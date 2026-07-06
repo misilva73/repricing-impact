@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divergence Overview — Repricing Impact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/plotly.min.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-brand">Repricing Impact</a>
+    <div class="nav-links">
+      <a data-nav="index">Landing</a>
+      <a data-nav="overview">Overview</a>
+      <a data-nav="transaction-failures">Transaction failures</a>
+    </div>
+    <div class="schedule-picker">
+      <span class="lbl">Schedule</span>
+      <a data-schedule="eip-8038">EIP-8038</a>
+      <a data-schedule="eip-8037">EIP-8037</a>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Divergence overview <span id="schedTitle" class="subtitle"></span></h1>
+    <p class="subtitle">Per-block group composition, totals, and gas-diff distributions for the changed groups.</p>
+
+    <div class="banner" id="truncBanner" style="display:none"></div>
+
+    <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
+
+    <h2>Group composition over time</h2>
+    <div class="toggle-row">
+      <span class="note" style="margin-right:6px">Y axis</span>
+      <button class="toggle-btn active" id="btnCounts" onclick="setMode(false)">Counts</button>
+      <button class="toggle-btn" id="btnPct" onclick="setMode(true)">Percent</button>
+    </div>
+    <div id="composition" class="chart"><p class="loading">Loading chart…</p></div>
+
+    <div class="with-side">
+      <div class="panel">
+        <h3>Totals</h3>
+        <div id="donut" class="chart"><p class="loading">Loading chart…</p></div>
+      </div>
+      <div class="sidecard">
+        <div class="big" id="rescues">—</div>
+        <div class="lbl">Rescues (of “Already failing”)</div>
+        <p class="note" style="margin-top:10px">Baseline-fail → schedule-success flips — a subset of “Already failing”, shown as a share of that group. Surfaced separately so beneficial flips aren’t buried.</p>
+        <div class="big" id="g5share" style="margin-top:16px;color:var(--text-muted)">—</div>
+        <div class="lbl">“Unknown” share</div>
+        <p class="note" id="g5note" style="margin-top:6px"></p>
+      </div>
+    </div>
+
+    <h2>Succeeds with changes - breakdown</h2>
+    <p class="note">The largest changed group: txs that still succeed at the original gas limit but whose replay differs from baseline. Change types are non-exclusive.</p>
+    <div class="panel">
+      <h3>Change type</h3>
+      <p class="note" id="g2changeNote"></p>
+      <div id="g2change" class="chart"><p class="loading">Loading…</p></div>
+    </div>
+    <div class="panel">
+      <h3>Gas-diff distribution</h3>
+      <p class="note" id="g2gasNote"></p>
+      <div id="g2gashist" class="chart"><p class="loading">Loading…</p></div>
+    </div>
+
+    <h2>Fixable with gas-limit increase - breakdown</h2>
+    <p class="note">Txs that fail at the original gas limit but succeed once it is raised — a repricing under-estimate, not a true break.</p>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Transaction shape</h3>
+        <p class="note">Simple ETH transfer vs contract call vs contract deployment vs EIP-7702 authorization.</p>
+        <div id="g3shape" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+      <div class="panel">
+        <h3>Transaction type (EIP-2718)</h3>
+        <p class="note">Legacy / access-list / dynamic-fee / blob / set-code.</p>
+        <div id="g3type" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Gas-diff distribution</h3>
+      <p class="note" id="g3note"></p>
+      <div id="histG3" class="chart"><p class="loading">Loading…</p></div>
+    </div>
+
+    <h2>Potentially broken - breakdown</h2>
+    <p class="note">Txs whose status flips to failure under the schedule and cannot be rescued by a gas-limit increase.</p>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Break reason</h3>
+        <p class="note">Out-of-gas (carries an OOG signal) vs a non-OOG revert.</p>
+        <div id="g4break" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+      <div class="panel">
+        <h3>OOG bottleneck kind</h3>
+        <p class="note">For out-of-gas breaks, the gas-accounting rule that ran short.</p>
+        <div id="g4oog" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Transaction shape</h3>
+        <p class="note">Simple ETH transfer vs contract call vs contract deployment vs EIP-7702 authorization.</p>
+        <div id="g4shape" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+      <div class="panel">
+        <h3>Transaction type (EIP-2718)</h3>
+        <p class="note">Legacy / access-list / dynamic-fee / blob / set-code.</p>
+        <div id="g4type" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Gas-diff distribution</h3>
+      <p class="note" id="g4note"></p>
+      <div id="histG4" class="chart"><p class="loading">Loading…</p></div>
+    </div>
+  </main>
+
+  <footer>
+    <hr>
+    <p class="note">repricing-impact · <span id="footSchedule"></span> · <span id="footConfig"></span> · <span id="footBlocks"></span> · <span id="footGenerated"></span></p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    let SERIES = null, pctMode = false;
+    function setMode(pct) {
+      pctMode = pct;
+      document.getElementById('btnCounts').classList.toggle('active', !pct);
+      document.getElementById('btnPct').classList.toggle('active', pct);
+      if (SERIES) renderComposition('composition', SERIES, pct);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      buildChrome('overview');
+      document.getElementById('schedTitle').textContent = '· ' + currentSchedule();
+
+      let meta, series, hist, cats;
+      try {
+        [meta, series, hist, cats] = await Promise.all([
+          fetchJSON(dataUrl('meta.json')),
+          fetchJSON(dataUrl('overview_series.json')),
+          fetchJSON(dataUrl('gas_delta_hist.json')),
+          fetchJSON(dataUrl('group_categories.json')),
+        ]);
+      } catch (e) { showError('cards', e); return; }
+      SERIES = series;
+      const t = series.totals, gl = series.group_labels;
+
+      renderCards('cards', [
+        { value: fmtCount(t.tx_count), label: 'Total txs' },
+        { value: fmtCount(t.g2), label: gl.g2, color: GROUP_COLOR(1) },
+        { value: fmtCount(t.g3), label: gl.g3, color: GROUP_COLOR(2) },
+        { value: fmtCount(t.g4), label: gl.g4, color: GROUP_COLOR(3) },
+      ]);
+
+      renderComposition('composition', series, false);
+      renderTotalsDonut('donut', t, gl);
+
+      document.getElementById('rescues').textContent = fmtPct(100 * t.rescues / t.af);
+      const g5pct = 100 * t.g5 / t.tx_count;
+      document.getElementById('g5share').textContent = fmtPct(g5pct);
+      const tr = meta.truncation;
+      document.getElementById('g5note').textContent =
+        `${fmtPct(100 * tr.truncated_share)} of blocks have truncated drill-ins, which inflate the Unknown group.`;
+
+      if (tr.truncated_share > 0) {
+        const b = document.getElementById('truncBanner');
+        b.style.display = '';
+        b.innerHTML = `<strong>Coverage quality</strong> · ${escHtml(tr.note)}`;
+      }
+
+      // Succeeds-with-changes (G2) deep dive
+      const g2 = cats.g2;
+      document.getElementById('g2changeNote').textContent = g2.change_type_note;
+      renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
+
+      // Fixable-with-gas-limit-increase (G3) deep dive
+      const g3 = cats.g3;
+      renderHBar('g3shape', g3.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(2) });
+      renderHBar('g3type', g3.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(2) });
+
+      // Potentially-broken (G4) deep dive
+      const g4 = cats.g4;
+      renderHBar('g4break', g4.break_reason, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+      renderHBar('g4oog', g4.oog_bottleneck_kind, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+      renderHBar('g4shape', g4.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+      renderHBar('g4type', g4.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(3) });
+
+      // gas-diff histograms. G2 stays absolute (the gas_only cohort has no per-tx
+      // baseline to form a ratio). G3/G4 render as a % of baseline gas when the
+      // precompute has emitted pct_bins, else fall back to the absolute log2 hist.
+      const g = hist.groups;
+      document.getElementById('g2gasNote').textContent = g['2'].note;
+      document.getElementById('g3note').textContent = g['3'].pct_bins ? g['3'].pct_note : g['3'].note;
+      document.getElementById('g4note').textContent = g['4'].pct_bins ? g['4'].pct_note : g['4'].note;
+      renderG2GasHist('g2gashist', g['2']);
+      renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
+      renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
+
+      document.getElementById('footSchedule').textContent = meta.schedule;
+      document.getElementById('footConfig').innerHTML =
+        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
+      document.getElementById('footBlocks').textContent =
+        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
+      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+
+      window.rerenderCharts = () => {
+        renderComposition('composition', series, pctMode);
+        renderTotalsDonut('donut', t, gl);
+        renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
+        renderHBar('g3shape', g3.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(2) });
+        renderHBar('g3type', g3.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(2) });
+        renderHBar('g4break', g4.break_reason, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+        renderHBar('g4oog', g4.oog_bottleneck_kind, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+        renderHBar('g4shape', g4.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+        renderHBar('g4type', g4.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(3) });
+        renderG2GasHist('g2gashist', g['2']);
+        renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
+        renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
+      };
+    });
+  </script>
+</body>
+</html>

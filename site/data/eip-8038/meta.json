@@ -1,0 +1,49 @@
+{
+  "schedule": "eip-8038",
+  "schedules_available": [
+    "eip-8037",
+    "eip-8038"
+  ],
+  "analysis_config_hash": "0xc17ac709e44c2100b9ee61cc17b5167643620462fb8a69cc6bad0d61d35f37d2",
+  "chain_id": 1,
+  "generated_at": "2026-07-06T15:54:10Z",
+  "block_range": {
+    "start": 24319986,
+    "end": 25319985,
+    "count": 1000000
+  },
+  "date_range": {
+    "start": "2026-01-26",
+    "end": "2026-06-15"
+  },
+  "totals": {
+    "tx_count": 312073975,
+    "g1": 146605366,
+    "g2": 121962205,
+    "g3": 37677871,
+    "g4": 1113223,
+    "af": 4658475,
+    "g5": 56835,
+    "rescues": 76565
+  },
+  "group_labels": {
+    "g1": "No change",
+    "g2": "Succeeds with changes",
+    "g3": "Fixable with gas-limit increase",
+    "g4": "Potentially broken",
+    "af": "Already failing",
+    "g5": "Unknown"
+  },
+  "truncation": {
+    "drill_ins_truncated_blocks": 415,
+    "total_blocks": 1000000,
+    "truncated_share": 0.0004,
+    "note": "Truncated blocks drop their drill-in rows at the 1024 cap, inflating the Unknown group. Treat Unknown as a coverage gap, not a true partition. (2369 raw ReplacingMergeTree duplicate row_ids were collapsed by argMax dedup; no double-counting.)"
+  },
+  "manifest": {
+    "source": "ClickHouse gas_analysis warehouse (per-block/per-tx replays)",
+    "schedule_name": "eip-8038",
+    "config_selected_by": "most blocks + most recent updated_at covering both schedules"
+  },
+  "pinned_config_note": "Pinned to chain_id=1 and a single analysis_config_hash; all aggregates derive the group partition once in groups.py."
+}

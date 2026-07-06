@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transaction Failures — Repricing Impact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/plotly.min.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-brand">Repricing Impact</a>
+    <div class="nav-links">
+      <a data-nav="index">Landing</a>
+      <a data-nav="overview">Overview</a>
+      <a data-nav="transaction-failures">Transaction failures</a>
+    </div>
+    <div class="schedule-picker">
+      <span class="lbl">Schedule</span>
+      <a data-schedule="eip-8038">EIP-8038</a>
+      <a data-schedule="eip-8037">EIP-8037</a>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Transaction failures <span id="schedTitle" class="subtitle"></span></h1>
+    <p class="subtitle" id="flavourNote"></p>
+    <p class="note">Potentially-broken (G4) transactions split by break reason:
+      <strong>out-of-gas failures</strong> (an OOG halt was recorded) vs.
+      <strong>non-OOG reverts</strong> (the status flipped without running out of gas).</p>
+
+    <!-- ============================ OOG ============================ -->
+    <section id="sec-oog">
+      <h2>Out-of-gas failures</h2>
+      <p class="note" id="oogIntro"></p>
+      <div class="poster-grid" id="oogCards"><span class="loading">Loading…</span></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Why — OOG pattern</h3>
+          <p class="note">Classification of the gas-exhaustion shape at the halt.</p>
+          <div id="oogPattern" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h3>How much — gas left at the halt</h3>
+          <p class="note">Distribution of the gas remaining when the transaction ran out (<code>oog_gas_remaining</code>).</p>
+          <div id="oogGasRemaining" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>What — opcode at the halt</h3>
+          <p class="note">The EVM opcode executing when gas ran out (top 5; the rest grouped as “Others”).</p>
+          <div id="oogOpcode" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h3>Where — call depth at the halt</h3>
+          <p class="note">Depth of the call frame where the halt occurred (1 = the entry contract).</p>
+          <div id="oogDepth" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Where — top entry contracts by OOG halts</h3>
+        <p class="note">Entry contracts (the <code>recipient</code> the user calls) ranked by OOG halts
+          or by failure rate. The failure rate is halts as a share of <em>all</em> mainnet
+          transactions to that contract over the analysis window. The <strong>Upgradable</strong>
+          column shows the detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
+          EIP-1167 <em>Immutable clone</em> is a proxy that can never change, so it is not
+          upgradable. Addresses link to Etherscan; click a column header to re-sort.</p>
+        <div class="toggle-row">
+          <span class="note" style="margin-right:6px">Rank by</span>
+          <button class="toggle-btn active" id="btnByHalts" onclick="setRecipientRank('halts')">OOG halts</button>
+          <button class="toggle-btn" id="btnByRate" onclick="setRecipientRank('rate')">Failure rate</button>
+        </div>
+        <p class="note" id="oogRecipientsNote"></p>
+        <div id="oogRecipients" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+
+      <div class="panel">
+        <h3>Flow — entry contract → halt contract</h3>
+        <p class="note">Where each transaction starts (the contract the user calls, <code>recipient</code>)
+          vs. where gas finally runs out (<code>oog_contract</code>). The halt is
+          usually several calls deeper than the entry point. Top entries/halts are
+          shown individually; the remainder is bucketed as “Other”.</p>
+        <div id="oogSankey" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- ======================= Non-OOG reverts ======================= -->
+    <section id="sec-nonoog">
+      <h2>Non-OOG reverts</h2>
+      <p class="note" id="nonOogIntro">Potentially-broken transactions whose status flipped under the
+        schedule <em>without</em> an out-of-gas signal — the transaction reverted
+        for a non-gas reason instead of halting on OOG.</p>
+      <div class="poster-grid" id="nonOogCards"><span class="loading">Loading…</span></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Why — revert reason</h3>
+          <p class="note">The producer's classified <code>failure_reason</code> for the reverting transaction.</p>
+          <div id="nonOogReason" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h3>Why — most common errors</h3>
+          <p class="note">ABI-decoded <code>Error(string)</code> revert messages (top 5; the rest grouped as “Others”).</p>
+          <div id="nonOogErrors" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>What — opcode at the revert</h3>
+          <p class="note">The EVM opcode at the first-divergence frame (top 5; the rest grouped as “Others”).</p>
+          <div id="nonOogOpcode" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h3>Where — call depth at the revert</h3>
+          <p class="note">Depth of the call frame where the revert occurred (1 = the entry contract).</p>
+          <div id="nonOogDepth" class="chart"><p class="loading">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Where — top entry contracts by non-OOG reverts</h3>
+        <p class="note">Entry contracts (the <code>recipient</code> the user calls) ranked by non-OOG
+          reverts or by failure rate. The failure rate is reverts as a share of <em>all</em> mainnet
+          transactions to that contract over the analysis window. The <strong>Upgradable</strong>
+          column shows the detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
+          EIP-1167 <em>Immutable clone</em> is a proxy that can never change, so it is not
+          upgradable. Addresses link to Etherscan; click a column header to re-sort.</p>
+        <div class="toggle-row">
+          <span class="note" style="margin-right:6px">Rank by</span>
+          <button class="toggle-btn active" id="btnNonOogByReverts" onclick="setNonOogRecipientRank('reverts')">Non-OOG reverts</button>
+          <button class="toggle-btn" id="btnNonOogByRate" onclick="setNonOogRecipientRank('rate')">Failure rate</button>
+        </div>
+        <p class="note" id="nonOogRecipientsNote"></p>
+        <div id="nonOogRecipients" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+
+      <div class="panel">
+        <h3>Flow — entry contract → revert contract</h3>
+        <p class="note">Where each transaction starts (the contract the user calls, <code>recipient</code>)
+          vs. where it finally reverts (<code>divergence_contract</code>). Top
+          entries/reverts are shown individually; the remainder is bucketed as “Other”.</p>
+        <div id="nonOogSankey" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <hr>
+    <p class="note">repricing-impact · <span id="footSchedule"></span> · <span id="footConfig"></span> · <span id="footBlocks"></span> · <span id="footGenerated"></span></p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      buildChrome('transaction-failures');
+      document.getElementById('schedTitle').textContent = '· ' + currentSchedule();
+
+      let meta, cats, oog, nonoog;
+      try {
+        [meta, cats, oog, nonoog] = await Promise.all([
+          fetchJSON(dataUrl('meta.json')),
+          fetchJSON(dataUrl('group_categories.json')),
+          fetchJSON(dataUrl('oog_forensics.json')),
+          fetchJSON(dataUrl('nonoog_forensics.json')),
+        ]);
+      } catch (e) { showError('oogIntro', e); return; }
+
+      document.getElementById('flavourNote').textContent = cats.flavour === 'state'
+        ? 'EIP-8037 (per-tx state reservoir): Potentially-broken (G4) transactions only.'
+        : 'EIP-8038 (state access/write repricing): Potentially-broken (G4) transactions only.';
+
+      // ── OOG section ──────────────────────────────────────────────
+      const T = theme();
+      const hasOog = oog && oog.oog_total > 0;
+      document.getElementById('oogIntro').textContent = hasOog
+        ? `${fmtCount(oog.oog_total)} of ${fmtCount(oog.g4_total)} potentially-broken txs `
+          + `(${fmtPct(100 * oog.oog_share_of_g4)}) recorded an out-of-gas halt. `
+          + `The rest are non-OOG reverts (below).`
+        : 'No out-of-gas halts recorded in the potentially-broken cohort for this schedule.';
+
+      renderCards('oogCards', [
+        { value: fmtCount(oog.oog_total), label: 'Out-of-gas failures', color: T.pos },
+        { value: (oog.distinct_oog_recipients == null ? '—' : fmtCount(oog.distinct_oog_recipients)), label: 'Distinct entry contracts affected' },
+        { value: fmtPct(100 * oog.oog_share_of_g4), label: 'Share of potentially-broken' },
+        { value: (oog.call_depth_percentiles.p50 ?? '—'), label: 'Median call depth' },
+      ]);
+
+      // Top-entry-contracts (recipient) table. Two precomputed rankings of the
+      // same rows: by OOG halt count, or by failure rate (rate view is gated on a
+      // min total-tx floor upstream, so tiny-denominator contracts don't dominate).
+      const oogByHalts = oog.oog_recipient_leaderboard || [];
+      const oogByRate = oog.oog_recipient_rate_leaderboard || [];
+      let recipientRank = 'halts';
+      window.setRecipientRank = (mode) => {
+        recipientRank = mode;
+        document.getElementById('btnByHalts').classList.toggle('active', mode === 'halts');
+        document.getElementById('btnByRate').classList.toggle('active', mode === 'rate');
+        drawOogRecipients();
+      };
+      const drawOogRecipients = () => {
+        const byRate = recipientRank === 'rate';
+        const ranked = (byRate ? oogByRate : oogByHalts).slice().sort((a, b) =>
+          byRate ? b.halt_rate - a.halt_rate : b.halt_count - a.halt_count);
+        document.getElementById('oogRecipientsNote').textContent = byRate
+          ? 'Ranked by failure rate; only contracts with ≥ 100 total mainnet txs over the window qualify.'
+          : '';
+        renderTable('oogRecipients', 'oogRecipientsTable', ranked, [
+          { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
+          { title: 'Contract', get: r => `<strong>${escHtml(r.label || shortAddr(r.addr))}</strong>` },
+          { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
+          { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
+          { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
+          { title: 'Address', get: r => `<a class="addr" href="https://etherscan.io/address/${escHtml(r.addr)}" target="_blank" rel="noopener noreferrer" title="${escHtml(r.addr)}">${escHtml(shortAddr(r.addr))}</a>` },
+          { title: 'OOG halts', num: true, get: r => fmtCount(r.halt_count), sortVal: r => r.halt_count },
+          { title: 'Failure rate', num: true,
+            get: r => r.halt_rate == null ? 'n/a' : fmtPct(100 * r.halt_rate), sortVal: r => r.halt_rate },
+        ]);
+      };
+
+      const drawOog = () => {
+        if (!hasOog) return;
+        renderHBar('oogPattern', oog.oog_pattern, 'key', 'count', { color: T.pos, xTitle: 'OOG txs' });
+        renderVBar('oogGasRemaining', oog.gas_remaining_hist, 'bucket', 'count', { xTitle: 'gas left at halt', color: T.groups[2] });
+        renderHBar('oogOpcode', topNWithOther(oog.oog_opcode, 5), 'key', 'count', { humanize: false, color: T.neg, xTitle: 'OOG txs' });
+        renderVBar('oogDepth', oog.call_depth_hist, 'depth', 'count', { xTitle: 'call depth', color: T.accent });
+        drawOogRecipients();
+        renderSankey('oogSankey', oog.sankey);
+      };
+
+      // ── Non-OOG reverts section ──────────────────────────────────
+      const hasNonOog = nonoog && nonoog.nonoog_total > 0;
+      const medDepth = nonoog.call_depth_percentiles.p50;
+      document.getElementById('nonOogIntro').textContent = hasNonOog
+        ? `${fmtCount(nonoog.nonoog_total)} of ${fmtCount(nonoog.g4_total)} potentially-broken txs `
+          + `(${fmtPct(100 * nonoog.nonoog_share_of_g4)}) flipped status without an out-of-gas `
+          + `signal — the transaction reverted for a non-gas reason instead of halting on OOG.`
+        : 'No non-OOG reverts recorded in the potentially-broken cohort for this schedule.';
+
+      renderCards('nonOogCards', [
+        { value: fmtCount(nonoog.nonoog_total), label: 'Non-OOG reverts', color: T.groups[3] },
+        { value: (nonoog.distinct_nonoog_recipients == null ? '—' : fmtCount(nonoog.distinct_nonoog_recipients)), label: 'Distinct entry contracts affected' },
+        { value: fmtPct(100 * nonoog.nonoog_share_of_g4), label: 'Share of potentially-broken' },
+        { value: medDepth == null ? '—' : medDepth, label: 'Median call depth' },
+      ]);
+
+      // Top-entry-contracts (recipient) table — mirror of the OOG side. Two
+      // precomputed rankings of the same rows: by non-OOG revert count, or by
+      // failure rate (rate view gated on a min total-tx floor upstream).
+      const nonOogByReverts = nonoog.nonoog_recipient_leaderboard || [];
+      const nonOogByRate = nonoog.nonoog_recipient_rate_leaderboard || [];
+      let nonOogRank = 'reverts';
+      window.setNonOogRecipientRank = (mode) => {
+        nonOogRank = mode;
+        document.getElementById('btnNonOogByReverts').classList.toggle('active', mode === 'reverts');
+        document.getElementById('btnNonOogByRate').classList.toggle('active', mode === 'rate');
+        drawNonOogRecipients();
+      };
+      const drawNonOogRecipients = () => {
+        const byRate = nonOogRank === 'rate';
+        const ranked = (byRate ? nonOogByRate : nonOogByReverts).slice().sort((a, b) =>
+          byRate ? b.revert_rate - a.revert_rate : b.revert_count - a.revert_count);
+        document.getElementById('nonOogRecipientsNote').textContent = byRate
+          ? 'Ranked by failure rate; only contracts with ≥ 100 total mainnet txs over the window qualify.'
+          : '';
+        renderTable('nonOogRecipients', 'nonOogRecipientsTable', ranked, [
+          { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
+          { title: 'Contract', get: r => `<strong>${escHtml(r.label || shortAddr(r.addr))}</strong>` },
+          { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
+          { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
+          { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
+          { title: 'Address', get: r => `<a class="addr" href="https://etherscan.io/address/${escHtml(r.addr)}" target="_blank" rel="noopener noreferrer" title="${escHtml(r.addr)}">${escHtml(shortAddr(r.addr))}</a>` },
+          { title: 'Non-OOG reverts', num: true, get: r => fmtCount(r.revert_count), sortVal: r => r.revert_count },
+          { title: 'Failure rate', num: true,
+            get: r => r.revert_rate == null ? 'n/a' : fmtPct(100 * r.revert_rate), sortVal: r => r.revert_rate },
+        ]);
+      };
+
+      const drawNonOog = () => {
+        if (!hasNonOog) return;
+        renderHBar('nonOogReason', nonoog.failure_reason, 'key', 'count', { color: T.groups[3], xTitle: 'non-OOG reverts' });
+        renderHBar('nonOogErrors', nonoog.revert_error_mix, 'key', 'count', { humanize: false, color: T.neg, left: 240, xTitle: 'non-OOG reverts' });
+        renderHBar('nonOogOpcode', topNWithOther(nonoog.divergence_opcode, 5), 'key', 'count', { humanize: false, color: T.groups[2], xTitle: 'non-OOG reverts' });
+        renderVBar('nonOogDepth', nonoog.call_depth_hist, 'depth', 'count', { xTitle: 'call depth', color: T.accent, yTitle: 'non-OOG reverts' });
+        drawNonOogRecipients();
+        renderSankey('nonOogSankey', nonoog.sankey, { unit: 'non-OOG reverts' });
+      };
+
+      const draw = () => {
+        drawOog();
+        drawNonOog();
+      };
+      draw();
+
+      document.getElementById('footSchedule').textContent = meta.schedule;
+      document.getElementById('footConfig').innerHTML =
+        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
+      document.getElementById('footBlocks').textContent =
+        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
+      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      window.rerenderCharts = draw;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repricing Impact — Gas Schedule Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/plotly.min.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-brand">Repricing Impact</a>
+    <div class="nav-links">
+      <a data-nav="index">Landing</a>
+      <a data-nav="overview">Overview</a>
+      <a data-nav="transaction-failures">Transaction failures</a>
+    </div>
+    <div class="schedule-picker">
+      <span class="lbl">Schedule</span>
+      <a data-schedule="eip-8038">EIP-8038</a>
+      <a data-schedule="eip-8037">EIP-8037</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <h1>Gas-schedule divergence dashboard</h1>
+      <p class="lead">
+        Per-schedule analysis of how mainnet transactions diverge under a candidate
+        gas schedule. Pick a schedule, then explore the
+        <strong>divergence overview</strong> and <strong>transaction failures</strong>.
+      </p>
+      <div class="hero-actions">
+        <a class="cta-btn" id="overviewLink">Open overview →</a>
+        <a class="btn-secondary" id="failuresLink">Transaction failures</a>
+      </div>
+    </div>
+
+    <div class="banner" id="truncBanner" style="display:none"></div>
+
+    <h2>Headline</h2>
+    <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
+
+    <div class="panel">
+      <h3>Group composition (totals)</h3>
+      <p class="note">Share of all transactions across every group, over the pinned block range.</p>
+      <div id="donut" class="chart"><p class="loading">Loading chart…</p></div>
+    </div>
+  </main>
+
+  <footer>
+    <hr>
+    <p class="note">repricing-impact · <span id="footSchedule"></span> · <span id="footConfig"></span> · <span id="footBlocks"></span> · <span id="footGenerated"></span></p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      buildChrome('index');
+      document.getElementById('overviewLink').href = pageLink('overview.html');
+      document.getElementById('failuresLink').href = pageLink('transaction-failures.html');
+
+      let meta, series;
+      try {
+        [meta, series] = await Promise.all([
+          fetchJSON(dataUrl('meta.json')),
+          fetchJSON(dataUrl('overview_series.json')),
+        ]);
+      } catch (e) { showError('cards', e); return; }
+
+      const t = meta.totals, gl = meta.group_labels;
+      renderCards('cards', [
+        { value: fmtCount(t.tx_count), label: 'Total transactions' },
+        { value: fmtCount(meta.block_range.count), label: 'Blocks analyzed' },
+        { value: fmtPct(100 * t.g3 / t.tx_count), label: gl.g3, color: GROUP_COLOR(2) },
+        { value: fmtPct(100 * t.g4 / t.tx_count), label: gl.g4, color: GROUP_COLOR(3) },
+      ]);
+
+      renderTotalsDonut('donut', t, gl);
+
+      // truncation banner
+      const tr = meta.truncation;
+      if (tr.truncated_share > 0) {
+        const b = document.getElementById('truncBanner');
+        b.style.display = '';
+        b.innerHTML = `<strong>Coverage caveat</strong> · ${escHtml(tr.note)} `
+          + `${fmtPct(100 * tr.truncated_share)} of blocks have truncated drill-ins `
+          + `(${fmtCount(tr.drill_ins_truncated_blocks)} / ${fmtCount(tr.total_blocks)}).`;
+      }
+
+      document.getElementById('footSchedule').textContent = meta.schedule;
+      document.getElementById('footConfig').innerHTML =
+        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
+      document.getElementById('footBlocks').textContent =
+        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
+      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      window.rerenderCharts = () => renderTotalsDonut('donut', t, gl);
+    });
+  </script>
+</body>
+</html>

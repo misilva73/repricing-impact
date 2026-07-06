@@ -1,0 +1,300 @@
+{
+  "schedule": "eip-8037",
+  "flavour": "state",
+  "g2": {
+    "label": "Succeeds with changes",
+    "count": 40049141,
+    "gas_only_count": 38414804,
+    "drillin_count": 1634337,
+    "state_driver_mix": [
+      {
+        "key": "no_state",
+        "count": 18329690
+      },
+      {
+        "key": "runtime_state",
+        "count": 20085114
+      },
+      {
+        "key": "creation",
+        "count": 9507
+      },
+      {
+        "key": "authorization",
+        "count": 1574012
+      }
+    ],
+    "state_driver_mix_drillin": [
+      {
+        "key": "none",
+        "count": 1438099
+      },
+      {
+        "key": "authorization",
+        "count": 195976
+      },
+      {
+        "key": "contract_creation",
+        "count": 262
+      }
+    ],
+    "change_type_mix": [
+      {
+        "key": "gas_changed",
+        "count": 39875667
+      },
+      {
+        "key": "event_logs_changed",
+        "count": 1252778
+      },
+      {
+        "key": "output_changed",
+        "count": 430282
+      },
+      {
+        "key": "logs_bloom_changed",
+        "count": 908100
+      },
+      {
+        "key": "trace_only",
+        "count": 6230
+      }
+    ],
+    "change_type_note": "Change types are non-exclusive: a tx can be counted under several (e.g. a gas change plus a logs-bloom change), so they do not sum to the group total. gas_changed spans the gas_only cohort and drill-in members with gas_delta != 0; the other flags exist only on drill-in members."
+  },
+  "g3": {
+    "label": "Fixable with gas-limit increase",
+    "count": 50684649,
+    "multiplier_histogram": [
+      {
+        "multiplier": 2,
+        "count": 35169140
+      },
+      {
+        "multiplier": 4,
+        "count": 14748726
+      },
+      {
+        "multiplier": 6,
+        "count": 646813
+      },
+      {
+        "multiplier": 8,
+        "count": 118841
+      },
+      {
+        "multiplier": 10,
+        "count": 1129
+      }
+    ],
+    "state_gas_category": [
+      {
+        "key": "authorization",
+        "count": 710899
+      },
+      {
+        "key": "contract_creation",
+        "count": 230486
+      },
+      {
+        "key": "transfer_new_account",
+        "count": 2227
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 8436
+      },
+      {
+        "key": "contract_call",
+        "count": 49734828
+      },
+      {
+        "key": "contract_creation",
+        "count": 230486
+      },
+      {
+        "key": "authorization",
+        "count": 710899
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 5592313
+      },
+      {
+        "key": "access_list",
+        "count": 61394
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 44119267
+      },
+      {
+        "key": "blob",
+        "count": 200776
+      },
+      {
+        "key": "set_code",
+        "count": 710899
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "is_create": {
+      "true": 230486,
+      "false": 50454163
+    },
+    "oog_pattern": [
+      {
+        "key": "storage_heavy",
+        "count": 8417
+      },
+      {
+        "key": "call_chain",
+        "count": 1014
+      },
+      {
+        "key": "loop",
+        "count": 476
+      },
+      {
+        "key": "unknown",
+        "count": 174
+      },
+      {
+        "key": "memory_expansion",
+        "count": 35
+      }
+    ],
+    "reservoir": {
+      "reservoir_exhausted": {
+        "true": 43408419,
+        "false": 7276230
+      },
+      "avg_runtime_state_gas_spillover": 422692
+    }
+  },
+  "g4": {
+    "label": "Potentially broken",
+    "count": 1282144,
+    "fixability": [
+      {
+        "key": "not_gas_fixable",
+        "count": 1281886
+      },
+      {
+        "key": "still_oog_at_ceiling",
+        "count": 258
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "break_reason": [
+      {
+        "key": "oog",
+        "count": 336890
+      },
+      {
+        "key": "non_oog_revert",
+        "count": 945254
+      },
+      {
+        "key": "other",
+        "count": 0
+      }
+    ],
+    "oog_bottleneck_kind": [
+      {
+        "key": "FractionalGas",
+        "count": 241555
+      },
+      {
+        "key": "FixedGas",
+        "count": 60313
+      }
+    ],
+    "status_flip": [
+      {
+        "key": "success_to_fail",
+        "count": 1282144
+      },
+      {
+        "key": "fail_to_fail",
+        "count": 0
+      },
+      {
+        "key": "fail_to_success",
+        "count": 0
+      }
+    ],
+    "state_gas_category": [
+      {
+        "key": "authorization",
+        "count": 195002
+      },
+      {
+        "key": "contract_creation",
+        "count": 2
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 0
+      },
+      {
+        "key": "contract_call",
+        "count": 1087140
+      },
+      {
+        "key": "contract_creation",
+        "count": 2
+      },
+      {
+        "key": "authorization",
+        "count": 195002
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 4903
+      },
+      {
+        "key": "access_list",
+        "count": 145
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 1082094
+      },
+      {
+        "key": "blob",
+        "count": 0
+      },
+      {
+        "key": "set_code",
+        "count": 195002
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "reservoir": {
+      "reservoir_exhausted": {
+        "true": 0,
+        "false": 1282144
+      },
+      "avg_runtime_state_gas_spillover": 0,
+      "avg_initial_reservoir": 0
+    }
+  }
+}

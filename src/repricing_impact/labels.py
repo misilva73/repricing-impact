@@ -1,0 +1,260 @@
+"""Known mainnet contract address labels + merged multi-source resolution.
+
+``ADDRESS_PROJECT_LABELS`` is the curated **manual override layer** — highest
+precedence in the resolver (expansion plan §4.3). It was ported from
+``repricing-forensics`` (``ADDRESS_PROJECT_LABELS`` + ``normalize_address`` +
+``infer_project_label``) plus ``label_address`` from the forensics ``web/db.py``.
+
+Resolution now layers a build-time **merged cache**
+(``label_cache/contract_labels.parquet``, produced by
+:mod:`repricing_impact.label_sources.build`) on top of the manual map:
+
+- :func:`label_address` — **unchanged signature/behaviour.** Resolves
+  merged-cache name → ``ADDRESS_PROJECT_LABELS`` → raw address → ``"unknown"``.
+  When the cache is absent it degrades to exactly the old behaviour (the manual
+  map only), so tests and a fresh checkout keep working.
+- :func:`classify_address` — the full structured :class:`LabelRecord` incl.
+  ``category`` / ``owner_project`` / ``source`` / ``confidence``.
+- :func:`infer_project_label` — the name/classification heuristic ladder, used
+  as the last-resort tier.
+
+The parquet read is memoised (:func:`functools.lru_cache`) so precompute pays it
+once per process; :func:`_reset_label_cache` clears it (used by tests).
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Dict, Optional
+
+from .config import MERGED_LABELS_PATH
+from .label_sources.schema import (
+    Category,
+    Confidence,
+    LabelRecord,
+    Source,
+    is_precompile,
+)
+
+ADDRESS_PROJECT_LABELS = {
+    # EVM precompiles
+    "0x0000000000000000000000000000000000000001": "ECRECOVER precompile",
+    "0x0000000000000000000000000000000000000002": "SHA256 precompile",
+    "0x0000000000000000000000000000000000000003": "RIPEMD160 precompile",
+    "0x0000000000000000000000000000000000000004": "IDENTITY precompile",
+    "0x0000000000000000000000000000000000000005": "MODEXP precompile",
+    "0x0000000000000000000000000000000000000006": "ECADD precompile",
+    "0x0000000000000000000000000000000000000007": "ECMUL precompile",
+    "0x0000000000000000000000000000000000000008": "ECPAIRING precompile",
+    "0x0000000000000000000000000000000000000009": "BLAKE2F precompile",
+    "0x000000000000000000000000000000000000000a": "KZG_POINT_EVAL precompile",
+    # Contracts
+    "0xdac17f958d2ee523a2206206994597c13d831ec7": "Tether USDT",
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "Circle USDC",
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "WETH",
+    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": "Uniswap V2 Router",
+    "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": "SushiSwap Router",
+    "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad": "Uniswap Universal Router",
+    "0x66a9893cc07d91d95644aedd05d03f95e1dba8af": "Uniswap V4 Universal Router",
+    "0x00005ea00ac477b1030ce78506496e8c2de24bf5": "OpenSea SeaDrop",
+    # ERC-4337 EntryPoints — versioned (they coexist on mainnet; the 7702/AA
+    # cohort under EIP-8037 spans all three).
+    "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789": "ERC-4337 EntryPoint v0.6",
+    "0x0000000071727de22e5e9d8baf0edac6f37da032": "ERC-4337 EntryPoint v0.7",
+    "0x4337084d9e255ff0702461cf8895ce9e3b5ff108": "ERC-4337 EntryPoint v0.8",
+    # Uniswap V4 PoolManager — the singleton holding all V4 pools. (Was
+    # previously mislabeled "1inch Aggregation Router"; the 0x…4444 vanity is
+    # V4's, 1inch v6 is the 0x1111… address below.)
+    "0x000000000004444c5dc75cb358380d2e3de08a90": "Uniswap V4 PoolManager",
+    "0x000000000022d473030f116ddee9f6b43ac78ba3": "Uniswap Permit2",
+    "0x6b175474e89094c44da98b954eedeac495271d0f": "Maker DAI",
+    "0x514910771af9ca656af840dff83e8264ecf986ca": "Chainlink LINK",
+    "0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce": "SHIB",
+    "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2": "Maker MKR",
+    "0x881d40237659c251811cec9c364ef91dc08d300c": "Metamask Swap Router",
+    "0xe592427a0aece92de3edee1f18e0157c05861564": "Uniswap V3 Router",
+    "0x111111125421ca6dc452d289314280a0f8842a65": "1inch Aggregation Router",
+    "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb": "0x Settler / Aggregation",
+    "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45": "Uniswap V3 Router 2",
+    "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae": "LI.FI / Socket Bridge",
+}
+
+
+def _as_str(value) -> Optional[str]:
+    """Coerce a value to a string, treating None and pandas NaN floats as None."""
+    if isinstance(value, str):
+        return value
+    return None
+
+
+def normalize_address(address: Optional[str]) -> Optional[str]:
+    s = _as_str(address)
+    if s is None:
+        return None
+    return s.lower()
+
+
+@lru_cache(maxsize=1)
+def _load_merged_cache() -> Dict[str, LabelRecord]:
+    """Load the merged label cache as ``{lowercased address: LabelRecord}``.
+
+    Returns an empty dict when the cache file is absent or unreadable, so the
+    resolver transparently degrades to the manual map — **current behaviour
+    exactly**. Memoised so the parquet is read at most once per process.
+    """
+    path = MERGED_LABELS_PATH
+    if not path.exists():
+        return {}
+    try:
+        from .label_sources.schema import read_contract_parquet
+
+        return {rec.address: rec for rec in read_contract_parquet(path)}
+    except Exception:
+        # A malformed / partial cache must never break the dashboard build.
+        return {}
+
+
+def _reset_label_cache() -> None:
+    """Clear the memoised merged-cache read (used by tests that swap caches)."""
+    _load_merged_cache.cache_clear()
+
+
+def label_address(addr: Optional[str]) -> str:
+    """Return the project label for an address, or the address itself.
+
+    Resolution order (plan §4.4): merged-cache name → ``ADDRESS_PROJECT_LABELS``
+    → raw address → ``"unknown"``. Non-strings / empties become ``"unknown"``.
+    With no merged cache present this is identical to the original forensics
+    behaviour (manual map only).
+    """
+    if not isinstance(addr, str) or not addr:
+        return "unknown"
+    low = addr.lower()
+    cache = _load_merged_cache()
+    rec = cache.get(low)
+    if rec is not None and rec.label:
+        return rec.label
+    return ADDRESS_PROJECT_LABELS.get(low, addr)
+
+
+def manual_label_records() -> list[LabelRecord]:
+    """The curated manual overrides as :class:`LabelRecord`s (highest precedence).
+
+    These are the ``source="manual"`` layer merged first by
+    :mod:`repricing_impact.label_sources.build`. Categories are left ``unknown``
+    (the manual map is name-only) except the precompiles, which self-classify.
+    """
+    records = []
+    for addr, label in ADDRESS_PROJECT_LABELS.items():
+        records.append(
+            LabelRecord(
+                address=addr,
+                label=label,
+                category=(
+                    Category.PRECOMPILE.value
+                    if is_precompile(addr)
+                    else Category.UNKNOWN.value
+                ),
+                source=Source.MANUAL.value,
+                confidence=Confidence.HIGH.value,
+            )
+        )
+    return records
+
+
+def classify_address(addr: Optional[str]) -> LabelRecord:
+    """Resolve an address to a full :class:`LabelRecord` (plan §1 target).
+
+    Prefers the merged cache; falls back to the manual map, then the
+    :func:`infer_project_label` heuristic ladder, then an ``unknown`` record. The
+    ``label`` field always matches what :func:`label_address` would return, so the
+    two resolvers never disagree on the display name.
+    """
+    if not isinstance(addr, str) or not addr:
+        return LabelRecord(
+            address="",
+            label="unknown",
+            category=Category.UNKNOWN.value,
+            source=Source.UNKNOWN.value,
+            confidence=Confidence.LOW.value,
+        )
+    low = addr.lower()
+
+    cached = _load_merged_cache().get(low)
+    if cached is not None:
+        return cached
+
+    if low in ADDRESS_PROJECT_LABELS:
+        return LabelRecord(
+            address=low,
+            label=ADDRESS_PROJECT_LABELS[low],
+            category=(
+                Category.PRECOMPILE.value
+                if is_precompile(low)
+                else Category.UNKNOWN.value
+            ),
+            source=Source.MANUAL.value,
+            confidence=Confidence.HIGH.value,
+        )
+
+    inferred = infer_project_label(low)
+    if inferred and inferred != low:
+        return LabelRecord(
+            address=low,
+            label=inferred,
+            category=Category.UNKNOWN.value,
+            source=Source.HEURISTIC.value,
+            confidence=Confidence.LOW.value,
+        )
+
+    return LabelRecord(
+        address=low,
+        label=low,
+        category=Category.UNKNOWN.value,
+        source=Source.UNKNOWN.value,
+        confidence=Confidence.LOW.value,
+    )
+
+
+def infer_project_label(
+    address: Optional[str],
+    compiled_name: Optional[str] = None,
+    classification: Optional[str] = None,
+    source_hint: Optional[str] = None,
+) -> str:
+    norm = normalize_address(address)
+    if norm in ADDRESS_PROJECT_LABELS:
+        return ADDRESS_PROJECT_LABELS[norm]
+
+    compiled_name = _as_str(compiled_name)
+    classification = _as_str(classification)
+    source_hint = _as_str(source_hint)
+
+    name = " ".join(
+        filter(None, [(compiled_name or "").lower(), (source_hint or "").lower()])
+    )
+    if "entrypoint" in name:
+        return "ERC-4337 EntryPoint"
+    if "uniswap" in name:
+        return "Uniswap"
+    if "sushi" in name:
+        return "SushiSwap"
+    if "permit2" in name:
+        return "Uniswap Permit2"
+    if "aggregationrouter" in name:
+        return "1inch Aggregation Router"
+    if "universalrouter" in name:
+        return "Uniswap Universal Router"
+    if "entrypoint" in name:
+        return "ERC-4337 EntryPoint"
+    if "safe" in name or "gnosis" in name:
+        return "Safe"
+    if "proxy" in name and classification:
+        return f"Proxy ({classification})"
+    if classification == "wallet_or_safe":
+        return "Wallet / Safe"
+    if classification == "proxy":
+        return "Proxy"
+    if classification == "upgradeable":
+        return "Upgradeable Contract"
+    return norm or "unknown"

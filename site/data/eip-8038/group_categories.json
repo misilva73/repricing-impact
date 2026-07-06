@@ -1,0 +1,281 @@
+{
+  "schedule": "eip-8038",
+  "flavour": "opcode",
+  "g2": {
+    "label": "Succeeds with changes",
+    "count": 121962205,
+    "gas_only_count": 119031666,
+    "drillin_count": 2930539,
+    "state_driver_mix": [
+      {
+        "key": "no_state",
+        "count": 119031666
+      },
+      {
+        "key": "runtime_state",
+        "count": 0
+      },
+      {
+        "key": "creation",
+        "count": 181694
+      },
+      {
+        "key": "authorization",
+        "count": 1731975
+      }
+    ],
+    "state_driver_mix_drillin": [
+      {
+        "key": "none",
+        "count": 2732347
+      },
+      {
+        "key": "access_list",
+        "count": 197470
+      },
+      {
+        "key": "contract_creation",
+        "count": 722
+      }
+    ],
+    "change_type_mix": [
+      {
+        "key": "gas_changed",
+        "count": 121962023
+      },
+      {
+        "key": "event_logs_changed",
+        "count": 2284786
+      },
+      {
+        "key": "output_changed",
+        "count": 687834
+      },
+      {
+        "key": "logs_bloom_changed",
+        "count": 717927
+      },
+      {
+        "key": "trace_only",
+        "count": 13169
+      }
+    ],
+    "change_type_note": "Change types are non-exclusive: a tx can be counted under several (e.g. a gas change plus a logs-bloom change), so they do not sum to the group total. gas_changed spans the gas_only cohort and drill-in members with gas_delta != 0; the other flags exist only on drill-in members."
+  },
+  "g3": {
+    "label": "Fixable with gas-limit increase",
+    "count": 37677871,
+    "multiplier_histogram": [
+      {
+        "multiplier": 2,
+        "count": 37669416
+      },
+      {
+        "multiplier": 4,
+        "count": 8455
+      },
+      {
+        "multiplier": 6,
+        "count": 0
+      },
+      {
+        "multiplier": 8,
+        "count": 0
+      },
+      {
+        "multiplier": 10,
+        "count": 0
+      }
+    ],
+    "state_gas_category": [
+      {
+        "key": "access_list",
+        "count": 1528905
+      },
+      {
+        "key": "contract_creation",
+        "count": 22740
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 460502
+      },
+      {
+        "key": "contract_call",
+        "count": 37096512
+      },
+      {
+        "key": "contract_creation",
+        "count": 22740
+      },
+      {
+        "key": "authorization",
+        "count": 98117
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 3658811
+      },
+      {
+        "key": "access_list",
+        "count": 69411
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 33830764
+      },
+      {
+        "key": "blob",
+        "count": 20768
+      },
+      {
+        "key": "set_code",
+        "count": 98117
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "is_create": {
+      "true": 22740,
+      "false": 37655131
+    },
+    "oog_pattern": [
+      {
+        "key": "call_chain",
+        "count": 494
+      },
+      {
+        "key": "storage_heavy",
+        "count": 283
+      },
+      {
+        "key": "loop",
+        "count": 29
+      },
+      {
+        "key": "unknown",
+        "count": 12
+      }
+    ]
+  },
+  "g4": {
+    "label": "Potentially broken",
+    "count": 1113223,
+    "fixability": [
+      {
+        "key": "not_gas_fixable",
+        "count": 1113086
+      },
+      {
+        "key": "still_oog_at_ceiling",
+        "count": 137
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "break_reason": [
+      {
+        "key": "oog",
+        "count": 248390
+      },
+      {
+        "key": "non_oog_revert",
+        "count": 864833
+      },
+      {
+        "key": "other",
+        "count": 0
+      }
+    ],
+    "oog_bottleneck_kind": [
+      {
+        "key": "Stipend2300",
+        "count": 232403
+      },
+      {
+        "key": "FixedGas",
+        "count": 6549
+      },
+      {
+        "key": "FractionalGas",
+        "count": 6376
+      }
+    ],
+    "status_flip": [
+      {
+        "key": "success_to_fail",
+        "count": 1113223
+      },
+      {
+        "key": "fail_to_fail",
+        "count": 0
+      },
+      {
+        "key": "fail_to_success",
+        "count": 0
+      }
+    ],
+    "state_gas_category": [
+      {
+        "key": "access_list",
+        "count": 136798
+      },
+      {
+        "key": "contract_creation",
+        "count": 7
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 0
+      },
+      {
+        "key": "contract_call",
+        "count": 1007231
+      },
+      {
+        "key": "contract_creation",
+        "count": 7
+      },
+      {
+        "key": "authorization",
+        "count": 105985
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 2431
+      },
+      {
+        "key": "access_list",
+        "count": 348
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 1004459
+      },
+      {
+        "key": "blob",
+        "count": 0
+      },
+      {
+        "key": "set_code",
+        "count": 105985
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ]
+  }
+}

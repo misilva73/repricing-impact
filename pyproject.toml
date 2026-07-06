@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repricing-impact"
+version = "0.1.0"
+description = "Analysis/dashboard over the ClickHouse gas_analysis warehouse (EVM gas-repricing impact)."
+requires-python = ">=3.12"
+readme = "README.md"
+
+# Runtime deps are pinned/managed in requirements.txt; this just lets us do an
+# editable src-layout install (`pip install -e .`) so `import repricing_impact`
+# works from scripts without juggling PYTHONPATH.
+dependencies = [
+    "pandas",
+    "numpy",
+    "sqlalchemy",
+    "clickhouse-sqlalchemy",
+    "duckdb",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+target-version = ["py312"]

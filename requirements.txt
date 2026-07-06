@@ -1,0 +1,21 @@
+# Core data / warehouse access
+pandas
+numpy
+sqlalchemy
+clickhouse-sqlalchemy
+duckdb
+
+# Testing
+pytest
+
+# Contract/selector label enrichment (build-time only — expansion plan §4.6).
+# `requests` covers the OLI GraphQL read + 4byte/Sourcify REST; `dune-client` is
+# the official Dune SDK for the `dune.labels` pull. Parquet caches are read/written
+# via duckdb (above), so no pyarrow dependency is required. These are only needed
+# to *refresh* the label caches; the merge/resolver + precompute run without them.
+requests
+dune-client
+
+# NOTE: deliberately no web-server dependencies. The dashboard is a fully
+# static site (HTML + Plotly.js fed by precomputed JSON); Python only does the
+# data work, so there is no FastAPI/uvicorn/Streamlit here.

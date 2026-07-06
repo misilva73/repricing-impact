@@ -1,0 +1,51 @@
+name: Deploy site to GitHub Pages
+
+# Publishes the static site/ directory to GitHub Pages.
+#
+# This is a publish-only workflow: there is NO build step (no Node, no Python).
+# Precompute runs LOCALLY against the internal ClickHouse warehouse (which
+# GitHub-hosted runners cannot reach) and the small aggregate JSON under
+# site/data/ is committed to the repo. This workflow just uploads site/ as a
+# Pages artifact and deploys it. secrets.json is gitignored and never published.
+#
+# Prerequisite (one-time, manual): in the repo's Settings -> Pages, set
+# "Build and deployment" -> Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege token scoped for Pages deployment via OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; do not cancel an in-progress production
+# deploy (let it finish rather than leaving the live site half-updated).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site/ artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
