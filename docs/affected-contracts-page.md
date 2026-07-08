@@ -30,6 +30,16 @@ the causal repricing drivers.
   three roles (entry / oog-site / revert-site) are a **facet tag** on each cluster,
   not three duplicated sections. Contract-level state (gas-delta stats, block span,
   g3/g2/af context, failure rate) lives in a collapsible context strip.
+- **Self-referential roles collapse to one row.** When a contract is BOTH the
+  entry (`recipient`) and the halt/revert site (`where_contract` == itself) of the
+  same failure mode, precompute emits two role-keyed clusters — one `entry`, one
+  `oog_site`/`revert_site` — over the same self-halting txs. The frontend
+  (`_mergeSelfRoleClusters` in `app.js`) merges them into a **single row tagged
+  with both roles**, keeping the site row's stats (the superset: it also counts
+  txs entered via other contracts, so its `count`/`drivers` are the correct
+  distinct-tx figures). This is a display-only grouping over the emitted cluster
+  list — the JSON contract (one `role` per cluster) is unchanged; a future
+  precompute regeneration produces the same rows either way.
 - **Every cluster carries a "why".** Each is annotated with the causal repricing
   drivers — the repriced state line items (cold-account / SLOAD / SSTORE / access-
   list counts), the shortfall magnitude (`surcharge_at_oog`, `oog_gas_remaining`),

@@ -871,6 +871,49 @@ function _roleChip(role) {
   return `<span class="tag ${cls}">${escHtml(lbl)}</span>`;
 }
 
+// Role cell for a (possibly merged) cluster: renders one chip per role. A cluster
+// merged by _mergeSelfRoleClusters carries a `roles` array (e.g. entry + revert
+// site); a plain cluster falls back to its single `role`.
+function _rolesCell(cl) {
+  const roles = (cl.roles && cl.roles.length) ? cl.roles : (cl.role ? [cl.role] : []);
+  return roles.map(_roleChip).join(' ') || '—';
+}
+
+// Collapse the entry/halt-or-revert double-count for self-referential failures.
+// When a contract is BOTH the entry (`recipient`) and the halt/revert site
+// (`where_contract` == itself) of the same failure mode, precompute emits two
+// rows keyed by role — one `entry`, one `oog_site`/`revert_site` — over the same
+// self-halting transactions. They share every field except role (the site row is
+// the superset, since it also counts txs entered via other contracts). We show a
+// single row that keeps the site row's stats and tags BOTH roles.
+function _mergeSelfRoleClusters(clusters) {
+  const keyOf = (c) => JSON.stringify([
+    c.kind, c.selector, c.where_contract, c.opcode,
+    c.pattern_or_reason, c.oog_bottleneck_kind, c.call_depth, c.revert_decoded,
+  ]);
+  const groups = new Map();
+  const order = [];
+  for (const c of clusters) {
+    const k = keyOf(c);
+    if (!groups.has(k)) { groups.set(k, []); order.push(k); }
+    groups.get(k).push(c);
+  }
+  const out = [];
+  for (const k of order) {
+    const g = groups.get(k);
+    const site = g.find(c => c.role === 'oog_site' || c.role === 'revert_site');
+    const entry = g.find(c => c.role === 'entry');
+    if (g.length > 1 && entry && site) {
+      // Superset site row carries the correct distinct-tx count and drivers.
+      out.push({ ...site, roles: ['entry', site.role] });
+    } else {
+      for (const c of g) out.push({ ...c, roles: [c.role] });
+    }
+  }
+  out.sort((a, b) => (b.count || 0) - (a.count || 0));
+  return out;
+}
+
 // Compact "why" drivers cell for a cluster's failure row. Only renders the
 // driver keys that are present (each key is optional per the JSON contract).
 function _driversCell(drivers) {
@@ -986,7 +1029,8 @@ function renderContractDetail(rec) {
   }
 
   // ── The spine: failure-mode clusters table ──────────────────────
-  const clusters = rec.failure_clusters || [];
+  // Merge the self-referential entry/site double-count into single rows.
+  const clusters = _mergeSelfRoleClusters(rec.failure_clusters || []);
   const distinct = rec.distinct_cluster_count != null ? rec.distinct_cluster_count : clusters.length;
   const shownShare = rec.clusters_shown_share != null ? ` covering ${fmtPct(100 * rec.clusters_shown_share)} of this contract's G4 txs` : '';
   const caption = `Top ${clusters.length} of ${fmtCount(distinct)} failure modes${shownShare}.`;
@@ -1015,7 +1059,7 @@ function renderContractDetail(rec) {
     renderTable('acClusters', 'acClustersTable', clusters, [
       { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
       { title: 'Function', get: r => _functionCell(r) },
-      { title: 'Role', get: r => _roleChip(r.role), sortVal: r => r.role || '' },
+      { title: 'Role', get: r => _rolesCell(r), sortVal: r => (r.roles || [r.role]).join(',') },
       { title: 'Kind', get: r => r.kind === 'oog' ? 'OOG' : (r.kind === 'non_oog' ? 'Revert' : humanizeKey(r.kind)), sortVal: r => r.kind || '' },
       { title: 'Where', get: r => _whereCell(r) },
       { title: 'Halt / revert detail', get: r => _detailCell(r) },
