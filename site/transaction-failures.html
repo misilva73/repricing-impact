@@ -15,6 +15,7 @@
       <a data-nav="index">Landing</a>
       <a data-nav="overview">Overview</a>
       <a data-nav="transaction-failures">Transaction failures</a>
+      <a data-nav="affected-contracts">Affected contracts</a>
     </div>
     <div class="schedule-picker">
       <span class="lbl">Schedule</span>
@@ -186,7 +187,8 @@
 
       renderCards('oogCards', [
         { value: fmtCount(oog.oog_total), label: 'Out-of-gas failures', color: T.pos },
-        { value: (oog.distinct_oog_recipients == null ? '—' : fmtCount(oog.distinct_oog_recipients)), label: 'Distinct entry contracts affected' },
+        { value: twoStat(oog.distinct_oog_recipients, oog.distinct_oog_contracts, 'entry', 'halt site'),
+          label: 'Distinct contracts affected' },
         { value: fmtPct(100 * oog.oog_share_of_g4), label: 'Share of potentially-broken' },
         { value: (oog.call_depth_percentiles.p50 ?? '—'), label: 'Median call depth' },
       ]);
@@ -212,7 +214,7 @@
           : '';
         renderTable('oogRecipients', 'oogRecipientsTable', ranked, [
           { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
-          { title: 'Contract', get: r => `<strong>${escHtml(r.label || shortAddr(r.addr))}</strong>` },
+          { title: 'Contract', get: r => `<strong>${escHtml(contractName(r))}</strong>` },
           { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
           { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
           { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
@@ -244,7 +246,8 @@
 
       renderCards('nonOogCards', [
         { value: fmtCount(nonoog.nonoog_total), label: 'Non-OOG reverts', color: T.groups[3] },
-        { value: (nonoog.distinct_nonoog_recipients == null ? '—' : fmtCount(nonoog.distinct_nonoog_recipients)), label: 'Distinct entry contracts affected' },
+        { value: twoStat(nonoog.distinct_nonoog_recipients, nonoog.distinct_nonoog_contracts, 'entry', 'revert site'),
+          label: 'Distinct contracts affected' },
         { value: fmtPct(100 * nonoog.nonoog_share_of_g4), label: 'Share of potentially-broken' },
         { value: medDepth == null ? '—' : medDepth, label: 'Median call depth' },
       ]);
@@ -270,7 +273,7 @@
           : '';
         renderTable('nonOogRecipients', 'nonOogRecipientsTable', ranked, [
           { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
-          { title: 'Contract', get: r => `<strong>${escHtml(r.label || shortAddr(r.addr))}</strong>` },
+          { title: 'Contract', get: r => `<strong>${escHtml(contractName(r))}</strong>` },
           { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
           { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
           { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },

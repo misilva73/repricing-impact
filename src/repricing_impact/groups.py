@@ -161,6 +161,8 @@ duplicate count as an informational stat.
 
 from __future__ import annotations
 
+import re
+
 # Top gas-limit multiplier the producer actually replays at. The manifest's
 # ``gas_limit_multipliers = [1,2,4,8]`` is WRONG (verified 2026-07-03): the real
 # sweep is two points, ``1x`` and ``10x``. Not a G3/G4 partition boundary — it is
@@ -226,6 +228,90 @@ RESCUE_PREDICATE = "baseline_success = false AND schedule_success = true"
 
 # Corroborating (not authoritative) G3 sub-signal — see caveat R2.
 OUTER_LIMIT_ONLY_FAILURE_PREDICATE = "outer_limit_only_failure = 1"
+
+# --- Deploy-OOG detector (collapses freshly-deployed self-halting accounts) ----
+#
+# Contract init code (a constructor, or a minimal-proxy clone's setup) universally
+# begins with a PUSH of the free-memory pointer / clone bootstrap: the first byte
+# is ``0x60xx`` (PUSH1) or ``0x61xx`` (PUSH2). Canonical Solidity creation code
+# opens ``6080604052…`` (PUSH1 0x80, PUSH1 0x40, MSTORE — set the free-memory
+# pointer); an ERC-1167 clone opens ``603d3d81…``; other clone/proxy bootstraps
+# open ``61…3d``. A *dispatched* function is reached via its 4-byte selector,
+# which is a keccak hash truncation (effectively random), so it essentially never
+# starts with ``0x60``/``0x61``. Hence a ``0x60xx``/``0x61xx`` prefix on the
+# failing-frame selector is a reliable marker that the frame is executing
+# constructor / init code rather than a dispatched function.
+DEPLOY_OOG_SELECTOR_REGEX = r"^0x6[01]"
+
+# The account-level rule the precompute emitter applies (authoritative here).
+#
+# An **affected contract** — the G4-only affected set: an address that appears as
+# a recipient, ``oog_contract``, or ``divergence_contract`` in any G4 tx — is a
+# **"deploy-OOG account"** iff ALL of:
+#
+#   (a) it is NOT name-searchable: no real label distinct from its ``0x`` address,
+#       and no ``owner_project``;
+#   (b) it never appears as a tx recipient (its entry-role count == 0);
+#   (c) it appears >= 1 time as an OOG halt site (``oog_contract == addr``);
+#   (d) EVERY one of its OOG-halt rows lands in init code —
+#       ``is_initcode_selector(coalesce(tier1_failing_selector, entry_selector))``
+#       is True for all of them.
+#
+# Accounts matching this rule are collapsed out of the per-contract shards into a
+# single aggregate file (they are freshly-deployed contract accounts — mostly
+# ERC-4337 smart-account wallets created via CREATE2 inside EntryPoint.handleOps —
+# that run out of gas during their OWN construction, appearing only as a self-halt
+# site and never as a real named contract).
+#
+# Verified: 102,124 / 117,905 (86.6%) of eip-8037 (a state-CREATION repricing)
+# affected contracts match; ~0 for eip-8038 (state-ACCESS). Among the matches the
+# halt opcodes are RETURN (code-deposit) and SSTORE (constructor storage) — so the
+# detector keys on the **init-code selector**, NOT the halt opcode.
+DEPLOY_OOG_RULE_DOC = """Deploy-OOG account rule (single source of truth).
+
+An affected contract (the G4-only affected set: appears as recipient,
+oog_contract, or divergence_contract in any G4 tx) is a "deploy-OOG account"
+iff ALL of:
+
+  (a) it is NOT name-searchable — no real label distinct from its 0x address,
+      and no owner_project;
+  (b) it never appears as a tx recipient (its entry-role count == 0);
+  (c) it appears >= 1 time as an OOG halt site (oog_contract == addr);
+  (d) EVERY one of its OOG-halt rows lands in init code:
+      is_initcode_selector(coalesce(tier1_failing_selector, entry_selector))
+      is True.
+
+These accounts are freshly-deployed contract accounts (mostly ERC-4337
+smart-account wallets created via CREATE2 inside EntryPoint.handleOps) that run
+out of gas during their OWN construction; they appear only as a self-halt site,
+never as a real named contract. The emitter collapses them out of the
+per-contract shards into a single aggregate file.
+
+Verified: 102,124/117,905 (86.6%) of eip-8037 (state-creation) affected
+contracts match; ~0 for eip-8038 (state-access). Halt opcodes among them are
+RETURN (code-deposit) + SSTORE (constructor storage) — detection keys on the
+init-code selector, NOT the opcode.
+"""
+
+
+def is_initcode_selector(selector) -> bool:
+    """True when a 4-byte failing-frame selector looks like contract init code.
+
+    Contract init code (constructor / minimal-proxy clone setup) universally
+    begins with a PUSH of the free-memory pointer or clone bootstrap — ``0x60xx``
+    (PUSH1) or ``0x61xx`` (PUSH2), e.g. ``6080604052…`` (canonical Solidity
+    creation), ``603d3d81…`` (ERC-1167 clone), ``61…3d``. A real dispatched
+    function's 4-byte selector is a keccak-hash truncation (effectively random),
+    so an init-code prefix at the failing frame is a reliable marker that the
+    frame is executing constructor / init code rather than a dispatched function.
+
+    Returns ``False`` for ``None`` / empty; otherwise the truthiness of
+    ``re.match(DEPLOY_OOG_SELECTOR_REGEX, str(selector))``.
+    """
+    if not selector:
+        return False
+    return bool(re.match(DEPLOY_OOG_SELECTOR_REGEX, str(selector)))
+
 
 # Cheap ReplacingMergeTree dedup guard: on a row_id-DEDUPED relation this must be
 # 0 (one row per row_id by construction). On the RAW table it can be > 0 at full

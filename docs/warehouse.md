@@ -155,6 +155,61 @@ If the denominator query fails or is unavailable, `total_tx` (and hence
   is `Nullable(UInt8)` (0/1), not Bool. See
   [`verification-findings.md`](verification-findings.md) for the full domain study.
 
+### `_divergence` selector & driver columns (materialized into `divergence_tx`)
+
+A `DESCRIBE gas_analysis.gas_analysis_divergence` (113 cols, verified live
+**2026-07-07**) surfaced function-selector and causal-repricing-driver columns
+that earlier docs never named. These power the per-contract **Affected contracts**
+page (`affected_contracts.json`, SCHEMA §5b); they are materialized into the slim
+build-time `divergence_tx` table (`scripts/precompute.py`, `DIVERGENCE_TX_COLUMNS`
+/ `_DIVTX_DDL`) so all clustering runs locally in DuckDB with **no new
+`_divergence` scan**. Populated-rate figures are from a 50k-block eip-8038 G4
+probe (84,526 rows).
+
+**Function-selector columns** (all `Nullable(String)`, 4-byte hex; decode to
+signatures with `label_sources.selectors.decode_selector` — display only):
+
+| Column | Type | G4 populated | Meaning |
+| --- | --- | --- | --- |
+| `entry_selector` | `Nullable(String)` | ~100% | Top-level function called on the entry contract (`recipient`). |
+| `tier1_failing_selector` | `Nullable(String)` | ~53% | Selector of the function at the failing (original-limit) frame — the function the halt/revert lands in. **Fall back to `entry_selector` when NULL.** |
+| `failure_selector_path` | `Nullable(String)` | ~100% | String-repr array of the selector call-path to the failure (parse with `opcodes.parse_arr`); optional context. |
+
+**Causal repricing-driver columns** (the "why" — the repriced state line items
+behind a G4 failure). Materialized because they are populated for G4:
+
+| Column | Type | G4 populated | Meaning |
+| --- | --- | --- | --- |
+| `surcharge_at_oog` | `Nullable(Int64)` | ~33% (OOG-halt-only) | Extra gas the repricing charged at the OOG halt site — the direct cost of the repricing at the failure point. |
+| `cold_account_access_count` | `Nullable(UInt64)` | ~100% | F2 cold-account access count. |
+| `sload_cold_count` | `Nullable(UInt64)` | ~100% | F8 cold `SLOAD` count. |
+| `sstore_cold_count` | `Nullable(UInt64)` | ~100% | F8 cold `SSTORE` count. |
+| `access_list_address_count` | `Nullable(UInt64)` | ~100% | F3 EIP-2930 access-list address entries. |
+| `access_list_storage_key_count` | `Nullable(UInt64)` | ~100% | F3 EIP-2930 access-list storage-key entries. |
+
+**Present in the table but NOT yet materialized** (documented-for-future; the
+DESCRIBE surfaced them, but the current `divergence_tx` projection does not carry
+them — add to `DIVERGENCE_TX_COLUMNS` if a future aggregate needs them):
+
+- **F1 tier-1 original-limit halt-site family:** `tier1_oog_contract`,
+  `tier1_oog_opcode`, `tier1_oog_pc`, `tier1_oog_depth`,
+  `tier1_oog_gas_remaining`, `tier1_failure_reason`, `tier1_failing_gas_provided`,
+  `tier1_failing_gas_requested` (the failing-frame family; `tier1_failing_selector`
+  above is the one member that _is_ materialized).
+- **PC / divergence-site:** `divergence_pc`, `oog_pc`.
+- **F10 first-gas-divergence family:** `gas_div_contract`, `gas_div_pc`,
+  `gas_div_call_depth`, `gas_div_opcode`.
+- **Revert / charge detail:** `revert_data`, `additional_gas_charged`.
+- **Fuller state-access count family:** `warm_account_access_count`,
+  `sload_warm_count`, `sstore_set_count`, `sstore_reset_count`,
+  `sstore_clear_count`, `sstore_noop_count`, `sstore_dirty_count`,
+  `value_transfer_count`, `create_opcode_count`.
+
+⚠️ **F12 "tax" columns excluded.** `tax_second_db_read` / `tax_other` /
+`tax_intrinsic` exist in the table but remain **undocumented / uncertain** (see
+the F-series note above) — they are **not** materialized and must not be treated
+as usable pending producer clarification.
+
 ### Decoding the `opcode_*` arrays (block_summary)
 
 `opcode`, `opcode_count`, `opcode_gas_baseline`, `opcode_gas_schedule` are

@@ -70,6 +70,7 @@
  *    section of transaction-failures.html.
  *    { schedule:str, g4_total:int, oog_total:int, oog_share_of_g4:float,
  *      distinct_oog_recipients:int,              // distinct entry contracts with >=1 OOG halt
+ *      distinct_oog_contracts:int,               // distinct halt-site contracts (oog_contract)
  *      oog_pattern:[{key,count}],
  *      gas_remaining_hist:[{bucket:str,count:int}],  // ordered magnitude buckets, gas left at halt
  *      oog_opcode:[{key,count}],                 // key = decoded mnemonic (no humanizeKey)
@@ -96,6 +97,8 @@
  *    (g4) cohort (rows that flipped status without an OOG signal). Powers the
  *    "Non-OOG reverts" section of transaction-failures.html.
  *    { schedule:str, g4_total:int, nonoog_total:int, nonoog_share_of_g4:float,
+ *      distinct_nonoog_recipients:int,            // distinct entry contracts with >=1 non-OOG revert
+ *      distinct_nonoog_contracts:int,             // distinct revert-site contracts (divergence_contract)
  *      failure_reason:[{key,count}],              // raw failure_reason enum
  *      revert_error_mix:[{key,count}],            // Error(string) message, top 5 + "Others"
  *      divergence_opcode:[{key,count}],           // key = decoded mnemonic (no humanizeKey)
@@ -159,10 +162,10 @@ function pageLink(page) {
 // ── Theme palette ────────────────────────────────────────────────────
 // Modern Dark — group colors in GROUP_KEYS order (No change · Succeeds with
 // changes · Fixable · Potentially broken · Already failing · Unknown):
-// slate · cyan · amber · rose · violet · gray.
+// slate · cyan · amber · rose · violet · emerald.
 const MODERN_DARK = {
-  groups: ['#64748b', '#22d3ee', '#fbbf24', '#fb7185', '#a78bfa', '#94a3b8'],
-  pie: ['#64748b', '#22d3ee', '#fbbf24', '#fb7185', '#a78bfa', '#94a3b8'],
+  groups: ['#64748b', '#22d3ee', '#fbbf24', '#fb7185', '#a78bfa', '#34d399'],
+  pie: ['#64748b', '#22d3ee', '#fbbf24', '#fb7185', '#a78bfa', '#34d399'],
   pos: '#fb7185', neg: '#22d3ee', accent: '#818cf8',
   layout: {
     font: { family: 'Inter, system-ui, sans-serif', size: 13, color: '#b4bac6' },
@@ -217,7 +220,21 @@ function fmtPct(n) {
   return n.toFixed(2) + '%';
 }
 function escHtml(s) { const d = document.createElement('div'); d.textContent = (s == null ? '' : s); return d.innerHTML; }
+// Two counts in one poster card: each value with a small dimmed qualifier
+// (e.g. "3,182 entry · 1,274 halt site"). Returns "—" only when both are null.
+function twoStat(a, b, labelA, labelB) {
+  if (a == null && b == null) return '—';
+  const part = (v, lbl) =>
+    `${v == null ? '—' : fmtCount(v)}<span style="font-size:0.5em; font-weight:400; color:var(--text-muted); margin-left:3px">${escHtml(lbl)}</span>`;
+  return `${part(a, labelA)}<span style="color:var(--text-dim); margin:0 6px">·</span>${part(b, labelB)}`;
+}
 function shortAddr(a) { return a ? a.slice(0, 8) + '…' + a.slice(-4) : ''; }
+// Display name for a contract row: its human label, or a shortened address when
+// the row has no real label (upstream falls back to the bare 0x… address).
+function contractName(r) {
+  const bareAddr = r.label && /^0x[0-9a-fA-F]{40}$/.test(r.label);
+  return (r.label && !bareAddr) ? r.label : shortAddr(r.addr);
+}
 
 // Humanize a raw DB enum string for display. The categorical breakdowns
 // (state_gas_category, oog_pattern, oog_bottleneck_kind, status_flip, …) carry
@@ -640,4 +657,615 @@ function buildChrome(active) {
     a.href = scheduleLink(s);
     if (s === sched) a.classList.add('active');
   });
+}
+
+// ═════════════════════════════════════════════════════════════════════
+//  affected-contracts.html — per-contract failure search (cluster-first)
+//  See site/data/SCHEMA.md §5b and docs/affected-contracts-page.md.
+//  SHARDED data layout:
+//   · data/{schedule}/affected/index.json — small; loaded on page init. Holds
+//     block_range, g4_total, affected_count, and a NAME-SEARCHABLE `contracts`
+//     array (labeled contracts only, each with `address` + footprint counts).
+//   · data/{schedule}/affected/{lowercase_addr}.json — one shard per affected
+//     contract, FETCHED ON LOOKUP; its payload is exactly the record
+//     renderContractDetail(rec) consumes (that render is unchanged).
+//  A direct address fetches its shard straight away; a name search substring-
+//  scans the index, then fetches the chosen entry's shard. A 404/failed shard
+//  fetch is treated as "not affected" (banner), never an uncaught error.
+// ═════════════════════════════════════════════════════════════════════
+
+// Module-scoped handle to the loaded index, set once by the page init.
+let _affected = null;
+// Lazily-fetched, cached aggregate for the collapsed "fresh contract deployment
+// OOG'd during construction" class (~102k long-tail accounts that no longer get
+// an individual {addr}.json shard). undefined = not yet fetched, null = fetch
+// failed / file absent, object = the deploy_oog.json payload.
+let _deployOog = undefined;
+function initAffectedContracts(index) {
+  _affected = index || { contracts: [] };
+  _deployOog = undefined;               // reset on a new index / schedule change
+}
+
+// Fetch the collapsed deploy-OOG aggregate once, on first miss. Potentially
+// several MB, so it is never loaded on page init — only when a shard miss needs
+// to consult it. Resolves to null on any failure so callers can fall through.
+async function _fetchDeployOog() {
+  if (_deployOog !== undefined) return _deployOog;
+  try {
+    _deployOog = await fetchJSON(dataUrl('affected/deploy_oog.json'));
+  } catch (e) {
+    _deployOog = null;
+  }
+  return _deployOog;
+}
+
+// Fetch a per-contract shard; resolve to null on any failure (404 / network /
+// bad JSON) so callers can treat a miss as "not affected" without throwing.
+async function _fetchAffectedShard(addr) {
+  try {
+    return await fetchJSON(dataUrl('affected/' + addr.toLowerCase() + '.json'));
+  } catch (e) {
+    return null;
+  }
+}
+// Transient loading state in #detail while a shard is in flight.
+function _showDetailLoading() {
+  const d = document.getElementById('detail');
+  if (d) d.innerHTML = '<div class="panel"><p class="loading">Loading…</p></div>';
+}
+
+// Etherscan links.
+function _etherscanAddr(addr) {
+  return `https://etherscan.io/address/${escHtml(addr)}`;
+}
+function _etherscanTx(hash) {
+  return `https://etherscan.io/tx/${escHtml(hash)}`;
+}
+
+// A human label for the analysis window, reused in banners.
+function _affectedWindowLabel() {
+  const r = _affected && _affected.block_range;
+  const sched = (_affected && _affected.schedule) || currentSchedule();
+  if (!r) return sched;
+  return `${sched}, blocks ${Number(r.start).toLocaleString()}–${Number(r.end).toLocaleString()}`;
+}
+
+// Persist the resolved/attempted lookup in the URL so views are shareable.
+function _setAddrParam(addr) {
+  const u = new URL(location.href);
+  if (addr) u.searchParams.set('addr', addr);
+  else u.searchParams.delete('addr');
+  history.replaceState(null, '', u.pathname.split('/').pop() + u.search);
+}
+
+// A single row's identity fields used by contractName/upgradeTag reuse.
+// The JSON contract stores the address under `address`; existing helpers
+// (contractName, table addr cells) expect `addr`, so we normalize.
+function _asRecord(rec) {
+  if (!rec) return rec;
+  if (rec.addr == null && rec.address != null) rec.addr = rec.address;
+  return rec;
+}
+
+// Render a banner (miss / not-affected / bad input) into #banner and clear detail.
+function _showBanner(html) {
+  const b = document.getElementById('banner');
+  if (b) b.innerHTML = `<div class="banner">${html}</div>`;
+  const d = document.getElementById('detail');
+  if (d) d.innerHTML = '';
+}
+function _clearBanner() {
+  const b = document.getElementById('banner');
+  if (b) b.innerHTML = '';
+}
+
+// The banner shown when an address has no shard (not affected / bad address).
+function _notAffectedBanner(q) {
+  _showBanner(`No failures were identified for <strong>${escHtml(q)}</strong> in the `
+    + `analysis (${escHtml(_affectedWindowLabel())}). This contract does not appear in any `
+    + `Potentially-broken (G4) transaction as an entry, out-of-gas halt, or non-OOG revert site.`);
+  const d = document.getElementById('detail');
+  if (d) d.innerHTML = '';
+}
+
+// Fetch + render a single contract's shard by address. Returns true on a hit.
+async function _resolveAndRender(addr, missQuery) {
+  _setAddrParam(addr);
+  _showDetailLoading();
+  const rec = await _fetchAffectedShard(addr);
+  if (!rec) {
+    // Shard miss: this address may be one of the collapsed fresh-deployment
+    // OOG accounts (no individual shard). Consult the aggregate before giving up.
+    const dj = await _fetchDeployOog();
+    const acct = dj && dj.accounts ? dj.accounts[addr.toLowerCase()] : null;
+    if (acct) { _clearBanner(); renderDeployOogDetail(addr.toLowerCase(), acct, dj); return true; }
+    _notAffectedBanner(missQuery != null ? missQuery : addr);
+    return false;
+  }
+  _clearBanner();
+  renderContractDetail(_asRecord(rec));
+  return true;
+}
+
+// Lookup entry point wired to the search box (and ?addr= deep-link). Normalizes
+// input; exact 0x…40hex → fetch that shard directly; otherwise a case-insensitive
+// substring search over the index's label/owner_project. Async: shards are fetched.
+async function affectedLookup(raw) {
+  const entries = (_affected && Array.isArray(_affected.contracts)) ? _affected.contracts : [];
+  const q = (raw == null ? '' : String(raw)).trim();
+  const detail = document.getElementById('detail');
+  if (!q) {
+    _clearBanner();
+    if (detail) detail.innerHTML = '';
+    _setAddrParam(null);
+    return;
+  }
+
+  // Exact address → fetch the shard; 404/failure → not-affected banner.
+  if (/^0x[0-9a-fA-F]{40}$/.test(q)) {
+    await _resolveAndRender(q.toLowerCase(), q);
+    return;
+  }
+
+  // Name / owner-project substring search over the index.
+  const needle = q.toLowerCase();
+  const matches = entries.filter(r => {
+    const hay = [(r.label || ''), (r.owner_project || '')].join(' ').toLowerCase();
+    return hay.includes(needle);
+  });
+  _setAddrParam(q);
+
+  if (matches.length === 0) {
+    _showBanner(`No affected contract matches <strong>${escHtml(q)}</strong> in the analysis `
+      + `(${escHtml(_affectedWindowLabel())}). Try a full <code>0x…</code> address, or a different name.`);
+    if (detail) detail.innerHTML = '';
+    return;
+  }
+  if (matches.length === 1) {
+    const addr = (matches[0].address || matches[0].addr || '').toLowerCase();
+    await _resolveAndRender(addr, contractName(_asRecord(matches[0])));
+    return;
+  }
+  // Several matches → clickable pick-list (each pick fetches its shard).
+  _renderPickList(matches, q);
+  if (detail) detail.innerHTML = '';
+}
+
+// A small clickable disambiguation list for a multi-match name search, built
+// from index entries (label + footprint counts). Each pick fetches its shard.
+function _renderPickList(matches, q) {
+  const footprint = (r) => {
+    const bits = [];
+    if (r.entry_g4_tx_count) bits.push(`${fmtCount(r.entry_g4_tx_count)} entry`);
+    if (r.halt_count) bits.push(`${fmtCount(r.halt_count)} halts`);
+    if (r.revert_count) bits.push(`${fmtCount(r.revert_count)} reverts`);
+    return bits.length ? ` · ${escHtml(bits.join(', '))}` : '';
+  };
+  const rows = matches.slice(0, 20).map(r => {
+    const rec = _asRecord(r);
+    const cat = rec.category ? ` · ${escHtml(humanizeKey(rec.category))}` : '';
+    const proj = rec.owner_project ? ` · ${escHtml(rec.owner_project)}` : '';
+    return `<li style="margin:4px 0"><a href="#" class="addr" data-pick="${escHtml(rec.addr)}">`
+      + `${escHtml(contractName(rec))}</a> <span class="note">${escHtml(shortAddr(rec.addr))}${cat}${proj}${footprint(r)}</span></li>`;
+  }).join('');
+  const more = matches.length > 20 ? `<p class="note">Showing 20 of ${matches.length} matches — refine your search.</p>` : '';
+  _showBanner(`<strong>${matches.length}</strong> contracts match `
+    + `<strong>${escHtml(q)}</strong>. Pick one:<ul style="margin:8px 0 0; padding-left:18px">${rows}</ul>${more}`);
+  // Wire the pick links.
+  document.querySelectorAll('#banner [data-pick]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const addr = a.getAttribute('data-pick');
+      const box = document.getElementById('addrSearch');
+      if (box) box.value = addr;
+      affectedLookup(addr);
+    });
+  });
+}
+
+// Facet chip for a cluster/context role.
+const _ROLE_LABELS = { entry: 'Entry', oog_site: 'Halt site', revert_site: 'Revert site' };
+function _roleChip(role) {
+  const lbl = _ROLE_LABELS[role] || humanizeKey(role);
+  const cls = role === 'entry' ? 'tag-upgradable' : 'tag-immutable';
+  return `<span class="tag ${cls}">${escHtml(lbl)}</span>`;
+}
+
+// Compact "why" drivers cell for a cluster's failure row. Only renders the
+// driver keys that are present (each key is optional per the JSON contract).
+function _driversCell(drivers) {
+  if (!drivers) return '—';
+  const parts = [];
+  const pctile = (o) => (o && o.p50 != null) ? o.p50 : null;
+  const sstore = pctile(drivers.sstore);
+  const sload = pctile(drivers.sload);
+  const cold = pctile(drivers.cold_account);
+  if (sstore != null) parts.push(`SSTORE ×${fmtCount(sstore)}`);
+  if (sload != null) parts.push(`SLOAD ×${fmtCount(sload)}`);
+  if (cold != null) parts.push(`cold ×${fmtCount(cold)}`);
+  if (drivers.surcharge_at_oog && drivers.surcharge_at_oog.p50 != null)
+    parts.push(`+${fmtGas(drivers.surcharge_at_oog.p50)} surcharge`);
+  if (drivers.gas_remaining_at_oog && drivers.gas_remaining_at_oog.p50 != null)
+    parts.push(`${fmtGas(drivers.gas_remaining_at_oog.p50)} short`);
+  if (drivers.reservoir_exhausted_share != null && drivers.reservoir_exhausted_share > 0)
+    parts.push(`reservoir exhausted ${fmtPct(100 * drivers.reservoir_exhausted_share)}`);
+  else if (drivers.spillover_share != null && drivers.spillover_share > 0)
+    parts.push(`spillover ${fmtPct(100 * drivers.spillover_share)}`);
+  const scat = drivers.state_gas_category;
+  if ((!parts.length) && Array.isArray(scat) && scat.length && scat[0].key != null)
+    parts.push(humanizeKey(scat[0].key));
+  return parts.length ? escHtml(parts.join(' / ')) : '—';
+}
+
+// "where" cell: the counterpart contract + its label (contract role site).
+function _whereCell(cl) {
+  if (!cl.where_contract) return '—';
+  const rec = { addr: cl.where_contract, label: cl.where_label };
+  const name = contractName(rec);
+  const cat = cl.where_category ? ` <span class="note">${escHtml(humanizeKey(cl.where_category))}</span>` : '';
+  return `<a class="addr" href="${_etherscanAddr(cl.where_contract)}" target="_blank" `
+    + `rel="noopener noreferrer" title="${escHtml(cl.where_contract)}">${escHtml(name)}</a>${cat}`;
+}
+
+// "halt/revert detail" cell: opcode / pattern-or-reason / decoded revert.
+function _detailCell(cl) {
+  const bits = [];
+  if (cl.opcode) bits.push(escHtml(cl.opcode));                       // opcode mnemonic, no humanize
+  if (cl.pattern_or_reason) bits.push(escHtml(humanizeKey(cl.pattern_or_reason)));
+  if (cl.oog_bottleneck_kind) bits.push(escHtml(humanizeKey(cl.oog_bottleneck_kind)));
+  if (cl.revert_decoded) bits.push(`<code>${escHtml(cl.revert_decoded)}</code>`);   // decoded error, no humanize
+  if (cl.call_depth != null) bits.push(`<span class="note">depth ${escHtml(cl.call_depth)}</span>`);
+  return bits.length ? bits.join('<br>') : '—';
+}
+
+// Representative tx hash link(s) for a cluster.
+function _examplesCell(examples) {
+  const ex = examples || [];
+  if (!ex.length) return '—';
+  return ex.slice(0, 2).map(e =>
+    `<a class="addr" href="${_etherscanTx(e.tx_hash)}" target="_blank" rel="noopener noreferrer" `
+    + `title="${escHtml(e.tx_hash)}${e.block_number != null ? ' · block ' + e.block_number : ''}">`
+    + `${escHtml(shortAddr(e.tx_hash))}</a>`
+  ).join('<br>');
+}
+
+// The function cell: decoded signature, falling back to the raw selector.
+function _functionCell(cl) {
+  const sig = cl.selector_signature || cl.selector;
+  if (!sig) return '—';
+  const isRaw = !cl.selector_signature;
+  return `<code${isRaw ? '' : ` title="${escHtml(cl.selector || '')}"`}>${escHtml(sig)}</code>`;
+}
+
+// Full per-contract detail render — cluster-first.
+function renderContractDetail(rec) {
+  rec = _asRecord(rec);
+  const el = document.getElementById('detail');
+  if (!el) return;
+  const T = theme();
+
+  // ── Identity / supportive header ────────────────────────────────
+  const pills = [];
+  if (rec.category) pills.push(`<span class="tag tag-immutable">${escHtml(humanizeKey(rec.category))}</span>`);
+  if (rec.owner_project) pills.push(`<span class="tag tag-immutable">${escHtml(rec.owner_project)}</span>`);
+  if (rec.source) pills.push(`<span class="tag tag-immutable">${escHtml(humanizeKey(rec.source))}${rec.confidence ? ' · ' + escHtml(humanizeKey(rec.confidence)) : ''}</span>`);
+  if (rec.is_proxy) pills.push(`<span class="tag tag-immutable">Proxy</span>`);
+  if (rec.is_factory) pills.push(`<span class="tag tag-immutable">Factory</span>`);
+  if (rec.is_safe) pills.push(`<span class="tag tag-immutable">Safe</span>`);
+  if (rec.erc_type) pills.push(`<span class="tag tag-immutable">${escHtml(humanizeKey(rec.erc_type))}</span>`);
+  if (rec.is_mev_bot) pills.push(`<span class="tag tag-immutable">MEV${rec.mev_role ? ' · ' + escHtml(humanizeKey(rec.mev_role)) : ''}</span>`);
+  const upg = upgradeTag(rec);
+  if (upg && upg !== '—') pills.push(upg);
+
+  const header = `
+    <div class="panel">
+      <h3>${escHtml(contractName(rec))}
+        <a class="addr" href="${_etherscanAddr(rec.addr)}" target="_blank" rel="noopener noreferrer"
+          title="${escHtml(rec.addr)}" style="font-size:0.6em; font-weight:400; margin-left:8px">${escHtml(shortAddr(rec.addr))} ↗</a>
+      </h3>
+      <div style="margin:8px 0 0">${pills.join(' ') || '<span class="note">No label metadata.</span>'}</div>
+    </div>`;
+
+  // ── Headline role cards ─────────────────────────────────────────
+  const rs = rec.roles_summary || {};
+  const cards = [];
+  if (rs.entry) {
+    if (rs.entry.g4_oog_count != null)
+      cards.push({ value: fmtCount(rs.entry.g4_oog_count), label: 'OOG halt txs as entry site', color: T.accent });
+    if (rs.entry.g4_nonoog_count != null)
+      cards.push({ value: fmtCount(rs.entry.g4_nonoog_count), label: 'non-OOG revert txs as entry site', color: T.accent });
+  }
+  if (rs.oog_site)
+    cards.push({ value: fmtCount(rs.oog_site.halt_count || 0), label: 'txs as OOG halt site', color: T.accent });
+  if (rs.revert_site)
+    cards.push({ value: fmtCount(rs.revert_site.revert_count || 0), label: 'txs as non-OOG revert site', color: T.accent });
+  const fr = rec.context && rec.context.failure_rate;
+  if (fr) {
+    if (fr.halt_rate != null) cards.push({ value: fmtPct(100 * fr.halt_rate), label: 'OOG halt rate (all mainnet txs)', color: T.accent });
+    else if (fr.revert_rate != null) cards.push({ value: fmtPct(100 * fr.revert_rate), label: 'Revert rate (all mainnet txs)', color: T.accent });
+  }
+
+  // ── The spine: failure-mode clusters table ──────────────────────
+  const clusters = rec.failure_clusters || [];
+  const distinct = rec.distinct_cluster_count != null ? rec.distinct_cluster_count : clusters.length;
+  const shownShare = rec.clusters_shown_share != null ? ` covering ${fmtPct(100 * rec.clusters_shown_share)} of this contract's G4 txs` : '';
+  const caption = `Top ${clusters.length} of ${fmtCount(distinct)} failure modes${shownShare}.`;
+
+  // ── Assemble the DOM shell, then render Plotly bits into it ──────
+  el.innerHTML = `
+    ${header}
+    <div class="poster-grid" id="acCards"></div>
+    <div class="panel">
+      <h3>Failure modes</h3>
+      <p class="note">${escHtml(caption)} Ranked by transaction count. Each row is a distinct
+        failure mode: a failing function paired with a halt/revert signature, tagged with the
+        role it plays for this contract, and annotated with the repriced state line items
+        (the "why") behind it.</p>
+      <div id="acClusters" class="chart"><p class="loading">No failure clusters.</p></div>
+    </div>
+    <div class="panel">
+      <h3 style="cursor:pointer" id="acCtxToggle">Context ▸</h3>
+      <div id="acContext" style="display:none"></div>
+    </div>`;
+
+  renderCards('acCards', cards);
+
+  // Cluster table (spine).
+  if (clusters.length) {
+    renderTable('acClusters', 'acClustersTable', clusters, [
+      { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
+      { title: 'Function', get: r => _functionCell(r) },
+      { title: 'Role', get: r => _roleChip(r.role), sortVal: r => r.role || '' },
+      { title: 'Kind', get: r => r.kind === 'oog' ? 'OOG' : (r.kind === 'non_oog' ? 'Revert' : humanizeKey(r.kind)), sortVal: r => r.kind || '' },
+      { title: 'Where', get: r => _whereCell(r) },
+      { title: 'Halt / revert detail', get: r => _detailCell(r) },
+      { title: 'Why', get: r => _driversCell(r.drivers) },
+      { title: 'Count', num: true, get: r => fmtCount(r.count), sortVal: r => r.count },
+      { title: 'Share', num: true,
+        get: r => r.share_of_contract != null ? fmtPct(100 * r.share_of_contract) : '—',
+        sortVal: r => r.share_of_contract || 0 },
+      { title: 'Example tx', get: r => _examplesCell(r.examples) },
+    ]);
+  }
+
+  // Context strip (collapsed by default; expandable).
+  _renderAffectedContext(rec);
+  const toggle = document.getElementById('acCtxToggle');
+  const ctx = document.getElementById('acContext');
+  if (toggle && ctx) {
+    toggle.addEventListener('click', () => {
+      const open = ctx.style.display !== 'none';
+      ctx.style.display = open ? 'none' : 'block';
+      toggle.textContent = open ? 'Context ▸' : 'Context ▾';
+      if (!open && window.rerenderAffectedContext) window.rerenderAffectedContext();
+    });
+  }
+}
+
+// Class detail for a collapsed fresh-deployment OOG account. Distinct from
+// renderContractDetail: there is no per-contract cluster spine here — the
+// account shares one aggregate summary (dj.aggregate) with ~dj.count peers.
+// `acct` is the single account's slot from dj.accounts (all fields guarded).
+function renderDeployOogDetail(addr, acct, dj) {
+  const el = document.getElementById('detail');
+  if (!el) return;
+  const T = theme();
+  acct = acct || {};
+  const agg = (dj && dj.aggregate) || {};
+
+  // ── Identity header + prominent class badge ─────────────────────
+  const header = `
+    <div class="panel">
+      <h3><a class="addr" href="${_etherscanAddr(addr)}" target="_blank" rel="noopener noreferrer"
+          title="${escHtml(addr)}">${escHtml(shortAddr(addr))} ↗</a></h3>
+      <div style="margin:8px 0 0">
+        <span class="tag tag-immutable">Fresh contract deployment — out-of-gas during creation</span>
+      </div>
+    </div>`;
+
+  // ── Explanatory paragraph (prefer the producer-supplied explainer) ─
+  const builtin = 'Under this repricing, this account\'s own deployment '
+    + '(constructor execution / code-deposit) exceeds the transaction gas limit, '
+    + 'so it halts out-of-gas while it is being created — it never finishes '
+    + 'deploying. Most such accounts are ERC-4337 smart-account wallets deployed '
+    + 'on first use.';
+  const explainer = (dj && dj.explainer) ? dj.explainer : builtin;
+  const countNote = (dj && dj.count != null)
+    ? ` This is one of <strong>${fmtCount(dj.count)}</strong> such accounts in the analysis window (${escHtml(_affectedWindowLabel())}).`
+    : '';
+
+  // ── This account's specifics (guarded fields) ───────────────────
+  const rows = [];
+  if (acct.opcode) rows.push(['Halt opcode', escHtml(acct.opcode)]);
+  if (acct.selector) rows.push(['Init-code selector', `<code>${escHtml(acct.selector)}</code>`]);
+  if (acct.gas_delta != null) rows.push(['Gas Δ', escHtml(fmtGas(acct.gas_delta))]);
+  if (acct.block != null) rows.push(['Block', Number(acct.block).toLocaleString()]);
+  if (acct.entry) rows.push(['Entry contract',
+    `<a class="addr" href="${_etherscanAddr(acct.entry)}" target="_blank" rel="noopener noreferrer" `
+    + `title="${escHtml(acct.entry)}">${escHtml(shortAddr(acct.entry))} ↗</a>`]);
+  if (acct.tx) rows.push(['Example tx',
+    `<a class="addr" href="${_etherscanTx(acct.tx)}" target="_blank" rel="noopener noreferrer" `
+    + `title="${escHtml(acct.tx)}">${escHtml(shortAddr(acct.tx))} ↗</a>`]);
+  const acctTable = rows.length
+    ? `<table><tbody>${rows.map(r =>
+        `<tr><th style="text-align:left">${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="note">No per-account detail recorded.</p>';
+
+  // ── Class-wide gas-delta summary ────────────────────────────────
+  const gd = agg.gas_delta || {};
+  const gdRows = [
+    ['Median (p50)', gd.p50], ['p90', gd.p90], ['Min', gd.min], ['Max', gd.max],
+  ].filter(r => r[1] != null);
+  const gdTable = gdRows.length
+    ? `<table><tbody>${gdRows.map(r =>
+        `<tr><th style="text-align:left">${r[0]}</th><td>${escHtml(fmtGas(r[1]))}</td></tr>`).join('')}</tbody></table>`
+    : '';
+
+  // Guarded lists for the class-wide bar charts.
+  const haltSplit = Array.isArray(agg.halt_opcode_split) ? agg.halt_opcode_split : [];
+  const topEntries = Array.isArray(agg.top_entry_contracts) ? agg.top_entry_contracts : [];
+  const driversLine = _driversCell(agg.drivers);
+
+  el.innerHTML = `
+    ${header}
+    <div class="panel">
+      <p>${escHtml(explainer)}${countNote}</p>
+    </div>
+    <div class="panel">
+      <h3>This account</h3>
+      ${acctTable}
+    </div>
+    <div class="panel">
+      <h3>Across this class</h3>
+      <p class="note">Aggregate over all collapsed fresh-deployment OOG accounts in this
+        schedule. Individual accounts are not shown separately.</p>
+      <div class="grid-2">
+        <div>
+          <h4>Halt opcode</h4>
+          <div id="doOpcode" class="chart"><p class="loading">No data.</p></div>
+        </div>
+        <div>
+          <h4>Top entry contracts</h4>
+          <div id="doEntries" class="chart"><p class="loading">No data.</p></div>
+        </div>
+      </div>
+      ${gdTable ? `<h4>Gas Δ (class-wide)</h4>${gdTable}` : ''}
+      <p class="note" style="margin-top:12px"><strong>Why:</strong> ${driversLine}</p>
+    </div>`;
+
+  // Class-wide bar charts (guarded — only draw when rows are present).
+  if (haltSplit.length) {
+    renderHBar('doOpcode', haltSplit, 'key', 'count', { humanize: false, left: 120 });
+  }
+  if (topEntries.length) {
+    // Prefer a human label over the bare address for the y-axis (fall back to a
+    // shortened address); keep the count for the bar length.
+    const entryRows = topEntries.map(e => ({
+      name: contractName({ addr: e.contract, label: e.label }),
+      count: e.count,
+    }));
+    renderHBar('doEntries', entryRows, 'name', 'count', {
+      humanize: false, left: 150,
+      hovertemplate: '%{y}: %{x:,}<extra></extra>',
+    });
+  }
+}
+
+// The collapsed context strip: gas-delta cards, function breakdowns,
+// counterpart-contract mixes, and broader-context counts. Charts are drawn
+// lazily on first expand (Plotly needs a visible container to size correctly).
+function _renderAffectedContext(rec) {
+  const ctx = rec.context || {};
+  const el = document.getElementById('acContext');
+  if (!el) return;
+  const T = theme();
+
+  // Gas-delta cards.
+  const gd = ctx.gas_delta || {};
+  const gasCards = [];
+  if (gd.avg != null) gasCards.push({ value: fmtGas(gd.avg), label: 'Avg gas Δ' });
+  if (gd.p50 != null) gasCards.push({ value: fmtGas(gd.p50), label: 'Median gas Δ' });
+  if (gd.p90 != null) gasCards.push({ value: fmtGas(gd.p90), label: 'p90 gas Δ' });
+  if (gd.sum != null) gasCards.push({ value: fmtGas(gd.sum), label: 'Total gas Δ' });
+
+  // Broader-context mini-table.
+  const miniRows = [
+    ['Fixable with gas-limit bump (G3)', ctx.g3_tx_count],
+    ['Succeeds with changes (G2 drill-in)', ctx.g2_drillin_tx_count],
+    ['Already failing (AF)', ctx.af_tx_count],
+    ['Status flips', ctx.status_flips],
+    ['Distinct blocks with G4', ctx.distinct_blocks],
+  ].filter(r => r[1] != null);
+  const spanNote = (ctx.block_span_start != null && ctx.block_span_end != null)
+    ? `<p class="note">Block span ${Number(ctx.block_span_start).toLocaleString()}–${Number(ctx.block_span_end).toLocaleString()}.</p>` : '';
+
+  el.innerHTML = `
+    ${gasCards.length ? '<div class="poster-grid" id="acGasCards"></div>' : ''}
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Which functions break — entry</h3>
+        <p class="note">Top entry functions (<code>entry_selector</code>) of this contract in G4 txs.</p>
+        <div id="acEntryFns" class="chart"><p class="loading">No data.</p></div>
+      </div>
+      <div class="panel">
+        <h3>Which functions break — failing frame</h3>
+        <p class="note">Top failing functions (the frame the halt/revert lands in).</p>
+        <div id="acFailingFns" class="chart"><p class="loading">No data.</p></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Counterpart contracts — OOG halt sites</h3>
+        <p class="note">Where this contract's entry txs run out of gas.</p>
+        <div id="acHaltContracts" class="chart"><p class="loading">No data.</p></div>
+      </div>
+      <div class="panel">
+        <h3>Counterpart contracts — revert sites</h3>
+        <p class="note">Where this contract's entry txs revert (non-OOG).</p>
+        <div id="acRevertContracts" class="chart"><p class="loading">No data.</p></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Counterpart contracts — entry points (site roles)</h3>
+      <p class="note">When this contract is a halt/revert site, the entry contracts that reach it.</p>
+      <div id="acEntryContracts" class="chart"><p class="loading">No data.</p></div>
+    </div>
+    <div class="panel">
+      <h3>Broader context</h3>
+      ${spanNote}
+      <div id="acMini"></div>
+    </div>`;
+
+  // Mini-table of broader-context counts.
+  if (miniRows.length) {
+    renderTable('acMini', 'acMiniTable', miniRows.map(r => ({ k: r[0], v: r[1] })), [
+      { title: 'Metric', get: r => escHtml(r.k) },
+      { title: 'Count', num: true, get: r => fmtCount(r.v), sortVal: r => r.v },
+    ]);
+  } else {
+    document.getElementById('acMini').innerHTML = '<p class="note">No additional context.</p>';
+  }
+
+  // Function-breakdown HBars keyed on signature (fall back to selector). raw
+  // 4-byte selector rides along in the hover tooltip; humanize disabled.
+  const fnRows = (list) => (list || []).map(r => ({
+    key: r.signature || r.selector || '—',
+    count: r.count,
+    _sel: r.selector || '',
+  }));
+  const drawFns = (divId, list, color) => {
+    const rows = fnRows(list);
+    if (!rows.length) return;
+    renderHBar(divId, rows, 'key', 'count', {
+      humanize: false, color, left: 220, xTitle: 'G4 txs',
+      customdata: rows.map(r => r._sel),
+      hovertemplate: '%{y}<br>selector %{customdata}<br>%{x:,} txs<extra></extra>',
+    });
+  };
+  const cRows = (list) => (list || []).map(r => ({
+    key: (r.label && !/^0x[0-9a-fA-F]{40}$/.test(r.label)) ? r.label : shortAddr(r.contract),
+    count: r.count,
+    _addr: r.contract || '',
+    _cat: r.category || '',
+  }));
+  const drawContracts = (divId, list, color) => {
+    const rows = cRows(list);
+    if (!rows.length) return;
+    renderHBar(divId, rows, 'key', 'count', {
+      humanize: false, color, left: 200, xTitle: 'G4 txs',
+      customdata: rows.map(r => r._addr),
+      hovertemplate: '%{y}<br>%{customdata}<br>%{x:,} txs<extra></extra>',
+    });
+  };
+
+  // Draw charts now if visible; otherwise defer to the toggle handler.
+  const drawAll = () => {
+    if (gasCards.length) renderCards('acGasCards', gasCards);
+    drawFns('acEntryFns', ctx.entry_functions, T.pos);
+    drawFns('acFailingFns', ctx.failing_functions, T.groups[2]);
+    drawContracts('acHaltContracts', ctx.halt_contracts, T.neg);
+    drawContracts('acRevertContracts', ctx.revert_contracts, T.groups[3]);
+    drawContracts('acEntryContracts', ctx.entry_contracts, T.accent);
+  };
+  window.rerenderAffectedContext = drawAll;
 }

@@ -13,8 +13,12 @@ Keep both in sync.
 ## Conventions
 
 - One directory per schedule: `site/data/eip-8038/` and `site/data/eip-8037/`.
-- Seven files per schedule: `meta`, `overview_series`, `gas_delta_hist`,
-  `group_categories`, `oog_forensics`, `contract_failures`, `examples` (all `.json`).
+- Per schedule: `meta`, `overview_series`, `gas_delta_hist`, `group_categories`,
+  `oog_forensics`, `nonoog_forensics`, `contract_failures`, `examples` (all
+  top-level `.json`), **plus** a sharded `affected/` subdir — `affected/index.json`
+  (small, name-searchable), one `affected/{lowercase_addr}.json` per affected
+  contract (§5b), and one `affected/deploy_oog.json` aggregate that collapses the
+  freshly-deployed-and-self-OOG long tail out of the per-contract shards (§5b-iii).
 - Pages select a schedule via query param: `overview.html?schedule=eip-8038`
   and fetch `data/{schedule}/{file}.json` (relative to the page).
 - All counts are **integers** (already deduped for ReplacingMergeTree — see plan).
@@ -250,6 +254,7 @@ mnemonics (e.g. `SLOAD`, `CALL`, `DELEGATECALL`), so the frontend renders them
   "oog_total": 248390,                           // g4 rows with an OOG signal
   "oog_share_of_g4": 0.2231,                     // float 0..1 = oog_total / g4_total
   "distinct_oog_recipients": 3182,               // distinct entry contracts (recipient) with >=1 OOG halt
+  "distinct_oog_contracts": 1274,                // distinct halt-site contracts (oog_contract) — WHERE the halt landed
   // WHY it ran out of gas
   "oog_pattern": [ { "key": "storage_heavy", "count": … }, … ], // storage_heavy|call_chain|loop|memory_expansion|unknown
   // HOW MUCH gas was left at the halt (distribution over ordered magnitude buckets)
@@ -372,6 +377,7 @@ is stripped; free-text messages are rendered verbatim).
   "nonoog_total": 864833,                        // g4 rows that reverted without OOG
   "nonoog_share_of_g4": 0.7769,                  // float 0..1 = nonoog_total / g4_total
   "distinct_nonoog_recipients": 2517,            // distinct entry contracts (recipient) with >=1 non-OOG revert
+  "distinct_nonoog_contracts": 1043,             // distinct revert-site contracts (divergence_contract) — WHERE it landed
   // WHY it reverted
   "failure_reason": [ { "key": "…", "count": … }, … ],       // producer failure_reason enum
   "revert_error_mix": [ { "key": "STF", "count": … }, …, { "key": "Others", "count": … } ], // top-5 Error(string) msgs + Others
@@ -406,8 +412,8 @@ The Sankey is **bipartite**: `side: "entry"` nodes (top-10 `recipient`s plus an
 `divergence_contract`s plus "Other reverts") on the right. Same builder as the OOG
 Sankey (`_entry_flow_sankey`), just targeting `divergence_contract`.
 
-`distinct_nonoog_recipients` and the two `nonoog_recipient_*_leaderboard`s mirror
-the OOG side (§4b) exactly — same bounded candidate pool, same rich label record,
+`distinct_nonoog_recipients` / `distinct_nonoog_contracts` and the two
+`nonoog_recipient_*_leaderboard`s mirror the OOG side (§4b) exactly — same bounded candidate pool, same rich label record,
 same bounded Xatu total-tx denominator, and the same `total_tx >= 100` floor on
 the rate ranking — only keyed on the non-OOG-revert cohort and named
 `revert_count` / `revert_rate` in place of `halt_count` / `halt_rate`.
@@ -450,6 +456,279 @@ failures (those are Already failing).
   ]
 }
 ```
+
+---
+
+## 5b. `affected/` — sharded per-contract G4 failure-mode analysis
+
+Per-contract G4 failure-mode data, powering the **Affected contracts** search
+page (`site/affected-contracts.html`). **Sharded**: a small name-searchable
+`affected/index.json` plus **one file per affected contract** at
+`affected/{lowercase_addr}.json`. The page loads `index.json` once (for
+name/label search + the affected set), then lazily fetches the single shard for
+the looked-up address.
+
+**Gated to G4 (Potentially-broken) only** (`baseline_success = true AND
+schedule_success = false AND min_multiplier_to_succeed IS NULL`). A contract is
+*affected* iff it appears in **any** G4 tx as the **entry** contract
+(`recipient`), the **OOG halt site** (`oog_contract`), or the **non-OOG revert
+site** (`divergence_contract`). Every affected contract gets a shard file; the
+primary unit within a shard is the **failure cluster** (a distinct failure mode
+ranked by tx count), and the three roles are a **facet tag on each cluster**, not
+separate sections. All aggregation runs locally over the materialized
+`divergence_tx` table — **no new `_divergence` scan**.
+
+### 5b-i. `affected/index.json`
+
+Small, load-once index. `contracts` lists **only name-searchable** contracts (a
+real, non-bare-address `label` **or** an `owner_project` set), sorted by footprint
+(sum of role counts) descending — so the search box can resolve a typed name.
+**Unlabeled affected contracts still get a shard file but are omitted from
+`index.contracts`** (they are only reachable by pasting the raw address).
+`affected_count` is the **full count of affected contracts** — the union over the
+three roles (entry / halt site / revert site), **including** the collapsed
+deploy-OOG accounts (§5b-iii). It is **not** `len(contracts)`, nor the number of
+`{addr}.json` shard files: deploy-OOG accounts are counted in `affected_count` but
+do **not** get individual `{addr}.json` shards (they live only in
+`deploy_oog.json`).
+
+```jsonc
+{
+  "schedule": "eip-8038",
+  "block_range": { "start": 24319986, "end": 25319985 }, // int start/end
+  "g4_total": 157185,                            // whole Potentially-broken cohort
+  "affected_count": 342,                         // FULL affected count (union over roles, INCL. collapsed deploy-OOG accounts)
+  "deploy_oog": { "count": 0, "file": "deploy_oog.json" }, // collapsed deploy-OOG accounts (§5b-iii); count ~0 for eip-8038, ~102k for eip-8037
+  "note": "Affected = appears in any Potentially-broken (G4) tx as entry/halt/revert site…",
+  "contracts": [                                 // NAME-SEARCHABLE only; sorted by footprint desc
+    {
+      "address": "0xdac17f9…ec7",                // lowercase hex — the shard is affected/<address>.json
+      "label": "Tether USDT",                    // real name (bare-address labels are NOT listed here)
+      "owner_project": "tether",                 // OPTIONAL — present when set
+      "category": "stablecoin",                  // OPTIONAL — §7 tag when set
+      "entry_g4_tx_count": 512,                  // OPTIONAL — omitted when not an entry
+      "halt_count": 88,                          // OPTIONAL — omitted when never a halt site
+      "revert_count": 41                         // OPTIONAL — omitted when never a revert site
+    }
+    // … name-searchable affected contracts only
+  ]
+}
+```
+
+Each role-count key (`entry_g4_tx_count` / `halt_count` / `revert_count`) is
+**omitted** when the contract plays no G4 rows in that role — the same
+role-omission rule as `roles_summary` in the shard.
+
+The top-level **`deploy_oog`** key (`{ "count": <int>, "file": "deploy_oog.json" }`)
+points the frontend at the aggregate (§5b-iii) and states how many affected
+contracts were collapsed into it. `count` is `~0` for eip-8038 (state-access
+repricing) and `~102k` for eip-8037 (state-creation repricing). The collapsed
+accounts are **not** listed in `contracts` (unlabeled) and have **no**
+`{addr}.json` shard — but they **are** included in `affected_count`.
+
+### 5b-ii. `affected/{lowercase_addr}.json` — the per-contract record
+
+One file per affected contract, keyed only by its path (`affected/<address>.json`,
+lowercase). The record is the identity header + `roles_summary` +
+`distinct_cluster_count` + `clusters_shown_share` + `failure_clusters` +
+`context`.
+
+```jsonc
+// affected/0xdac17f9…ec7.json
+    {
+      // --- identity header (§7 label record; classify_address + structural probe) ---
+      "address": "0xdac17f9…ec7",                // lowercase hex
+      "label": "Tether USDT",                    // human label or raw addr fallback
+      "category": "stablecoin",                  // taxonomy tag (§7) or null
+      "owner_project": "tether",                 // string or null
+      "source": "manual",                        // label source or null
+      "confidence": "high",                      // high|medium|low (always present)
+      "is_proxy": null, "is_factory": null, "is_safe": null, // bool or null
+      "erc_type": null,                          // structural tag or null
+      "is_upgradable": null,                     // bool or null (clones are NOT upgradable)
+      "upgrade_mechanism": null,                 // string or null (bare "none" elided)
+      "upgrade_admin": null,                     // EIP-1967 admin address or null
+      "is_mev_bot": false,                       // bool (always present)
+      "mev_role": null,                          // arb|sandwich|liquidation or null
+
+      // --- headline role counts (facet totals) ---
+      // A role key is OMITTED when the contract has no G4 rows in that role.
+      "roles_summary": {
+        "entry":       { "g4_tx_count": 512, "g4_oog_count": 300, "g4_nonoog_count": 212 },
+        "oog_site":    { "halt_count": 88 },     // omitted if the contract is never a halt site
+        "revert_site": { "revert_count": 41 }    // omitted if never a revert site
+      },
+
+      // --- THE SPINE: distinct failure modes, ranked by count desc, capped top-8 ---
+      "distinct_cluster_count": 23,              // total modes before the top-8 cap
+      "clusters_shown_share": 0.87,              // share of this contract's G4 covered by the shown clusters
+      "failure_clusters": [                      // sorted by count desc; len <= 8
+        {
+          "role": "entry",                       // entry|oog_site|revert_site (the facet)
+          "kind": "oog",                         // oog|non_oog
+          "selector": "0x…",                     // failing selector (coalesce(tier1_failing_selector, entry_selector)); null if undecoded/absent
+          "selector_signature": "swap(address,uint256)", // decoded signature or null (raw hex shown by UI on null)
+          "entry_selector": "0x…",               // top-level entry selector; str or null
+          "entry_signature": "swap(address,uint256)", // decoded or null
+          "where_contract": "0x…",               // halt/revert site (lowercased); str or null
+          "where_label": "…",                    // label_address(where_contract) or null
+          "where_category": "swap_dex",          // §7 tag or null
+          "opcode": "SLOAD",                      // decoded EVM mnemonic (oog_opcode|divergence_opcode); str or null
+          "pattern_or_reason": "storage_heavy",  // oog_pattern (oog) | failure_reason (non_oog); str or null
+          "oog_bottleneck_kind": "FractionalGas",// present only for oog kind; str or null
+          "call_depth": 2,                        // int or null
+          "revert_decoded": null,                 // present only for non_oog kind; str or null
+          "count": 210,                           // txs in this cluster
+          "share_of_role": 0.41,                  // count / role total; float or null
+          "share_of_contract": 0.36,              // count / this contract's tagged-row total; float or null
+          "gas_delta": { "avg": 170352, "p50": 168000, "p90": 250000 }, // p50/p90 int or null
+          // --- the "why": causal repricing drivers, aggregated within the cluster ---
+          // Each key is INCLUDED ONLY when its source column is populated for the
+          // cluster; an all-NULL column is omitted (not reported as zero).
+          "drivers": {
+            "state_gas_category": [ { "key": "access_list", "count": … } ], // [{key,count}]
+            "cold_account": { "p50": 3, "p90": 8 },      // int|null percentiles
+            "sload": { "p50": 12, "p90": 40 },
+            "sstore": { "p50": 4, "p90": 11 },
+            "access_list_entries": { "p50": 2, "p90": 6 },// address + storage-key counts summed per row
+            "surcharge_at_oog": { "p50": 21000, "sum": 4200000 }, // OOG-halt-only
+            "gas_remaining_at_oog": { "p50": 800, "p90": 5000 },
+            "reservoir_exhausted_share": 0.66,    // float 0..1
+            "spillover_share": 0.42               // float 0..1
+          },
+          "examples": [ { "tx_hash": "0x…", "block_number": 24320011, "gas_delta": 168420 } ] // 1–2
+        }
+        // … up to 8, each carrying its own role + kind + drivers
+      ],
+
+      // --- compact context strip (collapsed by default in the UI) ---
+      "context": {
+        "g3_tx_count": 132373, "g2_drillin_tx_count": 280464, "af_tx_count": 90,
+        "status_flips": 37716,                    // all over the contract's ALL-rows-as-recipient cohort
+        "gas_delta": { "avg": 170352, "sum": 10532175813, "p50": 168000, "p90": 250000 }, // over the entry (recipient) G4 rows
+        "block_span_start": 24320011, "block_span_end": 25319900, "distinct_blocks": 27104,
+        "failure_rate": {                         // PRESENT ONLY where a Xatu denominator exists; else null
+          "total_tx": 1250000,                    // all mainnet txs to this recipient over the range (Xatu, §4b)
+          "halt_rate": 0.000070,                  // n_halt / total_tx (6 dp); 0.0 when no halts
+          "revert_rate": 0.000033                 // n_revert / total_tx (6 dp)
+        },
+        "entry_functions":   [ { "selector": "0x…", "signature": "swap(…)", "count": … } ], // top-8 entry_selector
+        "failing_functions": [ { "selector": "0x…", "signature": "…",       "count": … } ], // top-8 coalesce(tier1_failing_selector, entry_selector)
+        "halt_contracts":    [ { "contract": "0x…", "label": "…", "category": "swap_dex", "count": … } ], // entry role: where its txs halted (top-8)
+        "revert_contracts":  [ { "contract": "0x…", "label": "…", "category": "…", "count": … } ], // entry role: where its txs reverted
+        "entry_contracts":   [ { "contract": "0x…", "label": "…", "category": "…", "count": … } ]  // site roles: which entry contracts called this one
+      }
+    }
+```
+
+(The affected set is large — **~14k–16k shards per schedule** (~100 MB each)
+even after collapsing the deploy-OOG long tail into `deploy_oog.json` (§5b-iii).
+The G4 gate bounds it but does not make it small.)
+
+**Roles / omission rules.** A `roles_summary` role key (`entry` / `oog_site` /
+`revert_site`) is **omitted** entirely when the contract has zero G4 rows in that
+role; clusters for an absent role simply never appear. Every shard has `>= 1`
+cluster (an unaffected contract gets no shard at all). The same role-omission rule
+governs the per-contract role-count keys in `index.contracts` (§5b-i).
+
+**Cluster ordering & cap.** `failure_clusters` is sorted by `count` **descending**
+and capped at the top **8** (`AFFECTED_CLUSTER_TOP_N`). `distinct_cluster_count`
+is the total number of modes **before** the cap, so
+`len(failure_clusters) <= min(8, distinct_cluster_count)`, and
+`clusters_shown_share` (∈ `[0, 1]`) is the share of the contract's G4 tagged rows
+covered by the shown clusters (`1.0` iff all modes fit within the cap).
+
+**Cluster key** (§1d of the design doc): `(role, kind, failing_selector,
+where_contract, opcode, pattern_or_reason, oog_bottleneck_kind, call_depth,
+revert_decoded)`. `failing_selector = coalesce(tier1_failing_selector,
+entry_selector)`. The **raw** selector keys the cluster; the decoded signature is
+display-only, so a selector-cache miss never splits a cluster. OOG rows key on the
+`oog_*` site fields; non-OOG rows on `divergence_*` / `failure_reason` /
+`revert_decoded`.
+
+**`drivers` inclusion.** Only driver keys whose source columns are populated for
+the cluster are emitted (see `warehouse.md` for populated-rate; `surcharge_at_oog`
+is OOG-halt-only ~33%, the cold / access-list counts ~100%). An all-NULL column is
+**omitted**, never reported as `0`. So a non-OOG revert cluster typically has no
+`surcharge_at_oog` / `gas_remaining_at_oog` keys.
+
+**`failure_rate`** (in `context`) is present **only** where the sanctioned bounded
+Xatu read (§4b) yields a `total_tx` denominator for the contract; otherwise the
+whole object is **`null`**.
+
+### 5b-iii. `affected/deploy_oog.json` — the collapsed deploy-OOG long tail
+
+One file per schedule. **Why it exists:** under **eip-8037** (state-creation
+repricing) ~102k of ~118k affected contracts are **freshly-deployed contract
+accounts** — mostly ERC-4337 smart-account wallets created via `CREATE2` inside
+`EntryPoint.handleOps` — that **run out of gas during their OWN construction**.
+Each is a single-tx, self-halting, unlabeled address, and individually they
+produced near-identical ~2.8 KB shards, so ~102k such shards would dominate the
+`affected/` directory with a redundant long tail. They are instead **collapsed
+into this one aggregate file** rather than emitted as ~102k `{addr}.json` shards.
+This class is **~0 for eip-8038** (state-access repricing does not surcharge
+construction), so its `deploy_oog.json` has `count: 0` and empty `accounts`.
+
+**Detection rule** (single source of truth in
+[`src/repricing_impact/groups.py`](../../src/repricing_impact/groups.py) —
+`DEPLOY_OOG_SELECTOR_REGEX` / `is_initcode_selector`). An affected contract is a
+**"deploy-OOG account"** iff **all** of:
+
+- **(a)** it is **not name-searchable** (no real `label`, no `owner_project`);
+- **(b)** it is **never a tx recipient** (never an entry contract in any G4 row);
+- **(c)** it is an **OOG halt site** `>= 1` time (`oog_contract`); and
+- **(d)** **every** OOG-halt row lands in **init code** —
+  `coalesce(tier1_failing_selector, entry_selector)` matches `^0x6[01]`, a
+  PUSH-based constructor / clone-init prefix (`PUSH1`/`PUSH2`), **not** a keccak
+  function selector.
+
+These accounts are counted in `index.affected_count` and pointed to by
+`index.deploy_oog` (§5b-i); they are **not** in `index.contracts` (unlabeled) and
+have **no** `{addr}.json` shard. The frontend loads this file **lazily** (only on
+a shard miss — i.e. a looked-up address that has no `{addr}.json`), and renders a
+matching address with a distinct **"fresh deployment OOG"** template rather than
+the per-contract failure-cluster view.
+
+```jsonc
+{
+  "schedule": "eip-8037",
+  "class": "deploy_oog",                         // constant tag
+  "block_range": { "start": 24319986, "end": 25319985 }, // int start/end
+  "g4_total": 157185,                            // whole Potentially-broken cohort
+  "count": 102431,                               // number of collapsed accounts (== index.deploy_oog.count)
+  "explainer": "Freshly-deployed contract accounts (mostly ERC-4337 smart-account wallets created via CREATE2 inside EntryPoint.handleOps) that ran out of gas during their own construction under the state-creation repricing…", // human paragraph
+  "aggregate": {                                 // rollups across all collapsed accounts
+    "halt_opcode_split":   [ { "key": "RETURN", "count": … }, … ],     // halt opcode (decoded mnemonic), desc
+    "initcode_families":   [ { "key": "0x6100", "count": … }, … ],     // 6-char failing-selector prefix, desc
+    "top_entry_contracts": [ { "contract": "0x…", "label": "ERC-4337 EntryPoint v0.7", "category": "account_abstraction", "count": … }, … ], // top-8; label/category OPTIONAL (§7)
+    "revert_reasons":      [ { "key": "custom:0x220266b6", "count": … }, … ], // top-8, from revert_decoded
+    "gas_delta": { "p50": …, "p90": …, "min": …, "max": … }, // all int
+    "drivers": { /* SAME shape as a failure cluster's `drivers` (§5b-ii) — optional keys,
+                    emitted only when the source column is populated for the cohort:
+                    cold_account / sload / sstore / access_list_entries each { p50, p90 };
+                    surcharge_at_oog { p50, sum }; gas_remaining_at_oog { p50, p90 };
+                    reservoir_exhausted_share; spillover_share (float 0..1);
+                    state_gas_category [{ key, count }]. Only populated keys present. */ }
+  },
+  "accounts": {                                  // per-account row, keyed by lowercase addr
+    "0x<lowercase addr>": {
+      "tx": "0x<hash>",                          // the single deploy tx
+      "block": 24320011,                         // int
+      "gas_delta": 168420,                       // signed int
+      "opcode": "RETURN",                        // halt opcode (decoded mnemonic)
+      "selector": "0x6100…",                     // failing init-code selector (coalesce(tier1_failing_selector, entry_selector))
+      "entry": "0x<entry contract>"              // the EntryPoint / factory that deployed it
+    }
+    // … `count` entries (empty {} when count == 0, e.g. eip-8038)
+  }
+}
+```
+
+The `aggregate.drivers` object reuses the failure-cluster `drivers` contract
+verbatim (§5b-ii): only driver keys whose source columns are populated for the
+cohort are emitted; an all-NULL column is **omitted**, never reported as `0`.
+`accounts` is keyed by lowercase address so the frontend can resolve a
+shard-miss lookup by direct key access; for `count == 0` it is `{}`.
 
 ---
 

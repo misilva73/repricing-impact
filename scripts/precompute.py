@@ -4,11 +4,19 @@
 Re-runnable CLI that, for each focus schedule, runs **chunked, server-side**
 ClickHouse ``GROUP BY`` aggregations (never pulling the ~10^7 slim rows to the
 client), stages them in a build-time **DuckDB** file (never published), and
-emits the **six published JSON files per schedule** under
-``site/data/{schedule}/`` exactly matching ``site/data/SCHEMA.md``:
+emits the **published JSON files per schedule** under ``site/data/{schedule}/``
+exactly matching ``site/data/SCHEMA.md``:
 
     meta.json, overview_series.json, gas_delta_hist.json,
-    group_categories.json, contract_failures.json, examples.json
+    group_categories.json, oog_forensics.json, nonoog_forensics.json,
+    contract_failures.json, examples.json
+
+plus the **sharded affected-contracts** output under ``site/data/{schedule}/affected/``:
+
+    affected/index.json                 (small init file; name-searchable contracts)
+    affected/{lowercase_addr}.json      (one per-contract record shard, fetched on lookup)
+    affected/deploy_oog.json            (aggregate of the collapsed freshly-deployed
+                                         self-OOG long tail — one file, no shards)
 
 The group partition is derived entirely from
 :mod:`repricing_impact.groups` (the single source of truth). All scans are
@@ -162,6 +170,22 @@ DIVERGENCE_TX_COLUMNS = [
     # Failure detail (F1/F2/F6) — the "why" behind non-OOG reverts.
     "failure_reason",
     "revert_decoded",
+    # Function-selector columns (verified live 2026-07-07): the function called
+    # on the entry contract, the function the failing frame lands in (fall back to
+    # entry_selector when NULL, ~53% populated over G4), and the selector call-path
+    # to the failure (string-repr array; parsed with opcodes.parse_arr, context).
+    "entry_selector",
+    "tier1_failing_selector",
+    "failure_selector_path",
+    # Causal repricing-driver counts (the "why" — the repriced state line items).
+    # surcharge_at_oog is populated only on OOG halts (~33% over G4); the cold /
+    # access-list counts are ~100% populated.
+    "surcharge_at_oog",
+    "cold_account_access_count",
+    "sload_cold_count",
+    "sstore_cold_count",
+    "access_list_address_count",
+    "access_list_storage_key_count",
 ]
 
 
@@ -385,7 +409,16 @@ CREATE TABLE divergence_tx (
     oog_gas_remaining BIGINT,
     oog_bottleneck_depth INTEGER,
     failure_reason VARCHAR,
-    revert_decoded VARCHAR
+    revert_decoded VARCHAR,
+    entry_selector VARCHAR,
+    tier1_failing_selector VARCHAR,
+    failure_selector_path VARCHAR,
+    surcharge_at_oog BIGINT,
+    cold_account_access_count BIGINT,
+    sload_cold_count BIGINT,
+    sstore_cold_count BIGINT,
+    access_list_address_count BIGINT,
+    access_list_storage_key_count BIGINT
 )
 """
 
@@ -424,6 +457,24 @@ _DIVTX_INT_NULLABLE_COLS = (
     "oog_bottleneck_depth",
     # Non-OOG revert call depth (first-divergence frame; NULL otherwise).
     "divergence_call_depth",
+    # Causal repricing-driver counts (§1b). surcharge_at_oog is Int64 (populated
+    # only on OOG halts); the rest are UInt64 line-item counts far below the
+    # reservoir sentinel, so they coerce cleanly through _to_int_nullable.
+    "surcharge_at_oog",
+    "cold_account_access_count",
+    "sload_cold_count",
+    "sstore_cold_count",
+    "access_list_address_count",
+    "access_list_storage_key_count",
+)
+
+# Nullable selector (hex string) columns. Over the HTTP driver a NULL VARCHAR can
+# arrive as NaN / '' / '\n'; normalize those to SQL NULL so a missing selector
+# never becomes a spurious cluster key. Selectors are hex — case is preserved.
+_DIVTX_SELECTOR_COLS = (
+    "entry_selector",
+    "tier1_failing_selector",
+    "failure_selector_path",
 )
 
 
@@ -464,6 +515,10 @@ def stage_divergence_tx(ctx: RunContext) -> int:
                 df[c] = df[c].map(_to_uint64_nullable)
             for c in _DIVTX_INT_NULLABLE_COLS:
                 df[c] = df[c].map(_to_int_nullable)
+            # Selector VARCHARs: normalize HTTP-driver NULLs (NaN/''/'\n') to None
+            # so an absent selector never seeds a spurious cluster key.
+            for c in _DIVTX_SELECTOR_COLS:
+                df[c] = df[c].map(_to_str_nullable)
             # opcode byte -> mnemonic (kept as string; NULL stays NULL)
             for oc in ("divergence_opcode", "oog_opcode"):
                 df[oc] = df[oc].map(lambda b: opcode_name(b) if pd.notna(b) else None)
@@ -1633,6 +1688,16 @@ def emit_oog_forensics(ctx: RunContext) -> dict:
         ).fetchone()[0]
     )
 
+    # Distinct halt-site contracts (oog_contract) — WHERE the halt landed, distinct
+    # from distinct_oog_recipients (WHO was called). A halt deep in a shared
+    # library/router shows here but not under recipient, so the two diverge.
+    distinct_oog_contracts = int(
+        ctx.con.execute(
+            f"SELECT count(DISTINCT oog_contract) FROM divergence_tx "
+            f"WHERE {where} AND oog_contract IS NOT NULL"
+        ).fetchone()[0]
+    )
+
     # Entry-contract (recipient) leaderboards with rich labels + failure rate.
     # Keyed on `recipient` (WHO was called), distinct from oog_contract_leaderboard
     # (WHERE the halt landed). Ranked by OOG halt count and, from the same pool,
@@ -1648,6 +1713,8 @@ def emit_oog_forensics(ctx: RunContext) -> dict:
         "oog_share_of_g4": round(oog_total / g4_total, 4) if g4_total else 0.0,
         # HOW MANY distinct entry contracts recorded an OOG halt (impact breadth)
         "distinct_oog_recipients": distinct_oog_recipients,
+        # HOW MANY distinct halt-site contracts (oog_contract) — WHERE the halt landed
+        "distinct_oog_contracts": distinct_oog_contracts,
         # WHY it ran out
         "oog_pattern": _ddb_mix(ctx, "oog_pattern", where),
         # HOW MUCH gas was left at the halt (distribution)
@@ -1731,6 +1798,16 @@ def emit_nonoog_forensics(ctx: RunContext) -> dict:
         ).fetchone()[0]
     )
 
+    # Distinct revert-site contracts (divergence_contract) — WHERE the revert
+    # landed, distinct from distinct_nonoog_recipients (WHO was called). Mirrors
+    # the OOG side.
+    distinct_nonoog_contracts = int(
+        ctx.con.execute(
+            f"SELECT count(DISTINCT divergence_contract) FROM divergence_tx "
+            f"WHERE {where} AND divergence_contract IS NOT NULL"
+        ).fetchone()[0]
+    )
+
     # Entry-contract (recipient) leaderboards, ranked by non-OOG revert count and,
     # from the same pool, by failure rate. Mirrors the OOG recipient leaderboards.
     recipient_leaderboard, recipient_rate_leaderboard = _recipient_leaderboards(
@@ -1744,6 +1821,8 @@ def emit_nonoog_forensics(ctx: RunContext) -> dict:
         "nonoog_share_of_g4": round(nonoog_total / g4_total, 4) if g4_total else 0.0,
         # HOW MANY distinct entry contracts reverted without OOG (impact breadth)
         "distinct_nonoog_recipients": distinct_nonoog_recipients,
+        # HOW MANY distinct revert-site contracts (divergence_contract) — WHERE it landed
+        "distinct_nonoog_contracts": distinct_nonoog_contracts,
         # WHY it reverted
         "failure_reason": _ddb_mix(ctx, "failure_reason", where),
         "revert_error_mix": _revert_error_mix(ctx, where),
@@ -1860,6 +1939,890 @@ def emit_contract_failures(ctx: RunContext) -> dict:
     }
 
 
+# ---- affected_contracts.json ----
+
+# Per-contract cap on the emitted failure-cluster spine (top-N by count).
+AFFECTED_CLUSTER_TOP_N = 8
+# Cap on supporting breakdowns (functions / counterpart-contract mixes).
+AFFECTED_BREAKDOWN_TOP_N = 8
+# Examples emitted per cluster.
+AFFECTED_EXAMPLES_PER_CLUSTER = 2
+# Upper bound on the SANCTIONED cross-source Xatu probe set (structural tags +
+# failure-rate denominator). At full scale the affected set is tens of thousands
+# of contracts; both reads must stay bounded to top-N (AGENTS.md). Contracts
+# outside this set fall back to cache-based tags + a null failure_rate.
+AFFECTED_PROBE_TOP_N = 1000
+
+_AFFECTED_NOTE = (
+    "Affected = appears in any Potentially-broken (G4) tx as entry/halt/revert "
+    "site. Clusters are distinct failure modes ranked by tx count; drivers are "
+    "the repriced state line items behind each. Failure rates cover only "
+    "contracts with a Xatu denominator."
+)
+
+_DEPLOY_OOG_EXPLAINER = (
+    "Freshly-deployed contract accounts (mostly ERC-4337 smart-account wallets "
+    "created via CREATE2 inside EntryPoint handleOps) that run out of gas during "
+    "their own construction under the state-creation repricing: the deployment's "
+    "constructor / code-deposit exceeds the transaction gas limit, halting the "
+    "create. Each is a single-tx, self-halt, unlabeled address whose per-contract "
+    "shard would be near-identical to every other, so they are collapsed into this "
+    "one aggregate file instead of one shard apiece."
+)
+
+
+def _q(series, q):
+    """Percentile of a pandas Series over non-null values (int, or None)."""
+    s = series.dropna()
+    if s.empty:
+        return None
+    return int(round(float(s.quantile(q))))
+
+
+def _pop_share(series) -> bool:
+    """True if a Series has at least one non-null value (drives driver inclusion)."""
+    return bool(series.notna().any())
+
+
+def _cluster_drivers(rows: pd.DataFrame) -> dict:
+    """Aggregate the causal repricing drivers within one failure cluster.
+
+    Emits only the driver keys whose source columns are populated for the
+    cluster (per §1b/§1d); an all-NULL column is omitted rather than reported as
+    zero. ``access_list_entries`` sums the address + storage-key counts per row.
+    """
+    drivers: Dict[str, object] = {}
+
+    # state_gas_category: [{key,count}] — only when populated in the cluster.
+    sgc = rows["state_gas_category"].dropna()
+    sgc = sgc[sgc.astype(str).str.len() > 0]
+    if not sgc.empty:
+        counts = sgc.astype(str).value_counts()
+        drivers["state_gas_category"] = [
+            {"key": str(k), "count": int(v)} for k, v in counts.items()
+        ]
+
+    for key, col in (
+        ("cold_account", "cold_account_access_count"),
+        ("sload", "sload_cold_count"),
+        ("sstore", "sstore_cold_count"),
+    ):
+        if _pop_share(rows[col]):
+            drivers[key] = {"p50": _q(rows[col], 0.5), "p90": _q(rows[col], 0.9)}
+
+    ale = rows["access_list_address_count"].fillna(0) + rows[
+        "access_list_storage_key_count"
+    ].fillna(0)
+    if _pop_share(rows["access_list_address_count"]) or _pop_share(
+        rows["access_list_storage_key_count"]
+    ):
+        drivers["access_list_entries"] = {"p50": _q(ale, 0.5), "p90": _q(ale, 0.9)}
+
+    if _pop_share(rows["surcharge_at_oog"]):
+        s = rows["surcharge_at_oog"].dropna()
+        drivers["surcharge_at_oog"] = {
+            "p50": _q(rows["surcharge_at_oog"], 0.5),
+            "sum": int(s.sum()),
+        }
+
+    if _pop_share(rows["oog_gas_remaining"]):
+        drivers["gas_remaining_at_oog"] = {
+            "p50": _q(rows["oog_gas_remaining"], 0.5),
+            "p90": _q(rows["oog_gas_remaining"], 0.9),
+        }
+
+    n = len(rows)
+    if n and _pop_share(rows["reservoir_exhausted"]):
+        drivers["reservoir_exhausted_share"] = round(
+            int((rows["reservoir_exhausted"] == True).sum()) / n, 4  # noqa: E712
+        )
+    if n and _pop_share(rows["runtime_state_gas_spillover"]):
+        drivers["spillover_share"] = round(
+            int((rows["runtime_state_gas_spillover"].fillna(0) > 0).sum()) / n, 4
+        )
+    return drivers
+
+
+def _affected_context(
+    entry_rows: pd.DataFrame,
+    site_rows: pd.DataFrame,
+    selector_map: dict,
+    category: Optional[str],
+    failure_rate: Optional[dict],
+    broader: tuple,
+) -> dict:
+    """The compact per-contract context strip (§1e).
+
+    ``entry_rows`` are G4 rows where this contract is the entry (``recipient``);
+    ``site_rows`` are G4 rows where it is the OOG/revert site. All breakdowns are
+    capped at :data:`AFFECTED_BREAKDOWN_TOP_N`. ``broader`` is the precomputed
+    ``(g3, g2_drillin, af, status_flips)`` count tuple over ALL of this contract's
+    rows-as-recipient (the emit_contract_failures pattern), not just the G4 slice —
+    computed ONCE for every recipient in a single grouped scan before the loop, not
+    per-contract (at full scale a per-contract ``WHERE recipient = ?`` was a full
+    table scan repeated for every affected contract).
+    """
+    gd = entry_rows["gas_delta"].dropna() if not entry_rows.empty else pd.Series([])
+    gas_delta = {
+        "avg": int(round(float(gd.mean()))) if not gd.empty else 0,
+        "sum": int(gd.sum()) if not gd.empty else 0,
+        "p50": _q(gd, 0.5) if not gd.empty else None,
+        "p90": _q(gd, 0.9) if not gd.empty else None,
+    }
+
+    span = entry_rows if not entry_rows.empty else site_rows
+    if not span.empty:
+        block_span_start = int(span["block_number"].min())
+        block_span_end = int(span["block_number"].max())
+        distinct_blocks = int(span["block_number"].nunique())
+    else:
+        block_span_start = block_span_end = distinct_blocks = 0
+
+    def _fn_breakdown(series: pd.Series) -> List[dict]:
+        s = series.dropna()
+        if s.empty:
+            return []
+        counts = s.astype(str).value_counts().head(AFFECTED_BREAKDOWN_TOP_N)
+        return [
+            {
+                "selector": str(sel),
+                "signature": _decode_sel(str(sel), category, selector_map),
+                "count": int(cnt),
+            }
+            for sel, cnt in counts.items()
+        ]
+
+    entry_functions = _fn_breakdown(entry_rows["entry_selector"])
+    failing_functions = _fn_breakdown(
+        entry_rows["tier1_failing_selector"].fillna(entry_rows["entry_selector"])
+        if not entry_rows.empty
+        else pd.Series([], dtype=object)
+    )
+
+    def _mix(rows: pd.DataFrame, col: str) -> List[dict]:
+        if rows.empty:
+            return []
+        s = rows[col].dropna()
+        if s.empty:
+            return []
+        counts = s.astype(str).value_counts().head(AFFECTED_BREAKDOWN_TOP_N)
+        return [
+            {
+                "contract": str(c),
+                "label": label_address(str(c)),
+                "category": _addr_category(str(c)),
+                "count": int(cnt),
+            }
+            for c, cnt in counts.items()
+        ]
+
+    return {
+        "g3_tx_count": int(broader[0] or 0),
+        "g2_drillin_tx_count": int(broader[1] or 0),
+        "af_tx_count": int(broader[2] or 0),
+        "status_flips": int(broader[3] or 0),
+        "gas_delta": gas_delta,
+        "block_span_start": block_span_start,
+        "block_span_end": block_span_end,
+        "distinct_blocks": distinct_blocks,
+        "failure_rate": failure_rate,
+        "entry_functions": entry_functions,
+        "failing_functions": failing_functions,
+        # Counterpart mixes: where the entry contract's txs halted / reverted, and
+        # (for site roles) which entry contracts called this one.
+        "halt_contracts": _mix(entry_rows, "oog_contract"),
+        "revert_contracts": _mix(entry_rows, "divergence_contract"),
+        "entry_contracts": _mix(site_rows, "recipient"),
+    }
+
+
+def _build_affected_contracts(ctx: RunContext) -> tuple:
+    """Build the sharded affected-contracts payload — ``(index_dict, records)``.
+
+    Runs entirely LOCALLY over the materialized ``divergence_tx`` table — no new
+    ClickHouse ``_divergence`` scan. A contract is *affected* iff it appears in
+    any G4 row as the entry (``recipient``), the OOG halt site (``oog_contract``),
+    or the non-OOG revert site (``divergence_contract``). For each affected
+    contract we build an identity header, per-role headline counts, the top-N
+    failure-cluster spine (distinct failure modes, each annotated with the causal
+    repricing drivers), and a compact context strip.
+
+    Returns a ``(index_dict, {lowercase_addr: record})`` tuple. ``records`` holds
+    the per-contract shard payloads (one file each); ``index_dict`` is the small
+    init file — it lists ONLY name-searchable contracts (a real ``label`` name or a
+    set ``owner_project``), sorted by total G4 footprint descending, with light
+    role footprint counts to drive the search pick-list. Unlabeled contracts are
+    still emitted as shard files (direct-address lookup) but omitted from the index
+    to keep it tiny. :func:`write_affected_contracts` writes the files.
+    """
+    totals = _totals(ctx)
+    g4_total = int(totals["g4"])
+
+    # Selector decoder (display only): load once, degrade to raw hex on miss so a
+    # missing selectors.parquet cache never crashes the build or splits a cluster.
+    try:
+        from repricing_impact.label_sources.selectors import load_selector_map
+
+        selector_map = load_selector_map()
+    except Exception as exc:  # noqa: BLE001 — degrade to raw hex, never crash
+        _log(
+            f"[{ctx.schedule}] selector map load failed "
+            f"({type(exc).__name__}: {exc}); signatures fall back to raw hex."
+        )
+        selector_map = {}
+
+    # Pull the whole G4 cohort into pandas ONCE (G4 is small — ~hundreds of
+    # contracts / ~10^5 txs). All clustering + driver stats are pandas over this.
+    g4 = ctx.con.execute(f"""
+        SELECT
+            tx_hash, block_number, recipient, gas_delta,
+            oog_contract, divergence_contract,
+            entry_selector, tier1_failing_selector,
+            oog_opcode, oog_pattern, oog_bottleneck_kind, oog_call_depth,
+            oog_gas_remaining, replay_halt_oog,
+            divergence_opcode, divergence_call_depth, failure_reason, revert_decoded,
+            state_gas_category, reservoir_exhausted, runtime_state_gas_spillover,
+            surcharge_at_oog, cold_account_access_count,
+            sload_cold_count, sstore_cold_count,
+            access_list_address_count, access_list_storage_key_count
+        FROM divergence_tx
+        WHERE ({groups.G4_PREDICATE})
+        """).df()
+
+    block_range = {"start": int(ctx.block_start), "end": int(ctx.block_end)}
+
+    def _index(records: Dict[str, dict], deploy_count: int = 0) -> dict:
+        """Assemble the small init index from the built per-contract records.
+
+        Includes only name-searchable contracts (a real ``label`` name — not a bare
+        ``0x…`` fallback — OR a set ``owner_project``), sorted by total G4 footprint
+        (entry + halt + revert counts) descending. Light role counts are omitted per
+        role when absent, mirroring ``roles_summary``.
+
+        ``affected_count`` reflects the FULL affected total — the union over the
+        three role columns — INCLUDING the deploy-OOG accounts collapsed out of the
+        per-contract shards into ``affected/deploy_oog.json`` (``deploy_count``).
+        Those accounts are unlabeled and were already absent from the searchable
+        ``contracts`` list.
+        """
+        entries = []
+        for addr, rec in records.items():
+            label = rec.get("label")
+            owner = rec.get("owner_project")
+            named = (label and label != addr) or bool(owner)
+            if not named:
+                continue
+            rs = rec.get("roles_summary", {})
+            entry_c = rs.get("entry", {}).get("g4_tx_count")
+            halt_c = rs.get("oog_site", {}).get("halt_count")
+            revert_c = rs.get("revert_site", {}).get("revert_count")
+            footprint = (entry_c or 0) + (halt_c or 0) + (revert_c or 0)
+            e: Dict[str, object] = {"address": addr, "label": label}
+            if owner:
+                e["owner_project"] = owner
+            if rec.get("category"):
+                e["category"] = rec["category"]
+            if entry_c:
+                e["entry_g4_tx_count"] = entry_c
+            if halt_c:
+                e["halt_count"] = halt_c
+            if revert_c:
+                e["revert_count"] = revert_c
+            entries.append((footprint, e))
+        entries.sort(key=lambda fe: fe[0], reverse=True)
+        return {
+            "schedule": ctx.schedule,
+            "block_range": block_range,
+            "g4_total": g4_total,
+            "affected_count": len(records) + int(deploy_count),
+            "deploy_oog": {"count": int(deploy_count), "file": "deploy_oog.json"},
+            "note": _AFFECTED_NOTE,
+            "contracts": [e for _, e in entries],
+        }
+
+    def _empty_deploy_oog() -> dict:
+        """A benign, valid deploy_oog object with no accounts (e.g. eip-8038)."""
+        return {
+            "schedule": ctx.schedule,
+            "class": "deploy_oog",
+            "block_range": block_range,
+            "g4_total": g4_total,
+            "count": 0,
+            "explainer": _DEPLOY_OOG_EXPLAINER,
+            "aggregate": {
+                "halt_opcode_split": [],
+                "initcode_families": [],
+                "top_entry_contracts": [],
+                "revert_reasons": [],
+                "gas_delta": {"p50": None, "p90": None, "min": None, "max": None},
+                "drivers": {},
+            },
+            "accounts": {},
+        }
+
+    if g4.empty:
+        return _index({}), {}, _empty_deploy_oog()
+
+    # The affected-address set = union over the three role columns.
+    affected: set = set()
+    for col in ("recipient", "oog_contract", "divergence_contract"):
+        affected.update(a for a in g4[col].dropna().astype(str) if a)
+    affected_list = sorted(affected)
+
+    # Per-address role footprints (used to rank the bounded probe set and, later,
+    # reused inside the loop via the per-contract masks). counts over the whole G4
+    # frame once — cheap, and independent of the per-contract loop.
+    entry_counts = g4["recipient"].dropna().astype(str).value_counts()
+    halt_counts = g4["oog_contract"].dropna().astype(str).value_counts()
+    revert_counts = g4["divergence_contract"].dropna().astype(str).value_counts()
+
+    def _footprint(a: str) -> int:
+        return (
+            int(entry_counts.get(a, 0))
+            + int(halt_counts.get(a, 0))
+            + int(revert_counts.get(a, 0))
+        )
+
+    # Bound the two SANCTIONED cross-source Xatu reads to a top-N probe set so the
+    # full run stays within the "bounded to top-N addresses" rule (AGENTS.md) — at
+    # full scale ``affected`` is tens of thousands of contracts, and an unbounded
+    # bytecode/storage probe + IN-clause denominator scan over 1M blocks would be
+    # enormous. ``classify_address`` (cache-only, no network) still runs for EVERY
+    # affected contract below; long-tail contracts outside the probe set simply get
+    # cache-based structural tags + a null failure_rate (the existing graceful
+    # fallback in _labeled_leaderboard_rich / the null the doc already allows).
+    #
+    # probe set = {top-N by G4 footprint} ∪ {every name-searchable affected addr}
+    # (name-searchable = a real label OR owner_project — the same rule the index
+    # uses) so the contracts users actually open are always covered.
+    def _name_searchable(a: str) -> bool:
+        rec = classify_address(a)
+        return (rec.label and rec.label != a) or bool(rec.owner_project)
+
+    top_by_footprint = sorted(affected_list, key=_footprint, reverse=True)[
+        :AFFECTED_PROBE_TOP_N
+    ]
+    probe_addrs = set(top_by_footprint) | {
+        a for a in affected_list if _name_searchable(a)
+    }
+    # Failure rate is only meaningful for entry contracts (denominator = total txs
+    # sent to the recipient), so restrict the denominator read to probed entries.
+    entry_probe_addrs = sorted(
+        a for a in probe_addrs if int(entry_counts.get(a, 0)) > 0
+    )
+    _log(
+        f"[{ctx.schedule}] affected={len(affected_list)}, structural/rate probe "
+        f"bounded to {len(probe_addrs)} (entry-rate probe {len(entry_probe_addrs)})"
+    )
+
+    # ONE bounded Xatu structural probe over the top-N probe set (never the full
+    # affected set) — same off-request-path pattern as _labeled_leaderboard_rich.
+    structural = _recipient_structural(ctx, sorted(probe_addrs))
+    # ONE bounded Xatu failure-rate denominator read over the probed entries.
+    total_tx_by_addr = _recipient_failure_rates(ctx, entry_probe_addrs)
+
+    # Precompute the broader per-recipient counts (g3 / g2-drillin / af / status
+    # flips over ALL of a recipient's rows, not just the G4 slice) in ONE grouped
+    # scan, then look them up per contract. The previous per-contract
+    # ``WHERE recipient = ?`` query was a full scan of the multi-million-row
+    # divergence_tx table repeated once per affected contract (100k+ scans) and did
+    # not terminate in practical time.
+    broader_rows = ctx.con.execute(f"""
+        SELECT
+            recipient,
+            count(*) FILTER (WHERE {groups.G3_PREDICATE})         AS g3,
+            count(*) FILTER (WHERE {groups.G2_DRILLIN_PREDICATE})  AS g2d,
+            count(*) FILTER (WHERE {groups.AF_PREDICATE})         AS af,
+            count(*) FILTER (WHERE baseline_success AND NOT schedule_success) AS flips
+        FROM divergence_tx
+        WHERE recipient IS NOT NULL
+        GROUP BY recipient
+        """).fetchall()
+    broader_by_recipient = {
+        r[0]: (int(r[1] or 0), int(r[2] or 0), int(r[3] or 0), int(r[4] or 0))
+        for r in broader_rows
+    }
+
+    # Group the G4 frame ONCE by each role column so per-contract row lookup is an
+    # O(1) hash-slice (``get_group``) rather than a full-frame boolean mask. At full
+    # scale (100k+ affected contracts over a multi-million-row G4 frame) the prior
+    # per-contract ``g4[col] == addr`` masking (plus a full-length ``pd.Series`` per
+    # contract) was O(contracts × rows) and never finished; grouping makes the loop
+    # O(rows + contracts).
+    _EMPTY = g4.iloc[0:0]
+    entry_groups = g4.groupby("recipient")
+    oog_groups = g4.groupby("oog_contract")
+    rev_groups = g4.groupby("divergence_contract")
+
+    def _grp(gb, a):
+        try:
+            return gb.get_group(a)
+        except KeyError:
+            return _EMPTY
+
+    # Deploy-OOG accounts (rule owned by groups.py — see DEPLOY_OOG_RULE_DOC): the
+    # freshly-deployed-and-self-OOG long tail (~102k of ~118k affected under
+    # eip-8037). Collapsed OUT of the per-contract shards into one aggregate file
+    # (affected/deploy_oog.json) instead of one near-identical shard apiece. An
+    # affected addr qualifies iff (a) not name-searchable, (b) never a tx recipient,
+    # (c) an OOG halt site >=1 time, and (d) EVERY oog-halt row lands in init code.
+    def _is_deploy_oog(addr: str) -> bool:
+        if _name_searchable(addr):  # (a)
+            return False
+        if int(entry_counts.get(addr, 0)) != 0:  # (b)
+            return False
+        oog_rows = _grp(oog_groups, addr)  # (c)
+        if oog_rows.empty:
+            return False
+        sels = oog_rows["tier1_failing_selector"].fillna(oog_rows["entry_selector"])
+        return bool(sels.map(groups.is_initcode_selector).all())  # (d)
+
+    deploy_set = {addr for addr in affected_list if _is_deploy_oog(addr)}
+
+    contracts_out: Dict[str, dict] = {}
+    for addr in affected_list:
+        # Deploy-OOG accounts are collapsed into affected/deploy_oog.json — no shard.
+        if addr in deploy_set:
+            continue
+        entry_rows = _grp(entry_groups, addr)
+        oog_rows = _grp(oog_groups, addr)
+        rev_rows = _grp(rev_groups, addr)
+
+        n_entry = len(entry_rows)
+        n_halt = len(oog_rows)
+        n_rev = len(rev_rows)
+
+        # site_rows = union of OOG-halt and non-OOG-revert rows (a row can be both;
+        # keep it once), used by the context strip below.
+        if n_halt and n_rev:
+            site_rows = pd.concat([oog_rows, rev_rows])
+            site_rows = site_rows[~site_rows.index.duplicated()]
+        elif n_halt:
+            site_rows = oog_rows
+        elif n_rev:
+            site_rows = rev_rows
+        else:
+            site_rows = _EMPTY
+
+        # roles_summary — omit a role key when its count is 0.
+        roles_summary: Dict[str, dict] = {}
+        if n_entry:
+            n_oog = int(entry_rows["oog_contract"].notna().sum())
+            roles_summary["entry"] = {
+                "g4_tx_count": n_entry,
+                "g4_oog_count": n_oog,
+                "g4_nonoog_count": n_entry - n_oog,
+            }
+        if n_halt:
+            roles_summary["oog_site"] = {"halt_count": n_halt}
+        if n_rev:
+            roles_summary["revert_site"] = {"revert_count": n_rev}
+
+        # --- Build the tagged cluster rows: one (row, role) per role the row
+        # plays for THIS contract (entry + self-halt are both kept). ---
+        role_totals = {"entry": n_entry, "oog_site": n_halt, "revert_site": n_rev}
+        tagged = []
+        if n_entry:
+            df = entry_rows.copy()
+            df["_role"] = "entry"
+            # entry kind follows the row's own OOG membership.
+            df["_kind"] = (
+                df["oog_contract"].notna().map(lambda b: "oog" if b else "non_oog")
+            )
+            tagged.append(df)
+        if n_halt:
+            df = oog_rows.copy()
+            df["_role"] = "oog_site"
+            df["_kind"] = "oog"  # an oog_site row is always an OOG halt
+            tagged.append(df)
+        if n_rev:
+            df = rev_rows.copy()
+            df["_role"] = "revert_site"
+            df["_kind"] = "non_oog"  # a revert_site row is always non-OOG
+            tagged.append(df)
+        tagged_df = pd.concat(tagged, ignore_index=True)
+
+        # failing_selector = coalesce(tier1_failing_selector, entry_selector).
+        tagged_df["_failing_selector"] = tagged_df["tier1_failing_selector"].fillna(
+            tagged_df["entry_selector"]
+        )
+
+        # Cluster key columns (§1d): the raw selector keys the cluster; decoding
+        # is display-only. OOG rows key on oog_* site fields; non_oog on
+        # divergence_* / failure_reason / revert_decoded.
+        def _wc(r):
+            return (
+                r["oog_contract"] if r["_kind"] == "oog" else r["divergence_contract"]
+            )
+
+        def _op(r):
+            return r["oog_opcode"] if r["_kind"] == "oog" else r["divergence_opcode"]
+
+        def _pr(r):
+            return r["oog_pattern"] if r["_kind"] == "oog" else r["failure_reason"]
+
+        def _cd(r):
+            return (
+                r["oog_call_depth"]
+                if r["_kind"] == "oog"
+                else r["divergence_call_depth"]
+            )
+
+        tagged_df["_where"] = tagged_df.apply(_wc, axis=1)
+        tagged_df["_opcode"] = tagged_df.apply(_op, axis=1)
+        tagged_df["_pattern_or_reason"] = tagged_df.apply(_pr, axis=1)
+        tagged_df["_call_depth"] = tagged_df.apply(_cd, axis=1)
+        # oog_bottleneck_kind / revert_decoded only carry on their respective kinds.
+        tagged_df["_bottleneck"] = tagged_df.apply(
+            lambda r: r["oog_bottleneck_kind"] if r["_kind"] == "oog" else None, axis=1
+        )
+        tagged_df["_revert_decoded"] = tagged_df.apply(
+            lambda r: r["revert_decoded"] if r["_kind"] == "non_oog" else None, axis=1
+        )
+
+        key_cols = [
+            "_role",
+            "_kind",
+            "_failing_selector",
+            "_where",
+            "_opcode",
+            "_pattern_or_reason",
+            "_bottleneck",
+            "_call_depth",
+            "_revert_decoded",
+        ]
+        # NULL-safe grouping: fillna a sentinel so NULL keys group together, then
+        # restore None on emit.
+        _SENT = "\x00__na__"
+        grp_keys = {
+            c: tagged_df[c].where(tagged_df[c].notna(), _SENT) for c in key_cols
+        }
+        grouped = tagged_df.groupby(list(grp_keys.values()), sort=False)
+
+        contract_total = len(tagged_df)
+        clusters = []
+        for _, cluster_rows in grouped:
+            first = cluster_rows.iloc[0]
+
+            def _val(col):
+                v = first[col]
+                if pd.isna(v):
+                    return None
+                return v
+
+            role = str(first["_role"])
+            kind = str(first["_kind"])
+            failing_sel = _val("_failing_selector")
+            entry_sel = _val("entry_selector")
+            where_contract = _val("_where")
+            opcode = _val("_opcode")
+            pattern_or_reason = _val("_pattern_or_reason")
+            bottleneck = _val("_bottleneck")
+            call_depth = _val("_call_depth")
+            revert_decoded = _val("_revert_decoded")
+
+            count = int(len(cluster_rows))
+            role_denom = role_totals.get(role, 0)
+            gd = cluster_rows["gas_delta"].dropna()
+            examples = [
+                {
+                    "tx_hash": str(er["tx_hash"]),
+                    "block_number": int(er["block_number"]),
+                    "gas_delta": (
+                        int(er["gas_delta"]) if pd.notna(er["gas_delta"]) else None
+                    ),
+                }
+                for _, er in cluster_rows.head(AFFECTED_EXAMPLES_PER_CLUSTER).iterrows()
+            ]
+            clusters.append(
+                {
+                    "role": role,
+                    "kind": kind,
+                    "selector": str(failing_sel) if failing_sel else None,
+                    "selector_signature": _decode_sel(
+                        failing_sel, _addr_category(addr), selector_map
+                    ),
+                    "entry_selector": str(entry_sel) if entry_sel else None,
+                    "entry_signature": _decode_sel(
+                        entry_sel, _addr_category(addr), selector_map
+                    ),
+                    "where_contract": (
+                        str(where_contract).lower() if where_contract else None
+                    ),
+                    "where_label": (
+                        label_address(str(where_contract)) if where_contract else None
+                    ),
+                    "where_category": (
+                        _addr_category(str(where_contract)) if where_contract else None
+                    ),
+                    "opcode": str(opcode) if opcode is not None else None,
+                    "pattern_or_reason": (
+                        str(pattern_or_reason)
+                        if pattern_or_reason is not None
+                        else None
+                    ),
+                    "oog_bottleneck_kind": (
+                        str(bottleneck) if bottleneck is not None else None
+                    ),
+                    "call_depth": int(call_depth) if call_depth is not None else None,
+                    "revert_decoded": (
+                        str(revert_decoded) if revert_decoded is not None else None
+                    ),
+                    "count": count,
+                    "share_of_role": (
+                        round(count / role_denom, 4) if role_denom else None
+                    ),
+                    "share_of_contract": (
+                        round(count / contract_total, 4) if contract_total else None
+                    ),
+                    "gas_delta": {
+                        "avg": int(round(float(gd.mean()))) if not gd.empty else 0,
+                        "p50": _q(gd, 0.5) if not gd.empty else None,
+                        "p90": _q(gd, 0.9) if not gd.empty else None,
+                    },
+                    "drivers": _cluster_drivers(cluster_rows),
+                    "examples": examples,
+                }
+            )
+
+        clusters.sort(key=lambda c: c["count"], reverse=True)
+        distinct_cluster_count = len(clusters)
+        shown = clusters[:AFFECTED_CLUSTER_TOP_N]
+        shown_count = sum(c["count"] for c in shown)
+        clusters_shown_share = (
+            round(shown_count / contract_total, 4) if contract_total else 0.0
+        )
+
+        # --- identity header (§1f): fresh probe wins, cache fills the rest. ---
+        rec = classify_address(addr)
+        probe = structural.get(addr)
+
+        def _tag(field):
+            val = getattr(probe, field, None) if probe is not None else None
+            return val if val else getattr(rec, field)
+
+        up = (
+            probe
+            if probe is not None
+            and getattr(probe, "upgrade_mechanism", "none") != "none"
+            else rec
+        )
+
+        # failure_rate denominator (null when no Xatu total for this contract).
+        total_tx = total_tx_by_addr.get(addr)
+        if total_tx:
+            failure_rate = {
+                "total_tx": int(total_tx),
+                "halt_rate": round(n_halt / total_tx, 6) if n_halt else 0.0,
+                "revert_rate": round(n_rev / total_tx, 6) if n_rev else 0.0,
+            }
+        else:
+            failure_rate = None
+
+        context = _affected_context(
+            entry_rows,
+            site_rows,
+            selector_map,
+            _addr_category(addr),
+            failure_rate,
+            broader_by_recipient.get(addr, (0, 0, 0, 0)),
+        )
+
+        contracts_out[addr] = {
+            "address": addr,
+            "label": rec.label,
+            "category": rec.category if rec.category != "unknown" else None,
+            "owner_project": rec.owner_project or None,
+            "source": rec.source if rec.source != "unknown" else None,
+            "confidence": rec.confidence,
+            "is_proxy": _tag("is_proxy"),
+            "is_factory": _tag("is_factory"),
+            "is_safe": _tag("is_safe"),
+            "erc_type": _tag("erc_type"),
+            "is_upgradable": up.is_upgradable,
+            "upgrade_mechanism": (
+                up.upgrade_mechanism
+                if up.upgrade_mechanism and up.upgrade_mechanism != "none"
+                else None
+            ),
+            "upgrade_admin": up.upgrade_admin or None,
+            "is_mev_bot": bool(rec.is_mev_bot),
+            "mev_role": rec.mev_role or None,
+            "roles_summary": roles_summary,
+            "distinct_cluster_count": distinct_cluster_count,
+            "clusters_shown_share": clusters_shown_share,
+            "failure_clusters": shown,
+            "context": context,
+        }
+
+    # --- Build the collapsed deploy-OOG aggregate (VECTORIZED over the g4 frame
+    # via deploy_set membership — never per-account concatenation). ---
+    if not deploy_set:
+        deploy_oog = _empty_deploy_oog()
+    else:
+        deploy_oog_rows = g4[g4["oog_contract"].isin(deploy_set)]
+        deploy_rev_rows = g4[g4["divergence_contract"].isin(deploy_set)]
+
+        def _kv(counts) -> List[dict]:
+            return [{"key": str(k), "count": int(v)} for k, v in counts.items()]
+
+        # halt_opcode_split: value_counts of oog_opcode (desc).
+        halt_opcode_split = _kv(
+            deploy_oog_rows["oog_opcode"].dropna().astype(str).value_counts()
+        )
+
+        # initcode_families: 6-char prefix of coalesce(tier1_failing_selector,
+        # entry_selector) (desc). "0x60"/"0x61" init-code prefixes.
+        _sel = deploy_oog_rows["tier1_failing_selector"].fillna(
+            deploy_oog_rows["entry_selector"]
+        )
+        _prefix = _sel.dropna().astype(str).str.slice(0, 6)
+        initcode_families = _kv(_prefix.value_counts())
+
+        # top_entry_contracts: top-8 recipients (the EntryPoint / factory the create
+        # ran inside), labeled + categorized.
+        top_entry_contracts = [
+            {
+                "contract": str(c).lower(),
+                "label": label_address(str(c)),
+                "category": _addr_category(str(c)),
+                "count": int(n),
+            }
+            for c, n in deploy_oog_rows["recipient"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .head(8)
+            .items()
+        ]
+
+        # revert_reasons: top-8 decoded reverts on the bubbled-up revert rows.
+        revert_reasons = _kv(
+            deploy_rev_rows["revert_decoded"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .head(8)
+        )
+
+        gd = deploy_oog_rows["gas_delta"].dropna()
+        gas_delta = {
+            "p50": _q(deploy_oog_rows["gas_delta"], 0.5),
+            "p90": _q(deploy_oog_rows["gas_delta"], 0.9),
+            "min": int(gd.min()) if not gd.empty else None,
+            "max": int(gd.max()) if not gd.empty else None,
+        }
+
+        # accounts: one entry per deploy account (FIRST self-halt row).
+        accounts: Dict[str, dict] = {}
+        for acct, rows in deploy_oog_rows.groupby("oog_contract"):
+            first = rows.iloc[0]
+            sel = first["tier1_failing_selector"]
+            if pd.isna(sel):
+                sel = first["entry_selector"]
+            entry = first["recipient"]
+            accounts[str(acct).lower()] = {
+                "tx": str(first["tx_hash"]),
+                "block": int(first["block_number"]),
+                "gas_delta": (
+                    int(first["gas_delta"]) if pd.notna(first["gas_delta"]) else None
+                ),
+                "opcode": (
+                    str(first["oog_opcode"]) if pd.notna(first["oog_opcode"]) else None
+                ),
+                "selector": str(sel) if pd.notna(sel) else None,
+                "entry": str(entry).lower() if pd.notna(entry) else None,
+            }
+
+        deploy_oog = {
+            "schedule": ctx.schedule,
+            "class": "deploy_oog",
+            "block_range": block_range,
+            "g4_total": g4_total,
+            "count": len(deploy_set),
+            "explainer": _DEPLOY_OOG_EXPLAINER,
+            "aggregate": {
+                "halt_opcode_split": halt_opcode_split,
+                "initcode_families": initcode_families,
+                "top_entry_contracts": top_entry_contracts,
+                "revert_reasons": revert_reasons,
+                "gas_delta": gas_delta,
+                "drivers": _cluster_drivers(deploy_oog_rows),
+            },
+            "accounts": accounts,
+        }
+
+    return _index(contracts_out, len(deploy_set)), contracts_out, deploy_oog
+
+
+def write_affected_contracts(ctx: RunContext, sched_dir: Path) -> dict:
+    """Write the sharded affected-contracts output under ``sched_dir/affected/``.
+
+    Emits ``affected/index.json`` (COMPACT — the small init file the page loads on
+    load) plus one ``affected/{lowercase_addr}.json`` per affected contract (each
+    the per-contract record built by :func:`_build_affected_contracts`; shards are
+    small, so ``indent=2`` is fine) plus one aggregate ``affected/deploy_oog.json``
+    collapsing the freshly-deployed-and-self-OOG long tail (written COMPACT — it can
+    be large). Returns a size summary
+    ``{shard_count, index_bytes, deploy_oog_bytes, total_bytes}``.
+    """
+    index, records, deploy_oog = _build_affected_contracts(ctx)
+
+    affected_dir = sched_dir / "affected"
+    affected_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clear stale outputs first so a re-run is idempotent: contracts that drop out
+    # of the affected set (and, above all, the ~100k deploy-OOG accounts now
+    # collapsed into deploy_oog.json instead of one shard apiece) would otherwise
+    # linger as orphaned {addr}.json files, defeating the collapse. index.json and
+    # deploy_oog.json are rewritten below regardless.
+    for stale in affected_dir.glob("*.json"):
+        stale.unlink()
+
+    index_path = affected_dir / "index.json"
+    with open(index_path, "w") as f:
+        json.dump(index, f, separators=(",", ":"))
+    index_bytes = index_path.stat().st_size
+    total_bytes = index_bytes
+
+    # The collapsed deploy-OOG aggregate (one file for the whole long tail).
+    deploy_oog_path = affected_dir / "deploy_oog.json"
+    with open(deploy_oog_path, "w") as f:
+        json.dump(deploy_oog, f, separators=(",", ":"))
+    deploy_oog_bytes = deploy_oog_path.stat().st_size
+    total_bytes += deploy_oog_bytes
+
+    for addr, record in records.items():
+        shard_path = affected_dir / f"{addr}.json"
+        with open(shard_path, "w") as f:
+            json.dump(record, f, indent=2)
+        total_bytes += shard_path.stat().st_size
+
+    return {
+        "shard_count": len(records),
+        "index_bytes": index_bytes,
+        "deploy_oog_bytes": deploy_oog_bytes,
+        "total_bytes": total_bytes,
+    }
+
+
+def _decode_sel(selector, category, selector_map):
+    """Decode a 4-byte selector to a signature (display only), or None.
+
+    Wraps :func:`label_sources.selectors.decode_selector`; a cache miss / import
+    failure degrades to ``None`` (the frontend shows raw hex) and never splits a
+    cluster (clustering keys on the raw selector, not the decoded signature).
+    """
+    if not selector:
+        return None
+    try:
+        from repricing_impact.label_sources.selectors import decode_selector
+
+        return decode_selector(str(selector), category, selector_map)
+    except Exception:  # noqa: BLE001 — display-only, degrade to raw hex
+        return None
+
+
 def _round_or_none(v):
     return int(round(v)) if v is not None and pd.notna(v) else None
 
@@ -1926,6 +2889,24 @@ def _to_int_nullable(v):
             return None
         v = float(s) if ("." in s or "e" in s.lower()) else int(s)
     return int(v)
+
+
+def _to_str_nullable(v):
+    """Coerce a nullable VARCHAR (selector) cell to a Python str (or None).
+
+    Mirrors :func:`_to_int_nullable`'s string-NULL handling but for strings: the
+    HTTP driver hands back NULL VARCHARs as NaN / ``''`` / ``'\\n'`` / ``'none'``,
+    which would otherwise become a spurious non-NULL cluster key. Selectors are
+    hex, so the value is passed through verbatim (no lowercasing).
+    """
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return None
+    if not isinstance(v, str):
+        return str(v)
+    s = v.strip()
+    if s.lower() in ("", "nan", "none", "\\n"):
+        return None
+    return s
 
 
 def _contract_mix(
@@ -2082,6 +3063,18 @@ def run_schedule(
             json.dump(payload, f, indent=2)
         sizes[name] = path.stat().st_size
         print(f"[{schedule}] wrote {path} ({sizes[name]:,} bytes)")
+
+    # Sharded affected-contracts output: affected/index.json (compact) + one
+    # affected/{addr}.json shard per affected contract, written directly to disk
+    # (the single nested file was too big at full scale).
+    affected = write_affected_contracts(ctx, sched_dir)
+    sizes["affected/"] = affected["total_bytes"]
+    print(
+        f"[{schedule}] wrote {sched_dir / 'affected'}/ "
+        f"({affected['shard_count']:,} shards, "
+        f"index {affected['index_bytes']:,} bytes, "
+        f"total {affected['total_bytes']:,} bytes)"
+    )
     con.close()
     return sizes
 
