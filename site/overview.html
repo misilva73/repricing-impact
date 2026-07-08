@@ -29,8 +29,6 @@
     <h1>Divergence overview <span id="schedTitle" class="subtitle"></span></h1>
     <p class="subtitle">Per-block group composition, totals, and gas-diff distributions for the changed groups.</p>
 
-    <div class="banner" id="truncBanner" style="display:none"></div>
-
     <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
 
     <h2>Group composition over time</h2>
@@ -169,12 +167,6 @@
       const tr = meta.truncation;
       document.getElementById('g5note').textContent =
         `${fmtPct(100 * tr.truncated_share)} of blocks have truncated drill-ins, which inflate the Unknown group.`;
-
-      if (tr.truncated_share > 0) {
-        const b = document.getElementById('truncBanner');
-        b.style.display = '';
-        b.innerHTML = `<strong>Coverage quality</strong> · ${escHtml(tr.note)}`;
-      }
 
       // Succeeds-with-changes (G2) deep dive
       const g2 = cats.g2;

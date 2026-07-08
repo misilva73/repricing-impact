@@ -36,10 +36,9 @@
       <div class="hero-actions">
         <a class="cta-btn" id="overviewLink">Open overview →</a>
         <a class="btn-secondary" id="failuresLink">Transaction failures</a>
+        <a class="btn-secondary" id="affectedLink">Affected contracts</a>
       </div>
     </div>
-
-    <div class="banner" id="truncBanner" style="display:none"></div>
 
     <h2>Headline</h2>
     <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
@@ -48,6 +47,50 @@
       <h3>Group composition (totals)</h3>
       <p class="note">Share of all transactions across every group, over the pinned block range.</p>
       <div id="donut" class="chart"><p class="loading">Loading chart…</p></div>
+    </div>
+
+    <div class="panel">
+      <h3>How the six transaction groups are defined</h3>
+      <p class="note">
+        Every mainnet transaction in the pinned block range is replayed under the candidate
+        gas schedule and categorised into <strong>exactly one</strong> of these six groups.
+        The three <em>changed</em> groups — Succeeds with changes, Fixable, and Potentially
+        broken — require a <strong>working baseline</strong> (the transaction succeeded before
+        the repricing); a transaction whose baseline replay already failed is
+        <em>Already failing</em>, so it can never be counted as newly broken.
+      </p>
+      <div class="group-defs">
+        <div class="group-def" style="--gc: var(--g1)">
+          <h4>No change <span class="gkey">g1</span></h4>
+          <p>Identical outcome <em>and</em> execution trace under the repricing — the transaction
+             is completely unaffected.</p>
+        </div>
+        <div class="group-def" style="--gc: var(--g2)">
+          <h4>Succeeds with changes <span class="gkey">g2</span></h4>
+          <p>Still succeeds at its original gas limit, but something changed: gas used, event logs,
+             or output/trace. Needs a working baseline.</p>
+        </div>
+        <div class="group-def" style="--gc: var(--g3)">
+          <h4>Fixable with gas-limit increase <span class="gkey">g3</span></h4>
+          <p>Worked before; now runs out of gas at the original limit, but <strong>completes</strong>
+             once the limit is raised (rescued at up to <code>10×</code>). A gas-limit bump fixes it.</p>
+        </div>
+        <div class="group-def" style="--gc: var(--g4)">
+          <h4>Potentially broken <span class="gkey">g4</span></h4>
+          <p>Worked before; now fails and is <strong>not rescued</strong> even at the <code>10×</code>
+             gas ceiling — genuinely at risk under the repricing.</p>
+        </div>
+        <div class="group-def" style="--gc: var(--af)">
+          <h4>Already failing <span class="gkey">af</span></h4>
+          <p>The baseline replay itself failed, so a schedule-side failure is not <em>newly</em>
+             broken. Includes permanent fail→fail rows and baseline-fail→success rescues.</p>
+        </div>
+        <div class="group-def" style="--gc: var(--g5)">
+          <h4>Unknown <span class="gkey">g5</span></h4>
+          <p>No retained per-transaction detail — dropped at the per-block drill-in cap
+             (<code>1024</code>). A coverage gap, not an outcome; zero on non-truncated blocks.</p>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -62,6 +105,7 @@
       buildChrome('index');
       document.getElementById('overviewLink').href = pageLink('overview.html');
       document.getElementById('failuresLink').href = pageLink('transaction-failures.html');
+      document.getElementById('affectedLink').href = pageLink('affected-contracts.html');
 
       let meta, series;
       try {
@@ -80,16 +124,6 @@
       ]);
 
       renderTotalsDonut('donut', t, gl);
-
-      // truncation banner
-      const tr = meta.truncation;
-      if (tr.truncated_share > 0) {
-        const b = document.getElementById('truncBanner');
-        b.style.display = '';
-        b.innerHTML = `<strong>Coverage caveat</strong> · ${escHtml(tr.note)} `
-          + `${fmtPct(100 * tr.truncated_share)} of blocks have truncated drill-ins `
-          + `(${fmtCount(tr.drill_ins_truncated_blocks)} / ${fmtCount(tr.total_blocks)}).`;
-      }
 
       document.getElementById('footSchedule').textContent = meta.schedule;
       document.getElementById('footConfig').innerHTML =
