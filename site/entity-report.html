@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entity report — Repricing Impact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/plotly.min.js"></script>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-brand">Repricing Impact</a>
+    <div class="nav-links">
+      <a data-nav="index">Landing</a>
+      <a data-nav="overview">Overview</a>
+      <a data-nav="transaction-failures">Transaction failures</a>
+      <a data-nav="affected-contracts">Affected contracts</a>
+      <a data-nav="entity-report">Entity report</a>
+    </div>
+    <div class="schedule-picker">
+      <span class="lbl">Schedule</span>
+      <a data-schedule="eip-8038">EIP-8038</a>
+      <a data-schedule="eip-8037">EIP-8037</a>
+    </div>
+  </nav>
+
+  <main>
+    <p class="note">A prioritized outreach report covering <strong>both</strong> EIP-8037
+      and EIP-8038. The schedule toggle above doesn't change the report — it only sets
+      which schedule the linked <code>0x…</code> addresses open in the
+      <a data-nav-inline="affected-contracts">Affected contracts</a> search.</p>
+    <article id="report" class="report"><p class="loading">Loading report…</p></article>
+  </main>
+
+  <footer>
+    <hr>
+    <p class="note">repricing-impact · <span id="footSchedule"></span> · <span id="footConfig"></span> · <span id="footBlocks"></span> · <span id="footGenerated"></span></p>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      buildChrome('entity-report');
+      const inlineLink = document.querySelector('[data-nav-inline="affected-contracts"]');
+      if (inlineLink) inlineLink.href = pageLink('affected-contracts.html');
+
+      // Render the committed report markdown (source of truth: entity-report.md).
+      try {
+        const md = await fetchText('entity-report.md');
+        document.getElementById('report').innerHTML = renderMarkdown(md);
+      } catch (e) { showError('report', e); }
+
+      // Footer (per-schedule meta, same as other pages).
+      try {
+        const meta = await fetchJSON(dataUrl('meta.json'));
+        document.getElementById('footSchedule').textContent = meta.schedule;
+        document.getElementById('footConfig').innerHTML =
+          `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
+        document.getElementById('footBlocks').textContent =
+          `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
+        document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      } catch (e) { /* footer is non-critical */ }
+    });
+  </script>
+</body>
+</html>

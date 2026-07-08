@@ -198,6 +198,96 @@ async function fetchJSON(url) {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
 }
+async function fetchText(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  return res.text();
+}
+
+// ── Minimal Markdown → HTML (entity-report.html) ─────────────────
+// Dependency-free renderer for the committed report markdown. Supports the
+// subset the report uses: ATX headings, GFM pipe tables, ordered/unordered
+// lists (with wrapped continuation lines), horizontal rules, paragraphs, and
+// inline **bold** / `code` / [text](url). Full 0x… addresses (bare text OR a
+// code span) are auto-linked into the Affected-contracts search, preserving the
+// current schedule — so the report is a live index into the per-contract pages.
+function _mdAddrLink(addr) {
+  return `affected-contracts.html?schedule=${currentSchedule()}&addr=${addr.toLowerCase()}`;
+}
+function _mdInline(text) {
+  let s = escHtml(text);
+  // Extract code spans first into private-use-area sentinels (\uE000<idx>\uE001)
+  // so their contents are not re-processed and no real digit can collide with a
+  // placeholder; a full address inside a code span becomes a clickable <code>.
+  const code = [];
+  s = s.replace(/`([^`]+)`/g, (_, c) => {
+    const isAddr = /^0x[0-9a-fA-F]{40}$/.test(c);
+    const html = isAddr
+      ? `<a class="addr" href="${_mdAddrLink(c)}"><code>${c}</code></a>`
+      : `<code>${c}</code>`;
+    code.push(html);
+    return `\uE000${code.length - 1}\uE001`;
+  });
+  s = s.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');   // bold (non-greedy; tolerates inner *)
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');                    // italic
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, href) => {
+    const ext = /^https?:/i.test(href);
+    return `<a href="${href}"${ext ? ' target="_blank" rel="noopener noreferrer"' : ''}>${t}</a>`;
+  });
+  // Auto-link bare full addresses (code spans are already placeholdered out).
+  s = s.replace(/\b(0x[0-9a-fA-F]{40})\b/g, (_, a) => `<a class="addr" href="${_mdAddrLink(a)}">${a}</a>`);
+  return s.replace(/\uE000(\d+)\uE001/g, (_, i) => code[+i]);
+}
+function _mdTable(rows) {
+  const cells = r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const head = cells(rows[0]);
+  const body = rows.slice(2).map(cells);        // rows[1] is the --- separator
+  const th = head.map(h => `<th>${_mdInline(h)}</th>`).join('');
+  const trs = body.map(r => '<tr>' + r.map(c => `<td>${_mdInline(c)}</td>`).join('') + '</tr>').join('');
+  return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+function renderMarkdown(md) {
+  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  const out = [];
+  let i = 0;
+  const isItem = l => /^\s*([-*])\s+/.test(l) || /^\s*\d+\.\s+/.test(l);
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*$/.test(line)) { i++; continue; }
+    let m;
+    if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) {
+      const n = m[1].length; out.push(`<h${n}>${_mdInline(m[2])}</h${n}>`); i++; continue;
+    }
+    if (/^-{3,}$/.test(line.trim())) { out.push('<hr>'); i++; continue; }
+    if (line.trim().startsWith('|')) {
+      const tbl = []; while (i < lines.length && lines[i].trim().startsWith('|')) tbl.push(lines[i++]);
+      if (tbl.length >= 2) out.push(_mdTable(tbl));
+      continue;
+    }
+    if (isItem(line)) {
+      const ordered = /^\s*\d+\.\s+/.test(line);
+      const items = [];
+      while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^\s*\|/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i])) {
+        const l = lines[i];
+        if (isItem(l)) items.push(l.replace(/^\s*(?:[-*]|\d+\.)\s+/, ''));
+        else if (items.length) items[items.length - 1] += ' ' + l.trim();   // wrapped continuation
+        else break;
+        i++;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      out.push(`<${tag}>` + items.map(t => `<li>${_mdInline(t)}</li>`).join('') + `</${tag}>`);
+      continue;
+    }
+    // paragraph: gather wrapped lines until a blank/structural line
+    const para = [];
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !isItem(lines[i])
+           && !/^\s*\|/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) && !/^-{3,}$/.test(lines[i].trim())) {
+      para.push(lines[i].trim()); i++;
+    }
+    if (para.length) out.push(`<p>${_mdInline(para.join(' '))}</p>`);
+  }
+  return out.join('\n');
+}
 function fmtCount(n) {
   n = Number(n);
   if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + 'B';

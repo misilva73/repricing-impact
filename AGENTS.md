@@ -124,7 +124,8 @@ scripts/
   precompute.py   # CH -> build-time DuckDB -> site/data/**/*.json (re-runnable CLI)
   make_fixtures.py# seeded offline fixtures (fixtures_scratch/, NOT site/data/)
   serve.py        # local preview: static http.server over site/
-site/             # static site published to Pages (index/overview/transaction-failures + assets)
+site/             # static site published to Pages (index/overview/transaction-failures/affected-contracts + assets)
+  entity-report.md# committed narrative outreach report; rendered by entity-report.html (app.js renderMarkdown)
   data/{schedule} # committed aggregate JSON (see site/data/SCHEMA.md)
 tests/            # partition predicate + DB partition-identity tests
 ```
