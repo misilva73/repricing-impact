@@ -50,7 +50,8 @@ Already failing                        Retained ``_divergence`` rows whose basel
 Unknown                                ``tx_count - (No change + Succeeds + Fixable
                                         + Potentially broken + Already failing)`` —
                                         txs with no retained drill-in (dropped at
-                                        the 1024 ``drill_ins_truncated`` cap). 0 on
+                                        the producer's per-block
+                                        ``drill_ins_truncated`` cap). 0 on
                                         non-truncated blocks.
 ==  =================================  ============================================
 
@@ -111,7 +112,9 @@ exact ratio::
 measured from the run that *completes*. So:
 
 - If the tx completes at ``10x``: ``min_mult`` is the measured completion ratio
-  (continuous, ``0 < min_mult <= 10``; empirically maxes at 9.9979, never > 10),
+  (continuous, ``0 < min_mult <= 10``; empirically maxes at 9.9979, never > 10 —
+  measured on v10 and **re-measured unchanged over the full v11 window**,
+  2026-07-30),
   and ``replay_halt_oog`` is NULL (the top tier did not halt).
 - If the tx fails even at ``10x``: ``min_mult`` is NULL (**G4**), and
   ``replay_halt_oog`` records the top-tier halt kind — ``true`` (still OOG at
@@ -164,10 +167,12 @@ from __future__ import annotations
 import re
 
 # Top gas-limit multiplier the producer actually replays at. The manifest's
-# ``gas_limit_multipliers = [1,2,4,8]`` is WRONG (verified 2026-07-03): the real
+# ``gas_limit_multipliers = [1,2,4,8]`` is WRONG (verified 2026-07-03,
+# re-confirmed against producer v11 2026-07-30): the real
 # sweep is two points, ``1x`` and ``10x``. Not a G3/G4 partition boundary — it is
 # the sweep ceiling and the top edge of the G3 multiplier histogram. Every
-# rescued (G3) ``min_mult`` is measured and ``<= 10`` (empirical max 9.9979).
+# rescued (G3) ``min_mult`` is measured and ``<= 10`` (empirical max 9.9979 on
+# both the v10 and the v11 run).
 TOP_MULTIPLIER = 10
 
 # --- Per-drill-in-row SQL predicates (use inside _divergence aggregates) ------

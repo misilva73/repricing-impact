@@ -358,8 +358,9 @@ def stage_block_groups(ctx: RunContext) -> None:
             round(trunc_blocks / total_blocks, 4) if total_blocks else 0.0
         ),
         "note": (
-            "Truncated blocks drop their drill-in rows at the 1024 cap, inflating "
-            "the Unknown group. Treat Unknown as a coverage gap, not a true partition."
+            "Truncated blocks drop their drill-in rows at the producer's per-block "
+            "drill-in cap, inflating the Unknown group. Treat Unknown as a coverage "
+            "gap, not a true partition."
             + (
                 f" ({raw_dup_total} raw ReplacingMergeTree duplicate row_ids were "
                 "collapsed by argMax dedup; no double-counting.)"
@@ -478,6 +479,68 @@ _DIVTX_SELECTOR_COLS = (
 )
 
 
+# How many times to attempt a single wide ``_divergence`` chunk read before
+# giving up. The ClickHouse HTTP driver intermittently returns a SHORT result for
+# these reads (~2M rows x ~50 columns) with **no exception** — just a DataFrame
+# missing rows. Measured 2026-07-30 over two consecutive full-range eip-8038
+# runs: chunk 19 came back 141,967 rows short, then chunk 20 read clean and
+# chunk 18 came back 948,906 short. A different random chunk each run, and an
+# immediate re-read of the short chunk returned the full row count first try.
+#
+# Left unguarded this silently truncates the drill-in cohort; the end-of-function
+# retained_drill_in_count guard does catch it, but only after ~40 minutes of
+# scanning, and it cannot repair the run. Verifying per chunk turns a fatal
+# hour-long abort into a few seconds of re-read.
+_DIVTX_READ_ATTEMPTS = 4
+
+
+def _divtx_read_chunk(
+    ctx: RunContext, lo: int, hi: int, expected: int, i: int, n_chunks: int
+) -> pd.DataFrame:
+    """Read one deduped ``_divergence`` chunk, retrying while the result is short.
+
+    Returns a DataFrame with exactly ``expected`` rows. Raises if every attempt
+    came back short — that is a real inconsistency (or a persistently flaky
+    connection), not something to paper over by inserting partial data.
+
+    Only ever retries a **short** read. A read returning MORE rows than expected
+    would mean the retained_drill_in_count identity itself is broken (e.g. dedup
+    stopped collapsing duplicates), which a retry cannot fix, so it fails loudly.
+    """
+    sql = f"SELECT {', '.join(DIVERGENCE_TX_COLUMNS)} FROM " + (
+        groups.deduped_divergence_subquery(
+            columns=DIVERGENCE_TX_COLUMNS,
+            where=f"{ctx.base_where()} AND block_number BETWEEN {lo} AND {hi}",
+        )
+    )
+    for attempt in range(1, _DIVTX_READ_ATTEMPTS + 1):
+        # Decode opcode byte -> mnemonic server-side is not available; pull the
+        # raw byte and map in pandas. Bools come back as 'true'/'false' strings.
+        df = _ch(sql, ctx.engine)
+        got = len(df)
+        if got == expected:
+            return df
+        if got > expected:
+            raise RuntimeError(
+                f"divergence_tx chunk {i}/{n_chunks} for {ctx.schedule} blocks "
+                f"{lo:,}..{hi:,} returned {got:,} rows, MORE than the "
+                f"retained_drill_in_count {expected:,} — the dedup identity is "
+                "broken; not a short read, so retrying cannot help."
+            )
+        _log(
+            f"[{ctx.schedule}] divergence_tx chunk {i}/{n_chunks} blocks "
+            f"{lo:,}..{hi:,} SHORT READ: got {got:,} of {expected:,} rows "
+            f"({expected - got:,} missing) — attempt {attempt}/"
+            f"{_DIVTX_READ_ATTEMPTS}"
+            + (", re-reading" if attempt < _DIVTX_READ_ATTEMPTS else ", giving up")
+        )
+    raise RuntimeError(
+        f"divergence_tx chunk {i}/{n_chunks} for {ctx.schedule} blocks "
+        f"{lo:,}..{hi:,} still short after {_DIVTX_READ_ATTEMPTS} attempts "
+        f"(expected {expected:,} rows). Refusing to insert partial data."
+    )
+
+
 def stage_divergence_tx(ctx: RunContext) -> int:
     """Materialize the slim, row_id-DEDUPED per-tx ``_divergence`` projection.
 
@@ -486,6 +549,9 @@ def stage_divergence_tx(ctx: RunContext) -> int:
     All downstream per-tx aggregates then run **locally in DuckDB** — so no
     further ``_divergence`` scan hits the shared warehouse, and no single CH
     query covers the whole range. Returns the total retained row count.
+
+    Each chunk's row count is verified against ``block_groups`` before it is
+    inserted, and a short read is retried — see :data:`_DIVTX_READ_ATTEMPTS`.
     """
     ctx.con.execute("DROP TABLE IF EXISTS divergence_tx")
     ctx.con.execute(_DIVTX_DDL)
@@ -494,16 +560,19 @@ def stage_divergence_tx(ctx: RunContext) -> int:
     total = 0
     for i, (lo, hi) in enumerate(chunks, 1):
         t0 = time.monotonic()
-        deduped = groups.deduped_divergence_subquery(
-            columns=DIVERGENCE_TX_COLUMNS,
-            where=f"{ctx.base_where()} AND block_number BETWEEN {lo} AND {hi}",
+        # Expected row count for this chunk, read LOCALLY from block_groups (staged
+        # before this function, one row per block) — so verification costs the
+        # warehouse nothing. This is the same retained_drill_in_count identity the
+        # end-of-function guard asserts globally, just applied per chunk; it was
+        # measured exact for all 20 chunks of both schedules (2026-07-30).
+        expected = int(
+            ctx.con.execute(
+                "SELECT COALESCE(SUM(retained_drill_in_count), 0) FROM block_groups "
+                f"WHERE block_number BETWEEN {lo} AND {hi}"
+            ).fetchone()[0]
+            or 0
         )
-        # Decode opcode byte -> mnemonic server-side is not available; pull the
-        # raw byte and map in pandas. Bools come back as 'true'/'false' strings.
-        df = _ch(
-            f"SELECT {', '.join(DIVERGENCE_TX_COLUMNS)} FROM {deduped}",
-            ctx.engine,
-        )
+        df = _divtx_read_chunk(ctx, lo, hi, expected, i, len(chunks))
         if not df.empty:
             for c in _DIVTX_BOOL_COLS:
                 df[c] = df[c].map(_to_bool_nullable)
@@ -541,16 +610,25 @@ def stage_divergence_tx(ctx: RunContext) -> int:
 
     # Post-dedup invariant: divergence_tx must equal the retained drill-in count
     # (one row per retained drill-in tx). block_groups already has retained.
+    #
+    # Now a BACKSTOP: _divtx_read_chunk already enforces this identity per chunk,
+    # so a short read can no longer reach here. Kept because it is checked against
+    # the MATERIALIZED table rather than the summed read sizes, so it additionally
+    # covers loss on the INSERT side (a chunk read correctly but not landed).
+    materialized = int(
+        ctx.con.execute("SELECT count(*) FROM divergence_tx").fetchone()[0] or 0
+    )
     retained = int(
         ctx.con.execute(
             "SELECT SUM(retained_drill_in_count) FROM block_groups"
         ).fetchone()[0]
         or 0
     )
-    if total != retained:
+    if materialized != retained or total != retained:
         raise RuntimeError(
-            f"divergence_tx row count {total} != retained_drill_in_count "
-            f"{retained} for {ctx.schedule} (dedup/materialization mismatch)."
+            f"divergence_tx row count {materialized} (read {total}) != "
+            f"retained_drill_in_count {retained} for {ctx.schedule} "
+            "(dedup/materialization mismatch)."
         )
     _log(f"[{ctx.schedule}] divergence_tx complete: {total:,} deduped per-tx rows")
     return total
@@ -695,19 +773,28 @@ _GAS_BIN_RANGES = {i: (2 ** (i - 1), 2**i) for i in range(1, 11)}
 _GAS_BIN_RANGES[11] = (1024, None)
 
 
-# --- Percent gas-diff histogram (G3/G4 drill-in members) --------------------
+# --- Percent gas-diff histogram (ALL of G2, G3, G4) -------------------------
 #
-# Signed bin edges for ``100 * gas_delta / baseline_gas_used`` per tx, taken from
-# docs/producer-data-recommendations.md (Recommendation 2). Left-closed,
-# right-open. ``pct`` is bounded below at -100% (``schedule_gas_used >= 0``), so
-# the lowest bin is ``[-100, -50)``; the costlier tail runs far past +100%, so it
-# is split rather than capped, with ``[500, +inf)`` as the catch-all.
+# Signed bin edges for ``100 * gas_delta / baseline_gas_used`` per tx, originally
+# proposed in docs/producer-data-recommendations.md (Recommendation 2).
+# Left-closed, right-open. ``pct`` is bounded below at -100% (``schedule_gas_used
+# >= 0``), so the lowest bin is ``[-100, -50)``; the costlier tail runs far past
+# +100%, so it is split rather than capped, with ``[500, +inf)`` as the catch-all.
 #
-# NOTE: computable here ONLY for the G3/G4 drill-in cohorts, which carry per-tx
-# ``baseline_gas_used``. The G2 ``gas_only`` cohort is collapsed to per-block
-# aggregates with no per-tx pairing and no class-grain baseline denominator, so
-# its percentage distribution needs a producer-side ``gas_diff_pct_hist`` column
-# (see the doc) and stays absolute here.
+# Producer schema v11 SHIPPED that recommendation as
+# ``block_summary.gas_delta_pct_hist`` — a 13-bin closed-left histogram whose
+# edges are byte-identical to this list — plus the class-grain denominator
+# ``baseline_gas_used_sum``. (Shipped name is ``gas_delta_pct_hist``, not the
+# ``gas_diff_pct_hist`` the doc proposed.) So every group now publishes a
+# percentage view, but by two DIFFERENT routes over two DIFFERENT cohorts:
+#   G2    -> the producer's class-grain array, summed server-side with
+#            ``sumForEach``, covering the ``gas_only`` aggregate cohort ONLY (the
+#            drill-in members counted in ``gas_bins`` are NOT in it);
+#   G3/G4 -> computed locally per-tx from ``divergence_tx.baseline_gas_used``,
+#            covering the whole group (both are entirely drill-in rows).
+# Both routes reuse these edges and :func:`_pct_bins` unchanged, so the emitted
+# entry shape is identical; the cohort asymmetry is published as ``pct_cohort``
+# so a reader never has to infer which route a percentage view came from.
 GAS_PCT_BIN_EDGES = [-100, -50, -25, -10, -1, 0, 1, 10, 25, 50, 100, 200, 500]
 
 
@@ -801,6 +888,10 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
     producer's ``log2_bin`` (see :data:`GAS_LOG2_BIN_SQL`) so the drill-in members
     land in the same buckets as the aggregate hist, then reported as real gas-unit
     bins (:func:`_gas_bins`). G3/G4: signed exact per-tx from ``_divergence``.
+
+    The same G2 scan also sums the v11 ``gas_delta_pct_hist`` array and the
+    class-grain ``baseline_gas_used_sum``, giving G2 a percent-of-baseline view and
+    a ratio-of-sums headline over the ``gas_only`` cohort — no extra scan.
     """
     groups_out: Dict[str, dict] = {}
 
@@ -809,9 +900,19 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
     # per (block,class)). This is the only remaining CH scan in this stage. The
     # 12-bin array is indexed by the producer log2_bin (bin 0 = exact zero, empty
     # for gas_only since it is gas_delta != 0 by definition).
+    #
+    # ``arrayResize(gas_delta_pct_hist, 13)`` rather than the bare column because
+    # sumForEach THROWS on unequal array lengths within a batch and the column is
+    # documented "empty = written pre-v11". A WHERE-level ``notEmpty`` filter would
+    # be wrong: it would also drop those rows from sum(tx_count) / sum(gas_delta_sum)
+    # and silently change the already-published absolute numbers. arrayResize pads
+    # with the Int32 default 0, so padded rows fall out of pct_covered_count
+    # instead — which is the honest behaviour.
     g2_go_hist = [0] * 12
+    g2_pct_hist = [0] * len(GAS_PCT_BIN_EDGES)
     go_sum = go_min = go_max = 0
     go_count = 0
+    go_baseline_sum = 0
     have_go = False
     bs_chunks = _chunk_list(ctx.block_start, ctx.block_end, ctx.chunk_blocks)
     for i, (lo, hi) in enumerate(bs_chunks, 1):
@@ -823,7 +924,9 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
                 sum(gas_delta_sum)              AS s,
                 min(gas_delta_min)              AS mn,
                 max(gas_delta_max)              AS mx,
-                sum(tx_count)                   AS n
+                sum(tx_count)                   AS n,
+                sumForEach(arrayResize(gas_delta_pct_hist, {len(GAS_PCT_BIN_EDGES)})) AS ph,
+                sum(baseline_gas_used_sum)      AS bgs
             FROM gas_analysis.gas_analysis_block_summary
             WHERE {ctx.base_where()} AND class = 'gas_only'
               AND block_number BETWEEN {lo} AND {hi}
@@ -840,6 +943,11 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
         for j, v in enumerate(h):
             if j < len(g2_go_hist):
                 g2_go_hist[j] += int(v)
+        ph = parse_arr(r.iloc[0]["ph"])
+        for j, v in enumerate(ph):
+            if j < len(g2_pct_hist):
+                g2_pct_hist[j] += int(v)
+        go_baseline_sum += int(r.iloc[0]["bgs"] or 0)
         go_sum += int(r.iloc[0]["s"] or 0)
         go_min = (
             min(go_min, int(r.iloc[0]["mn"] or 0))
@@ -884,6 +992,20 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
     g2_sum = go_sum + dr_sum
     mins = [v for v in (go_min if have_go else None, dr_min) if v is not None]
     maxs = [v for v in (go_max if have_go else None, dr_max) if v is not None]
+
+    # Percent view: gas_only cohort ONLY. pct_covered_count is the summed producer
+    # bin counts, so it falls BELOW go_count exactly when some block row carried an
+    # unpopulated (pre-v11) array that arrayResize padded to zeros — the shortfall
+    # is disclosed in pct_note rather than silently absorbed.
+    g2_pct_bins = _pct_bins(dict(enumerate(g2_pct_hist)))
+    g2_pct_covered = sum(e["count"] for e in g2_pct_bins)
+    # Ratio OF SUMS (gas-weighted), not the mean of per-tx ratios — the latter is
+    # dominated by tiny transfers where a fixed overhead is a huge percentage. Both
+    # operands are Python ints accumulated over the same gas_only class rows, so the
+    # published figure is auditable from the two keys emitted beside it.
+    g2_pct_of_baseline = (
+        round(100.0 * go_sum / go_baseline_sum, 4) if go_baseline_sum else None
+    )
     groups_out["2"] = {
         "label": GROUP_LABELS["g2"],
         "signed": False,
@@ -898,6 +1020,25 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
         "sum_gas_delta": int(g2_sum),
         "min_gas_delta": int(min(mins)) if mins else 0,
         "max_gas_delta": int(max(maxs)) if maxs else 0,
+        "pct_cohort": "gas_only",
+        "pct_bins": g2_pct_bins,
+        "pct_covered_count": int(g2_pct_covered),
+        "pct_note": (
+            "Class-grain producer histogram of 100*gas_delta/baseline_gas_used per tx "
+            "over the gas_only aggregate cohort ONLY "
+            "(block_summary.gas_delta_pct_hist); the drill-in members counted in "
+            "gas_bins are not included. Fixed signed bins; bounded below at -100%; "
+            "the >=500% bin is a catch-all."
+            + (
+                f" Excludes {go_count - g2_pct_covered:,} gas_only txs from blocks "
+                "with an unpopulated histogram (written pre-v11)."
+                if go_count - g2_pct_covered > 0
+                else ""
+            )
+        ),
+        "sum_gas_delta_gas_only": int(go_sum),
+        "baseline_gas_used_sum": int(go_baseline_sum),
+        "gas_delta_pct_of_baseline": g2_pct_of_baseline,
     }
 
     # --- G3 / G4: signed exact per-tx histograms + percentiles ---
@@ -973,6 +1114,7 @@ def _signed_per_tx_hist(ctx: RunContext, predicate: str, label: str) -> dict:
         "sum_gas_delta": total_sum,
         "min_gas_delta": gmin,
         "max_gas_delta": gmax,
+        "pct_cohort": "drillin",
         "pct_bins": _pct_bins(pct_counts),
         "pct_covered_count": int(pct_covered),
         "pct_note": (
@@ -1012,20 +1154,37 @@ def emit_group_categories(ctx: RunContext) -> dict:
 
 
 def _g2_categories(ctx: RunContext) -> dict:
-    # State-driver mix + gas_only tx_count from block_summary (gas_only cohort).
+    # Class-grain mixes + gas_only tx_count from block_summary (gas_only cohort).
     # The opcode gas-shift leaderboard was dropped — it is no longer surfaced on
     # the transaction-failures page, and dropping it removes an expensive
     # per-opcode GROUP BY.
+    #
+    # Producer v11 added the tx-type / tx-shape counts to this same row grain, so
+    # they are appended to the EXISTING SELECT list: no second pass over
+    # block_summary, no new scan.
     sd_ns = sd_rs = sd_cr = sd_au = 0
+    sd_st = sd_cc = 0
+    sd_t_legacy = sd_t_access_list = sd_t_dynamic_fee = 0
+    sd_t_blob = sd_t_set_code = sd_t_other = 0
     gas_only_count = 0
     bs_chunks = _chunk_list(ctx.block_start, ctx.block_end, ctx.chunk_blocks)
     for ci, (lo, hi) in enumerate(bs_chunks, 1):
         t0 = time.monotonic()
         sd = _ch(
             f"""
-            SELECT sum(tx_count_no_state) ns, sum(tx_count_runtime_state) rs,
-                   sum(tx_count_creation) cr, sum(tx_count_authorization) au,
-                   sum(tx_count) n
+            SELECT sum(tx_count_no_state)         AS ns,
+                   sum(tx_count_runtime_state)    AS rs,
+                   sum(tx_count_creation)         AS cr,
+                   sum(tx_count_authorization)    AS au,
+                   sum(tx_count)                  AS n,
+                   sum(tx_count_simple_transfer)  AS st,
+                   sum(tx_count_contract_call)    AS cc,
+                   sum(tx_count_type_legacy)      AS t_legacy,
+                   sum(tx_count_type_access_list) AS t_access_list,
+                   sum(tx_count_type_dynamic_fee) AS t_dynamic_fee,
+                   sum(tx_count_type_blob)        AS t_blob,
+                   sum(tx_count_type_set_code)    AS t_set_code,
+                   sum(tx_count_type_other)       AS t_other
             FROM gas_analysis.gas_analysis_block_summary
             WHERE {ctx.base_where()} AND class = 'gas_only'
               AND block_number BETWEEN {lo} AND {hi}
@@ -1037,18 +1196,71 @@ def _g2_categories(ctx: RunContext) -> dict:
         sd_cr += int(sd["cr"] or 0)
         sd_au += int(sd["au"] or 0)
         gas_only_count += int(sd["n"] or 0)
+        sd_st += int(sd["st"] or 0)
+        sd_cc += int(sd["cc"] or 0)
+        sd_t_legacy += int(sd["t_legacy"] or 0)
+        sd_t_access_list += int(sd["t_access_list"] or 0)
+        sd_t_dynamic_fee += int(sd["t_dynamic_fee"] or 0)
+        sd_t_blob += int(sd["t_blob"] or 0)
+        sd_t_set_code += int(sd["t_set_code"] or 0)
+        sd_t_other += int(sd["t_other"] or 0)
         _log(
             f"[{ctx.schedule}] group_cat/g2 block_summary chunk {ci}/{len(bs_chunks)} "
             f"blocks {lo:,}..{hi:,} ({time.monotonic() - t0:.1f}s)"
         )
 
-    # state-driver mix from block_summary gas_only cohort (accumulated chunked).
+    # The v11 warehouse has exactly TWO exact partitions on block_summary, both
+    # verified 0-violation: (no_state + runtime_state == tx_count) and
+    # (creation + simple_transfer + contract_call == tx_count). Every list named
+    # ``*_mix`` here is one of those partitions and nothing else — emitting a
+    # non-partition under that name is precisely what produced the earlier bug,
+    # where tx_count_creation and tx_count_authorization sat in state_driver_mix
+    # and double-counted against its two real members.
     state_driver_mix = [
         {"key": "no_state", "count": sd_ns},
         {"key": "runtime_state", "count": sd_rs},
-        {"key": "creation", "count": sd_cr},
-        {"key": "authorization", "count": sd_au},
     ]
+    # Three shape keys, not the four of TX_SHAPE_ORDER: the producer does not carve
+    # authorizations out of contract_call, so there is no ``authorization`` member to
+    # emit. Zero-filling one would be an affirmative FALSE claim (the count is
+    # nonzero) — it is ABSENT, and lives in tx_overlay_mix instead.
+    tx_shape_mix = [
+        {"key": "simple_transfer", "count": sd_st},
+        {"key": "contract_call", "count": sd_cc},
+        {"key": "contract_creation", "count": sd_cr},
+    ]
+    # All six TX_TYPE_ORDER keys, zero-filled and in that order, so g2/g3/g4 are
+    # key- AND order-identical. The producer's residual bucket tx_count_type_other
+    # is the same category as the drill-in CASE's 'unknown' (any other EIP-2718
+    # type), so it is emitted under the existing name rather than churning g3/g4.
+    tx_type_mix = [
+        {"key": "legacy", "count": sd_t_legacy},
+        {"key": "access_list", "count": sd_t_access_list},
+        {"key": "dynamic_fee", "count": sd_t_dynamic_fee},
+        {"key": "blob", "count": sd_t_blob},
+        {"key": "set_code", "count": sd_t_set_code},
+        {"key": "unknown", "count": sd_t_other},
+    ]
+    gas_only_mix_note = (
+        "state_driver_mix, tx_shape_mix and tx_type_mix are producer class-grain "
+        "counts over the gas_only aggregate cohort ONLY — each is a true partition "
+        "summing to gas_only_count, and none of them cover the drill-in members. "
+        "contract_creation is the tx-level creation count (to IS NULL). Unlike the "
+        "g3/g4 taxonomy, EIP-7702 authorization txs are NOT carved out here: they "
+        "fall in contract_call (or simple_transfer when calldata is empty); their "
+        "count is in tx_overlay_mix."
+    )
+    # The one quantity that belongs to NEITHER partition, quarantined behind a
+    # distinctly-named key plus a note that travels in the JSON (the
+    # change_type_mix/change_type_note precedent). tx_count_creation is NOT
+    # duplicated in here — it is a legitimate member of tx_shape_mix, and showing
+    # the same number twice under two meanings is what confused v10 readers.
+    tx_overlay_mix = [{"key": "authorization", "count": sd_au}]
+    tx_overlay_note = (
+        "Overlay, NOT a partition: authorization counts gas_only txs carrying an "
+        "EIP-7702 authorization list. It overlaps tx_shape_mix and tx_type_mix and "
+        "must not be added to either."
+    )
 
     # G2 drill-in members — LOCAL DuckDB. status_changed is definitionally false
     # here (both replays succeed), so it is not a change type. The change-type
@@ -1100,6 +1312,11 @@ def _g2_categories(ctx: RunContext) -> dict:
         "gas_only_count": int(gas_only_count),
         "drillin_count": drillin_count,
         "state_driver_mix": state_driver_mix,
+        "tx_shape_mix": tx_shape_mix,
+        "tx_type_mix": tx_type_mix,
+        "gas_only_mix_note": gas_only_mix_note,
+        "tx_overlay_mix": tx_overlay_mix,
+        "tx_overlay_note": tx_overlay_note,
         "state_driver_mix_drillin": state_driver_mix_drillin,
         "change_type_mix": change_type_mix,
         "change_type_note": (
@@ -1127,9 +1344,17 @@ def _ddb_mix(ctx: RunContext, col: str, where: str) -> List[dict]:
 # ``_divergence`` (``is_create``, ``has_authorization``, ``input_*_bytes``,
 # ``tx_type``). These cover the WHOLE of G3/G4 (both are entirely drill-in rows),
 # unlike ``state_gas_category`` which is NULL for most txs and describes the
-# state-op driver rather than tx shape. NOT emitted for G2: its bulk ``gas_only``
-# cohort has no per-tx rows, and the G2 drill-in slice is unrepresentative (see
-# docs/producer-data-recommendations.md, Recommendation 1).
+# state-op driver rather than tx shape.
+#
+# These CASEs remain the G3/G4 **drill-in** route. G2 now derives its own
+# ``tx_shape_mix`` / ``tx_type_mix`` from the v11 ``block_summary`` class-grain
+# columns instead (see :func:`_g2_categories`), because its bulk ``gas_only``
+# cohort has no per-tx rows to run a CASE over. The two routes are NOT identical:
+# the drill-in CASE below gives ``authorization`` its own precedence slot ahead of
+# ``contract_call``, whereas the producer's 3-way shape partition does not carve
+# authorizations out at all — which is why G2 emits three shape keys and G3/G4
+# emit four. The producer's residual tx-type bucket ``tx_count_type_other`` is the
+# same category as this CASE's ``unknown`` and is emitted under that name.
 
 # Mutually exclusive shape, in precedence order (a set-code tx with calldata is an
 # authorization, not a contract_call). Every tx lands in exactly one bucket.
@@ -1176,7 +1401,8 @@ def _g3_categories(ctx: RunContext, flavour: str) -> dict:
     """G3 categorization — LOCAL DuckDB over the materialized divergence_tx."""
     pred = groups.G3_PREDICATE
     # Bins span the real (1, 10] sweep range (min_mult = schedule_gas_used /
-    # tx_gas_limit, measured at the 10x ceiling; empirical max 9.9979). The top
+    # tx_gas_limit, measured at the 10x ceiling; empirical max 9.9979 over the
+    # full v11 window, re-measured 2026-07-30 — same as v10). The top
     # bin is left open-ended (> 8) so the histogram always totals the whole G3
     # cohort, but it is effectively (8, 10] since nothing exceeds the ceiling.
     mh = ctx.con.execute(f"""SELECT

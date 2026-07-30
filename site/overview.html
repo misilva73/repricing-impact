@@ -61,10 +61,41 @@
       <p class="note" id="g2changeNote"></p>
       <div id="g2change" class="chart"><p class="loading">Loading…</p></div>
     </div>
+    <p class="note" id="g2mixNote"></p>
+    <p class="note" id="g2overlayNote"></p>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Transaction shape</h3>
+        <p class="note">Simple ETH transfer vs contract call vs contract deployment. EIP-7702 authorizations are not carved out here — see above.</p>
+        <div id="g2shape" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+      <div class="panel">
+        <h3>Transaction type (EIP-2718)</h3>
+        <p class="note">Legacy / access-list / dynamic-fee / blob / set-code.</p>
+        <div id="g2type" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>State-gas driver</h3>
+      <p class="note">Whether the transaction touched runtime state gas at all. A partition of the aggregate cohort.</p>
+      <div id="g2state" class="chart"><p class="loading">Loading…</p></div>
+    </div>
     <div class="panel">
       <h3>Gas-diff distribution</h3>
       <p class="note" id="g2gasNote"></p>
       <div id="g2gashist" class="chart"><p class="loading">Loading…</p></div>
+    </div>
+    <div class="with-side">
+      <div class="panel">
+        <h3>Gas-diff distribution (% of baseline)</h3>
+        <p class="note" id="g2pctNote"></p>
+        <div id="g2pcthist" class="chart"><p class="loading">Loading…</p></div>
+      </div>
+      <div class="sidecard">
+        <div class="big" id="g2ratio">—</div>
+        <div class="lbl">Aggregate gas change (gas_only cohort)</div>
+        <p class="note" style="margin-top:10px">Ratio of sums: total <code>gas_delta</code> over total <code>baseline_gas_used</code> for the aggregate cohort — gas-weighted, NOT the mean of per-tx percentages.</p>
+      </div>
     </div>
 
     <h2>Fixable with gas-limit increase - breakdown</h2>
@@ -172,6 +203,34 @@
       const g2 = cats.g2;
       document.getElementById('g2changeNote').textContent = g2.change_type_note;
       renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
+      // The three gas_only *_mix charts. Each is a TRUE partition of gas_only_count;
+      // tx_overlay_mix is an OVERLAPPING overlay and is deliberately never charted —
+      // it is printed as prose only, so a one-bar overlay cannot be read as a
+      // partition member with the same visual weight as one.
+      //
+      // tx_shape_mix is the marker for producer-v11-shaped output. Pre-v11 JSON has
+      // no tx_shape_mix/tx_type_mix at all, and its state_driver_mix is the OLD
+      // 4-key list (no_state|runtime_state|creation|authorization) which is NOT a
+      // partition — drawing it under these captions would reproduce the exact
+      // double-count this section exists to correct. So on pre-v11 data we print a
+      // note in each panel instead of drawing anything.
+      const drawG2Mixes = () => {
+        document.getElementById('g2mixNote').textContent = g2.gas_only_mix_note || '';
+        document.getElementById('g2overlayNote').textContent = g2.tx_overlay_note || '';
+        if (!Array.isArray(g2.tx_shape_mix)) {
+          const stale = 'Not available in this data build — the aggregate-cohort shape, '
+            + 'type and state-gas partitions need the producer class-grain columns. '
+            + 'Re-run precompute to populate them.';
+          ['g2state', 'g2shape', 'g2type'].forEach(id => {
+            document.getElementById(id).innerHTML = `<p class="loading">${escHtml(stale)}</p>`;
+          });
+          return;
+        }
+        renderHBar('g2state', g2.state_driver_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(1) });
+        renderHBar('g2shape', g2.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(1) });
+        renderHBar('g2type', g2.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(1) });
+      };
+      drawG2Mixes();
 
       // Fixable-with-gas-limit-increase (G3) deep dive
       const g3 = cats.g3;
@@ -185,9 +244,14 @@
       renderHBar('g4shape', g4.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
       renderHBar('g4type', g4.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(3) });
 
-      // gas-diff histograms. G2 stays absolute (the gas_only cohort has no per-tx
-      // baseline to form a ratio). G3/G4 render as a % of baseline gas when the
-      // precompute has emitted pct_bins, else fall back to the absolute log2 hist.
+      // gas-diff histograms. G2 renders BOTH views, over DIFFERENT cohorts, in two
+      // separate panels — an absolute gas-unit histogram covering the gas_only
+      // aggregate cohort PLUS the Succeeds-with-changes drill-in members
+      // (renderG2GasHist over gas_bins), and a percent-of-baseline histogram
+      // covering the gas_only aggregate cohort ONLY (renderPctHist over pct_bins,
+      // the producer v11 class-grain array; pct_cohort == "gas_only"). Each panel's
+      // note names its own cohort. G3/G4 keep the single auto-routed chart: % of
+      // baseline when precompute emitted pct_bins, else the absolute log2 hist.
       const g = hist.groups;
       document.getElementById('g2gasNote').textContent = g['2'].note;
       document.getElementById('g3note').textContent = g['3'].pct_bins ? g['3'].pct_note : g['3'].note;
@@ -195,6 +259,23 @@
       renderG2GasHist('g2gashist', g['2']);
       renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
       renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
+
+      // G2 percent-of-baseline panel + the ratio-of-sums sidecard. Both are absent
+      // from pre-v11 precompute output, so both degrade to an explicit note rather
+      // than a stuck "Loading…" placeholder. renderPctHist is called with NO color
+      // so negative bins keep the diverging (cheaper/costlier) scale.
+      if (g['2'].pct_bins) {
+        document.getElementById('g2pctNote').textContent = g['2'].pct_note;
+        renderPctHist('g2pcthist', g['2']);
+      } else {
+        document.getElementById('g2pctNote').textContent =
+          'Not available in this data build — the percent-of-baseline view needs the '
+          + 'producer class-grain percentage histogram. Re-run precompute to populate it.';
+        document.getElementById('g2pcthist').innerHTML = '<p class="loading">No data.</p>';
+      }
+      const g2r = g['2'].gas_delta_pct_of_baseline;
+      document.getElementById('g2ratio').textContent =
+        (g2r == null) ? '—' : (g2r < 0 ? '-' : '+') + fmtPct(Math.abs(g2r));
 
       document.getElementById('footSchedule').textContent = meta.schedule;
       document.getElementById('footConfig').innerHTML =
@@ -207,6 +288,7 @@
         renderComposition('composition', series, pctMode);
         renderTotalsDonut('donut', t, gl);
         renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
+        drawG2Mixes();
         renderHBar('g3shape', g3.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(2) });
         renderHBar('g3type', g3.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(2) });
         renderHBar('g4break', g4.break_reason, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
@@ -216,6 +298,13 @@
         renderG2GasHist('g2gashist', g['2']);
         renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
         renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
+        if (g['2'].pct_bins) {
+          document.getElementById('g2pctNote').textContent = g['2'].pct_note;
+          renderPctHist('g2pcthist', g['2']);
+        }
+        const g2r2 = g['2'].gas_delta_pct_of_baseline;
+        document.getElementById('g2ratio').textContent =
+          (g2r2 == null) ? '—' : (g2r2 < 0 ? '-' : '+') + fmtPct(Math.abs(g2r2));
       };
     });
   </script>

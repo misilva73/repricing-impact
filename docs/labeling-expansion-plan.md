@@ -251,7 +251,10 @@ feature we hold**. We publish only the small enriched slice inlined into
   exposes (calldata may not be present — `trace_payload` is off-limits per the
   warehouse rules). If calldata is unavailable, selector decoding is **descoped
   to phase 5** pending a producer-side field (cross-ref
-  [`producer-data-recommendations.md`](producer-data-recommendations.md)).
+  [`producer-data-recommendations.md`](producer-data-recommendations.md) — note
+  that doc is now marked **SHIPPED**, but only for its Recommendations 1 and 2 in
+  producer v11; **no calldata/selector field shipped**, so this descope still
+  stands).
 
 ---
 

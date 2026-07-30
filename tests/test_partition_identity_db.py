@@ -140,13 +140,23 @@ def test_min_mult_success_biconditional(ctx, schedule):
     assert int(leak["le1_but_not_success"]) == 0
 
 
-# Window known to contain raw ReplacingMergeTree duplicate row_ids at full scale
-# (eip-8037, blocks 24,498,000-24,499,999 — ~2.2k duplicates).
+# Window that carried raw ReplacingMergeTree duplicate row_ids at full scale on
+# the producer-v10 run (eip-8037, blocks 24,498,000-24,499,999 — ~2.2k dups).
+#
+# RE-MEASURED 2026-07-30 against the v11 run (config 0x6617c5db…6ed3): **zero**
+# duplicate row_ids, not only in this window but across the ENTIRE 1,000,000-block
+# range for BOTH focus schedules (chunked `count() - uniqExact(row_id)`, all
+# chunks 0) — that run's parts are fully merged. Whether any duplicates are
+# visible is a property of background merge timing, so it is NOT something a test
+# may pin: the live test below asserts the dedup *identity* on real rows (which
+# holds either way) and skips only the "duplicates were actually present" leg.
+# The collapse itself is covered unconditionally by the synthetic test that
+# follows, so removing the v10-era `assert raw_dups > 0` costs no coverage.
 DUP_WINDOW = (24498000, 24499999)
 
 
-def test_dedup_subquery_collapses_full_scale_duplicates(ctx):
-    """The argMax dedup subquery removes the raw duplicates; guard is 0 after."""
+def test_dedup_subquery_preserves_live_rows_and_collapses_any_duplicates(ctx):
+    """On live rows: dedup drops exactly the duplicates and leaves guard == 0."""
     engine, config_hash = ctx
     lo, hi = DUP_WINDOW
     where = (
@@ -167,9 +177,73 @@ def test_dedup_subquery_collapses_full_scale_duplicates(ctx):
     ).iloc[0]
 
     raw_dups = int(raw["dups"])
-    # This window must actually exercise the dedup path (else the test is moot).
-    assert raw_dups > 0, "expected raw duplicates in the dup window"
-    # Dedup removes exactly the duplicate rows...
+    # Non-vacuity: the window must return rows, or the identities below are moot.
+    assert int(ded["n"]) > 0, "dup window returned no rows at all"
+    # Dedup removes exactly the duplicate rows — a no-op when there are none...
     assert int(raw["n"]) - int(ded["n"]) == raw_dups
     # ...and the deduped relation has one row per row_id (guard == 0).
+    assert int(ded["dups"]) == 0
+    if raw_dups == 0:
+        pytest.skip(
+            "the current run has no pre-merge duplicate row_ids in DUP_WINDOW "
+            "(v11 is fully merged), so the live rows exercise only the no-op "
+            "leg; the collapse is covered by the synthetic-duplicates test"
+        )
+
+
+# Synthetic relation standing in for a pre-merge ``_divergence`` slice: row_id
+# 'a' three times, 'b' twice, 'c' once, with out-of-order ``updated_at`` so a
+# naive "last row wins" would pick the wrong value. Latest-version values are
+# a -> 3.5, b -> 8.0, c -> 0.5.
+_SYNTHETIC_DUPLICATE_ROWS = (
+    "(SELECT * FROM values("
+    "'row_id String, updated_at DateTime, min_multiplier_to_succeed Float64', "
+    "('a', toDateTime('2026-01-01 00:00:00'), 1.5), "
+    "('a', toDateTime('2026-01-03 00:00:00'), 3.5), "
+    "('a', toDateTime('2026-01-02 00:00:00'), 2.5), "
+    "('b', toDateTime('2026-01-02 00:00:00'), 8.0), "
+    "('b', toDateTime('2026-01-01 00:00:00'), 9.0), "
+    "('c', toDateTime('2026-01-01 00:00:00'), 0.5)))"
+)
+
+
+def test_dedup_subquery_collapses_synthetic_duplicates(ctx):
+    """The argMax dedup collapses to one row per row_id, keeping the latest.
+
+    Exercises the real SQL emitted by :func:`groups.deduped_divergence_subquery`
+    against a hand-built duplicated relation, so the collapse is covered even
+    when the warehouse's parts happen to be fully merged (as the v11 run is).
+    Substituting the table is deliberate and test-only — it fails loudly if the
+    helper ever stops reading :data:`groups.DIVERGENCE_TABLE`.
+    """
+    engine, _ = ctx
+    sql = groups.deduped_divergence_subquery(
+        columns=["min_multiplier_to_succeed"], where="1 = 1"
+    )
+    assert groups.DIVERGENCE_TABLE in sql, "dedup helper no longer reads the table"
+    deduped = sql.replace(groups.DIVERGENCE_TABLE, _SYNTHETIC_DUPLICATE_ROWS)
+
+    raw = _q(
+        engine,
+        f"SELECT count() n, ({groups.DEDUP_GUARD_SQL}) dups "
+        f"FROM {_SYNTHETIC_DUPLICATE_ROWS}",
+    ).iloc[0]
+    # The fixture really does carry duplicates (6 rows, 3 distinct row_ids).
+    assert int(raw["n"]) == 6
+    assert int(raw["dups"]) == 3
+
+    got = _q(
+        engine,
+        f"SELECT row_id, min_multiplier_to_succeed AS m FROM {deduped} "
+        f"ORDER BY row_id",
+    )
+    # Collapsed to one row per row_id, each holding the max-updated_at value.
+    assert list(got["row_id"]) == ["a", "b", "c"]
+    assert [float(v) for v in got["m"]] == [3.5, 8.0, 0.5]
+
+    ded = _q(
+        engine,
+        f"SELECT count() n, ({groups.DEDUP_GUARD_SQL}) dups FROM {deduped}",
+    ).iloc[0]
+    assert int(ded["n"]) == 3
     assert int(ded["dups"]) == 0

@@ -46,15 +46,28 @@ Node build. Python does all the data work; the site is static files only.
   `_block_summary`, `_divergence`); ignore the `_local` shard tables.
 - Pin one `analysis_config_hash` (via `config.resolve_config_hash`) and filter
   `schedule_name`; chunk by `block_number` to keep scans cheap.
-- `gas_analysis_*` are **ReplacingMergeTree** — **dedup when counting.** At full
-  scale `_divergence` carries pre-merge duplicate `row_id`s; use the deduped
+- `gas_analysis_*` are **ReplacingMergeTree** — **dedup when counting.**
+  `_divergence` **can** carry pre-merge duplicate `row_id`s; use the deduped
   relation from `groups.deduped_divergence_subquery` (`argMax(col, updated_at)`
-  per `row_id`) rather than `FINAL` on the 113M-row table. `_block_coverage` /
-  `_block_summary` have no duplicates.
+  per `row_id`) rather than `FINAL` on the ~105M-row table. `_block_coverage` /
+  `_block_summary` have no duplicates. Whether duplicates are *currently* visible
+  is a function of background-merge timing and must never be assumed either way:
+  the v10 run had ~2.2k in one 2k-block window, the v11 run has **zero across the
+  full 1M-block range for both schedules** (measured 2026-07-30). Always dedup
+  anyway — a later run, or the same run mid-merge, can have them again.
 - `Array` columns arrive as **string reprs** — parse with `opcodes.parse_arr`.
 - **Never** `SELECT trace_payload` (a large blob).
 - Divergence scans (~50M+ rows/schedule) are expensive — run them as
   infrequent, chunked, off-peak batches, **never on a request path**.
+- ⚠️ **Wide `_divergence` reads can come back SHORT with no error.** The
+  ClickHouse HTTP driver intermittently truncates these ~2M-row × ~50-column
+  chunk reads, returning a short DataFrame and **raising nothing** (observed on
+  ~1 chunk per full-range run, a different chunk each time, 2026-07-30). Never
+  trust the row count of a wide read — verify it. `stage_divergence_tx` checks
+  every chunk against `block_coverage.retained_drill_in_count` (available locally
+  in `block_groups`, so verification is free) and re-reads on a shortfall; a
+  retry has always returned the full count. Any new bulk per-tx read needs the
+  same guard, or it will silently publish a truncated cohort.
 - **One sanctioned cross-source exception:** precompute may do a single
   bounded, read-only read of the Xatu EL table
   `default.canonical_execution_transaction` (top-N addresses, pinned block range)
@@ -85,19 +98,40 @@ The JSON files are a strict contract between precompute and the frontend
 **Why this shape** (vs the sibling `repricing-forensics`): forensics live-scanned
 a 113M-row table (30–60s loads) and read an older producer schema that
 pre-classified txs into editorial buckets. Those buckets were removed in producer
-schema v10 (our data), so we **re-derive** the partition downstream and
+schema v10 (we now read v11), so we **re-derive** the partition downstream and
 **precompute** aggregates to keep the site instant.
 
 ## Key facts
 
 - **Pinned config** (auto-picked; override with `REPRICING_CONFIG_HASH`):
-  `0xc17ac709e44c2100b9ee61cc17b5167643620462fb8a69cc6bad0d61d35f37d2` — v10,
-  covers all schedules, blocks **24,319,986 → 25,319,985** (~2026-01-26 →
-  2026-06-15), `max_divergences_per_block = 1024`.
+  `0x6617c5db2827a7e77b08473306381258bb98e7eea456c90f18513d9e76e66ed3` — v11,
+  covers both schedules, blocks **24,319,986 → 25,319,985** (~2026-01-26 →
+  2026-06-15), `max_divergences_per_block = 8192`. It is the **only** config in
+  the warehouse (verified live 2026-07-29): the previously pinned v10 hash
+  `0xc17ac709…f37d2` and the `7904-prelim` schedule **no longer exist**, so
+  `eip-8037` / `eip-8038` are all that remain.
+- **Producer v11 grew `block_summary` 43 → 54 columns** (verified 2026-07-29) —
+  the eleven additions ship Recommendations 1 + 2 of
+  [`docs/producer-data-recommendations.md`](docs/producer-data-recommendations.md):
+  a six-way EIP-2718 taxonomy `tx_count_type_{legacy,access_list,dynamic_fee,
+  blob,set_code,other}` (the six sum to `tx_count`), `tx_count_simple_transfer` +
+  `tx_count_contract_call`, the 13-bin `gas_delta_pct_hist` (`Array(Int32)`; bin
+  sum == `tx_count`; **empty ⟺ written pre-v11** — pad, never filter), and the
+  class-grain denominator `baseline_gas_used_sum`. ⚠️ **BREAKING:**
+  `tx_count_creation` was **redefined** to tx-level creations (`to IS NULL`) — it
+  is no longer the v10 state-op creation count. The two **exact** partitions of
+  `tx_count` are `no_state + runtime_state` and `creation + simple_transfer +
+  contract_call`; `tx_count_authorization` and the redefined `tx_count_creation`
+  are **overlapping overlays**, members of neither. `_divergence` (113 cols) and
+  `_block_coverage` (22) are unchanged — v11 was purely additive on
+  `block_summary`. Column semantics: [`docs/warehouse.md`](docs/warehouse.md).
 - **Gas-limit sweep is `{1×, 10×}`, not `[1,2,4,8]`.** The manifest's
   `gas_limit_multipliers = [1,2,4,8]` is **wrong** (verified empirically
-  2026-07-03): the producer re-runs each failing tx at exactly two limits — `1×`
-  (original) and `10×` (ceiling). `min_multiplier_to_succeed` is the **measured
+  2026-07-03; **re-confirmed against v11 2026-07-30**, measured
+  `min_multiplier_to_succeed` running continuously `0.0031 … 9.9979` over the
+  full 1M-block window, both schedules): the producer
+  re-runs each failing tx at exactly two limits — `1×` (original) and `10×`
+  (ceiling). `min_multiplier_to_succeed` is the **measured
   ratio** `schedule_gas_used / tx_gas_limit` from the run that completes (`0 <
   min_mult <= 10`; NULL ⟺ not rescued even at `10×`), **not** a swept tier. So
   `TOP_MULTIPLIER = 10`, and `min_mult > 8` rows are genuinely rescued at `≤10×`
@@ -140,7 +174,11 @@ tests/            # partition predicate + DB partition-identity tests
   empirical investigation that locked the partition predicate. `groups.py` is the
   current truth where they differ.
 - [`docs/producer-data-recommendations.md`](docs/producer-data-recommendations.md)
-  — still-open additive-column proposals for the upstream producer.
+  — Recommendations 1 and 2 **shipped in producer v11**; the doc is kept as a
+  dated record of what was proposed vs what landed (incl. the naming deltas).
+  Remaining proposals — e.g. the calldata/selector field referenced from
+  [`docs/labeling-expansion-plan.md`](docs/labeling-expansion-plan.md) — are
+  still open.
 - [`README.md`](README.md) — human-facing project overview and setup.
 </content>
 </invoke>

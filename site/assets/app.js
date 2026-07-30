@@ -36,21 +36,31 @@
  *      groups: {
  *        "2": {   // Succeeds with changes — txs with a gas change (gas_delta != 0)
  *          label:str, signed:false, note:str, count:int,
- *          gas_bins: [ { lo:int, hi:int|null, count_gas_only:int,          // real gas
- *                        count_drillin:int, count:int }, ... ],            // units; hi excl,
- *          sum_gas_delta:int, min_gas_delta:int, max_gas_delta:int },      // null=catch-all
- *        "3"|"4": {   // signed exact per-tx log2 magnitude bins
+ *          gas_bins: [ { lo:int, hi:int|null, count_gas_only:int,     // real gas units;
+ *                        count_drillin:int, count:int }, ... ],       // hi excl, null=catch-all
+ *          sum_gas_delta:int, min_gas_delta:int, max_gas_delta:int,   // BOTH cohorts
+ *          pct_cohort:"gas_only",                                     // pct_* cover gas_only ONLY
+ *          pct_bins: [ { lo:int, hi:int|null, count:int }, ... ],     // 13 bins, hi excl, null=≥500%
+ *          pct_covered_count:int, pct_note:str,
+ *          sum_gas_delta_gas_only:int, baseline_gas_used_sum:int,
+ *          gas_delta_pct_of_baseline:float|null },                    // ratio of sums, signed %
+ *        "3"|"4": {   // signed exact per-tx log2 magnitude bins; pct_cohort:"drillin"
  *          label:str, signed:true, note:str, count:int,
  *          bins: [ { bin_log2:int, sign:-1|1, count:int }, ... ],
  *          percentiles: { p01,p10,p25,p50,p75,p90,p99 : int },
  *          sum_gas_delta:int, min_gas_delta:int, max_gas_delta:int,
+ *          pct_cohort:"drillin",                                  // per-tx drill-in route
  *          pct_bins: [ { lo:int, hi:int|null, count:int }, ... ],  // % of baseline gas;
  *          pct_covered_count:int, pct_note:str } } }              // hi excl, null=≥500% catch-all
  *
  * 4) group_categories.json
  *    { schedule:str, flavour:"opcode"|"state",
  *      g2: { label, count, gas_only_count:int, drillin_count:int,
- *            state_driver_mix:[{key,count}],                     // gas_only cohort (native driver counts)
+ *            state_driver_mix:[{key,count}],       // PARTITION of gas_only_count: no_state|runtime_state
+ *            tx_shape_mix:[{key,count}],           // PARTITION of gas_only_count: simple_transfer|contract_call|contract_creation (no authorization member — see tx_overlay_mix)
+ *            tx_type_mix:[{key,count}],            // PARTITION of gas_only_count, EIP-2718: legacy|access_list|dynamic_fee|blob|set_code|unknown (zero-filled)
+ *            gas_only_mix_note:str,                // the three mixes above cover the gas_only cohort ONLY
+ *            tx_overlay_mix:[{key,count}], tx_overlay_note:str,  // OVERLAY, not a partition: authorization
  *            state_driver_mix_drillin:[{key,count}],             // drill-in subset (state_gas_category)
  *            change_type_mix:[{key,count}], change_type_note:str }, // OVERLAPPING counts
  *      g3: { label, count, multiplier_histogram:[{multiplier,count}], // multiplier: 2|4|6|8|10, binned over the real (1,10] sweep (top bin open-ended)
@@ -496,10 +506,18 @@ function renderGasDeltaHist(divId, group, color) {
   }), { responsive: true, displayModeBar: false });
 }
 
-// Per-tx gas-diff distribution for a changed group (G3/G4). Prefers a percentage
-// histogram (share of baseline gas) when the precompute has emitted pct_bins;
-// otherwise falls back to the absolute signed log2 histogram. The G2 gas_only
-// cohort cannot form a per-tx ratio, so it keeps renderG2GasHist (absolute).
+// Per-tx gas-diff distribution for a changed group. This is the G3/G4 auto-router:
+// it prefers the percentage histogram (share of baseline gas) when the precompute
+// has emitted pct_bins, else falls back to the absolute signed log2 histogram.
+//
+// Do NOT route group "2" through here. G2 does have a percent view as of producer
+// schema v11 (block_summary.gas_delta_pct_hist), but it covers only the gas_only
+// aggregate cohort, whereas G2's absolute gas_bins cover gas_only + drill-in
+// members. The two cover DIFFERENT cohorts, so neither subsumes the other and
+// overview.html deliberately renders them as two separate panels — renderPctHist
+// for the percent view and renderG2GasHist for the cross-cohort absolute view —
+// each labelled with its own cohort. Auto-routing would silently swap one for the
+// other and drop the drill-in members from the only chart that shows them.
 function renderGroupGasHist(divId, group, color) {
   if (group && group.pct_bins) return renderPctHist(divId, group, color);
   return renderGasDeltaHist(divId, group, color);
@@ -511,9 +529,17 @@ function pctBinLabel(b) {
   return b.lo + '–' + b.hi + '%';
 }
 
-// Percent gas-diff histogram: per-tx 100*gas_delta/baseline_gas_used over the
-// fixed signed bin edges from docs/producer-data-recommendations.md. Negative
-// bins (schedule cheaper) use the neg color, non-negative (costlier) the pos color.
+// Percent gas-diff histogram: 100*gas_delta/baseline_gas_used over a fixed set of
+// signed bin edges (originally proposed in docs/producer-data-recommendations.md,
+// now shipped as the producer column block_summary.gas_delta_pct_hist). Negative
+// bins (schedule cheaper) use the neg color, non-negative (costlier) the pos color
+// — pass no `color` to keep that diverging scale.
+//
+// Serves BOTH routes, which share these edges and the {lo,hi,count} entry shape:
+// G3/G4 pct_bins are computed per-tx from drill-in rows (pct_cohort "drillin");
+// G2 pct_bins are the summed producer class-grain array over the gas_only cohort
+// only (pct_cohort "gas_only"). The renderer is identical either way; the cohort
+// difference is carried in the caller's note text, not here.
 function renderPctHist(divId, group, color) {
   const t = theme();
   const bins = group.pct_bins || [];

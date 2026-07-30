@@ -3,9 +3,9 @@
   "flavour": "opcode",
   "g2": {
     "label": "Succeeds with changes",
-    "count": 121962205,
+    "count": 121962444,
     "gas_only_count": 119031666,
-    "drillin_count": 2930539,
+    "drillin_count": 2930778,
     "state_driver_mix": [
       {
         "key": "no_state",
@@ -14,24 +14,64 @@
       {
         "key": "runtime_state",
         "count": 0
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 661370
       },
       {
-        "key": "creation",
-        "count": 181694
+        "key": "contract_call",
+        "count": 118188602
       },
+      {
+        "key": "contract_creation",
+        "count": 181694
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 15066087
+      },
+      {
+        "key": "access_list",
+        "count": 147365
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 101737076
+      },
+      {
+        "key": "blob",
+        "count": 349163
+      },
+      {
+        "key": "set_code",
+        "count": 1731975
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "gas_only_mix_note": "state_driver_mix, tx_shape_mix and tx_type_mix are producer class-grain counts over the gas_only aggregate cohort ONLY \u2014 each is a true partition summing to gas_only_count, and none of them cover the drill-in members. contract_creation is the tx-level creation count (to IS NULL). Unlike the g3/g4 taxonomy, EIP-7702 authorization txs are NOT carved out here: they fall in contract_call (or simple_transfer when calldata is empty); their count is in tx_overlay_mix.",
+    "tx_overlay_mix": [
       {
         "key": "authorization",
         "count": 1731975
       }
     ],
+    "tx_overlay_note": "Overlay, NOT a partition: authorization counts gas_only txs carrying an EIP-7702 authorization list. It overlaps tx_shape_mix and tx_type_mix and must not be added to either.",
     "state_driver_mix_drillin": [
       {
         "key": "none",
-        "count": 2732347
+        "count": 2732574
       },
       {
         "key": "access_list",
-        "count": 197470
+        "count": 197482
       },
       {
         "key": "contract_creation",
@@ -41,19 +81,19 @@
     "change_type_mix": [
       {
         "key": "gas_changed",
-        "count": 121962023
+        "count": 121962262
       },
       {
         "key": "event_logs_changed",
-        "count": 2284786
+        "count": 2285003
       },
       {
         "key": "output_changed",
-        "count": 687834
+        "count": 687858
       },
       {
         "key": "logs_bloom_changed",
-        "count": 717927
+        "count": 718000
       },
       {
         "key": "trace_only",
@@ -64,11 +104,11 @@
   },
   "g3": {
     "label": "Fixable with gas-limit increase",
-    "count": 37677871,
+    "count": 37685131,
     "multiplier_histogram": [
       {
         "multiplier": 2,
-        "count": 37669416
+        "count": 37676676
       },
       {
         "multiplier": 4,
@@ -90,51 +130,51 @@
     "state_gas_category": [
       {
         "key": "access_list",
-        "count": 1528905
+        "count": 1528971
       },
       {
         "key": "contract_creation",
-        "count": 22740
+        "count": 22741
       }
     ],
     "tx_shape_mix": [
       {
         "key": "simple_transfer",
-        "count": 460502
+        "count": 461949
       },
       {
         "key": "contract_call",
-        "count": 37096512
+        "count": 37102320
       },
       {
         "key": "contract_creation",
-        "count": 22740
+        "count": 22741
       },
       {
         "key": "authorization",
-        "count": 98117
+        "count": 98121
       }
     ],
     "tx_type_mix": [
       {
         "key": "legacy",
-        "count": 3658811
+        "count": 3660311
       },
       {
         "key": "access_list",
-        "count": 69411
+        "count": 69418
       },
       {
         "key": "dynamic_fee",
-        "count": 33830764
+        "count": 33836512
       },
       {
         "key": "blob",
-        "count": 20768
+        "count": 20769
       },
       {
         "key": "set_code",
-        "count": 98117
+        "count": 98121
       },
       {
         "key": "unknown",
@@ -142,8 +182,8 @@
       }
     ],
     "is_create": {
-      "true": 22740,
-      "false": 37655131
+      "true": 22741,
+      "false": 37662390
     },
     "oog_pattern": [
       {
@@ -166,11 +206,11 @@
   },
   "g4": {
     "label": "Potentially broken",
-    "count": 1113223,
+    "count": 1113286,
     "fixability": [
       {
         "key": "not_gas_fixable",
-        "count": 1113086
+        "count": 1113149
       },
       {
         "key": "still_oog_at_ceiling",
@@ -184,11 +224,11 @@
     "break_reason": [
       {
         "key": "oog",
-        "count": 248390
+        "count": 248407
       },
       {
         "key": "non_oog_revert",
-        "count": 864833
+        "count": 864879
       },
       {
         "key": "other",
@@ -198,7 +238,7 @@
     "oog_bottleneck_kind": [
       {
         "key": "Stipend2300",
-        "count": 232403
+        "count": 232419
       },
       {
         "key": "FixedGas",
@@ -212,7 +252,7 @@
     "status_flip": [
       {
         "key": "success_to_fail",
-        "count": 1113223
+        "count": 1113286
       },
       {
         "key": "fail_to_fail",
@@ -226,7 +266,7 @@
     "state_gas_category": [
       {
         "key": "access_list",
-        "count": 136798
+        "count": 136800
       },
       {
         "key": "contract_creation",
@@ -240,7 +280,7 @@
       },
       {
         "key": "contract_call",
-        "count": 1007231
+        "count": 1007291
       },
       {
         "key": "contract_creation",
@@ -248,7 +288,7 @@
       },
       {
         "key": "authorization",
-        "count": 105985
+        "count": 105988
       }
     ],
     "tx_type_mix": [
@@ -262,7 +302,7 @@
       },
       {
         "key": "dynamic_fee",
-        "count": 1004459
+        "count": 1004519
       },
       {
         "key": "blob",
@@ -270,7 +310,7 @@
       },
       {
         "key": "set_code",
-        "count": 105985
+        "count": 105988
       },
       {
         "key": "unknown",

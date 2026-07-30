@@ -1,5 +1,21 @@
 # Verification findings — locking the partition predicate
 
+> **Status (2026-07-29) — the warehouse has moved to producer schema v11.** The
+> `analysis_config_hash` this study pinned
+> (`0xc17ac709…f37d2`) **no longer exists in the warehouse**, and neither does the
+> `7904-prelim` schedule; exactly **one** config is present now,
+> `0x6617c5db2827a7e77b08473306381258bb98e7eea456c90f18513d9e76e66ed3` (producer
+> schema **v11**), over the **same** block range. Every mention of "the pinned
+> config" below is therefore **historical**. What still stands, re-confirmed under
+> v11: the partition predicates, and the `gas_limit_multipliers = [1,2,4,8]`
+> manifest-is-wrong finding (measured `min_multiplier_to_succeed` runs
+> continuously `0.0031 … 9.9979`). Full detail — including a **breaking**
+> `tx_count_creation` redefinition — in
+> [§ Addendum — producer schema v11](#addendum--producer-schema-v11-2026-07-29) at
+> the end of this file. As always,
+> [`../src/repricing_impact/groups.py`](../src/repricing_impact/groups.py) is the
+> current truth where anything here disagrees.
+
 > **Historical record (2026-06-30), reinterpreted to current logic.** This
 > documents the empirical study that locked the partition. The **current**
 > predicate lives in
@@ -13,7 +29,9 @@
 >   (original) and `10×` (ceiling), and `min_multiplier_to_succeed` is the
 >   **measured ratio** `schedule_gas_used / tx_gas_limit` from the completing run
 >   — not a swept tier. So `TOP_MULTIPLIER = 10`, values run continuously up to
->   `10` (empirical max 9.9979), and the old "top tier 8×" / R3 `min_mult ≤ 8`
+>   `10` (empirical max 9.9979 on this v10 run; **re-measured 9.9979 over v11
+>   too** — the `10` ceiling stands), and the old "top tier 8×" / R3
+>   `min_mult ≤ 8`
 >   clamp is **gone**: the whole `1 < min_mult <= 10` range is G3, and G4 is
 >   strictly `min_mult IS NULL`. The G4 "does more gas help" verdict comes from
 >   `replay_halt_oog` (the `10×`-ceiling halt kind), not the `oog_*` columns.
@@ -44,6 +62,9 @@
 1. **Sample config:** `0xc17ac709e44c2100b9ee61cc17b5167643620462fb8a69cc6bad0d61d35f37d2`
    — v10, has all three schedules, **1,000,000 blocks each**, blocks
    **24,319,986 → 25,319,985**, most recent `updated_at`. Use it.
+   ⚠️ **Superseded 2026-07-29:** this config and the `7904-prelim` schedule are
+   gone; the warehouse now holds one v11 config, `0x6617c5db…6ed3`, over the same
+   block range. See the status note at the top and the v11 addendum.
 2. **`min_multiplier_to_succeed` is a CONTINUOUS measured ratio** (`Nullable(Float64)`),
    NOT a discrete swept tier. It equals `schedule_gas_used / tx_gas_limit` from the run
    that completes; values run smoothly from ~0.013 up to the `10×` ceiling (`<1` is
@@ -64,11 +85,20 @@
    per-tx partition `G1 + gas_only + G2_drillin + G3 + G4 + af == tx_count` closes exactly
    (diff = 0) on non-truncated blocks.
 7. **All required columns exist in v10** (one naming note: `block_timestamp`, not
-   `block_time`/`time`). All enum domains match the handover.
+   `block_time`/`time`). All enum domains match the handover. ⚠️ **v11
+   annotation:** still all present, but `block_summary` has since grown 43 → 54
+   columns and `tx_count_creation` was **redefined** — see the v11 addendum.
 
 ---
 
 ## 1. Sample config
+
+> ⚠️ **Superseded 2026-07-29.** The whole config survey below is a dated snapshot
+> of the v10 warehouse. **None** of these four hashes exist any more — exactly one
+> config is present today (`0x6617c5db…6ed3`, producer schema v11, two schedules,
+> the same 1,000,000-block range). Kept as the record of how the config was
+> chosen; `config.resolve_config_hash()` re-runs that auto-pick live, so no code
+> change was needed for the rotation.
 
 `gas_analysis_run.manifest_json` + per-(config, schedule) `block_coverage` counts:
 
@@ -90,6 +120,18 @@ Manifest essentials: `producer_schema_version=10`,
 **wrong** (corrected 2026-07-03) — the real sweep is `{1×, 10×}` (see the header note
 and § 2). Schedules: `7904-prelim` (ExecutionOnly), `eip-8037` (Both — state-creation
 gas + reservoir), `eip-8038` (Both — state access/write repricing, non-uniform).
+
+⚠️ **Superseded 2026-07-29 (manifest essentials only).** Under v11:
+`producer_schema_version = 11`, `producer_git_commit =
+e91fe9d368f485fd84cd6e3ec3c58c9124af6d7e`, `max_divergences_per_block` **raised**,
+and `7904-prelim` is gone (only `eip-8037` / `eip-8038` remain). The `1024` above is
+retained deliberately as the **dated historical record** of what the v10 run used —
+this is the one place in the repo that still states a cap number, and it is a
+historical one. Every other mention refers to it by name as "the producer's
+per-block drill-in cap"; the **live** value is stated in exactly two files,
+[`../AGENTS.md`](../AGENTS.md) (Key facts) and [`warehouse.md`](warehouse.md). The
+`gas_limit_multipliers = [1,2,4,8]`-is-wrong warning above stands **verbatim** —
+v11 re-confirms it.
 
 Per-schedule block range is identical across schedules for this config
 (24,319,986–25,319,985), so eip-8037 and eip-8038 compare on like-for-like blocks — no
@@ -196,7 +238,7 @@ drill-in row stored** (= `expected_drill_in_count`), independent of truncation.
 `expected_drill_in_count == retained_drill_in_count == tx_count_stored`. On the
 truncated block, `tx_count_stored == expected_drill_in_count` (e.g. 381) but
 `retained_drill_in_count` is smaller (e.g. 305) — the gap is drill-ins the producer
-dropped at the 1024 cap. So:
+dropped at its per-block drill-in cap. So:
 
 - The partition identity uses **`tx_count_stored`** (the intended, pre-truncation count).
 - The number of `_divergence` rows you can actually count is **`retained_drill_in_count`**,
@@ -223,6 +265,12 @@ drill-ins, not a new source of rows.)
 Verified via `system.columns` for `database='gas_analysis'`. **Every** column the plan
 relies on exists. Notes/caveats:
 
+> ⚠️ **v11 annotation (2026-07-29).** This enumeration is a v10 snapshot and is now
+> **incomplete**: `block_summary` grew **43 → 54** columns under producer v11
+> (`_divergence` stayed at 113, `_block_coverage` at 22). Nothing listed below was
+> removed or renamed, but one was **redefined** — see the note on the state-driver
+> counts and the v11 addendum.
+
 - **`_divergence`:** all present — `min_multiplier_to_succeed` `Nullable(Float64)`,
   `schedule_success`/`baseline_success` `Bool`, `replay_halt_oog` `Nullable(Bool)`
   (the top-tier/`10×` halt kind — authoritative G4 fixability signal),
@@ -241,6 +289,12 @@ relies on exists. Notes/caveats:
   (`Array(Int32)`), opcode arrays (`Array(UInt8/UInt64)`), `class`
   (`LowCardinality(String)`), F2/F3/F8 state-driver counts
   `tx_count_creation`/`_authorization`/`_runtime_state`/`_no_state` (`Nullable(UInt32)`).
+  ⚠️ **v11 BREAKING:** `tx_count_creation` was **redefined** to tx-level contract
+  creations (`to IS NULL`) — no longer the v10 state-op creation count. The state
+  partition is now `tx_count_no_state + tx_count_runtime_state == tx_count`
+  (those two alone), and `tx_count_creation` / `tx_count_authorization` are
+  **overlapping overlays**, not partition members. Treating these four as
+  mutually exclusive — as the v10 reading did — double-counts.
 
 **Nothing missing or renamed** beyond the `block_timestamp` naming and the
 `outer_limit_only_failure` being `UInt8` not `Bool`.
@@ -366,9 +420,95 @@ duplicate `row_id`s over the 1M-block range). The implemented approach:
 ### Other locked facts for the implementers
 
 - Pinned config hash: `0xc17ac709e44c2100b9ee61cc17b5167643620462fb8a69cc6bad0d61d35f37d2`.
+  ⚠️ **Superseded 2026-07-29** by `0x6617c5db2827a7e77b08473306381258bb98e7eea456c90f18513d9e76e66ed3`
+  (producer schema v11); the v10 hash no longer exists in the warehouse.
 - Block range 24,319,986–25,319,985; identical per schedule (no per-schedule fallback).
+  **Unchanged under v11.**
 - Timestamp column for day-bucketing is **`block_timestamp`**.
 - `outer_limit_only_failure` is `UInt8` (0/1), compare `= 1` not truthiness on Bool.
 - Partition identity `unchanged + gas_only + stored == tx_count` is verified true
   (100%); G5 = `stored − retained` on truncated blocks (~0.015% of blocks, ~0.08% of
   drill-ins) and 0 otherwise.
+
+---
+
+## Addendum — producer schema v11 (2026-07-29)
+
+A separate live verification pass against the same warehouse, after the producer
+moved to **schema v11**. Everything above is left as the dated v10 record; this
+section is the delta. Column semantics live in
+[`warehouse.md`](warehouse.md#v11-block_summary-columns-producer-schema-11) — this
+is the *provenance* of the check.
+
+### What changed
+
+1. **Config rotation.** `gas_analysis_run` and `gas_analysis_block_coverage` now
+   contain exactly **one** config,
+   `0x6617c5db2827a7e77b08473306381258bb98e7eea456c90f18513d9e76e66ed3`
+   (`producer_schema_version = 11`, `producer_git_commit =
+   e91fe9d368f485fd84cd6e3ec3c58c9124af6d7e`). The v10 hash `0xc17ac709…f37d2` is
+   **gone from every table**, and so is the `7904-prelim` schedule — only
+   `eip-8037` and `eip-8038` remain. Block range is **unchanged**: 24,319,986 →
+   25,319,985, 1,000,000 blocks per schedule. The producer's per-block drill-in cap
+   (`max_divergences_per_block`) was **raised** — the v10 value is recorded in § 1
+   above as a historical fact; the live value is pinned in
+   [`../AGENTS.md`](../AGENTS.md) and [`warehouse.md`](warehouse.md).
+2. **`block_summary` grew 43 → 54 columns** — eleven additive columns implementing
+   Recommendations 1 and 2 of
+   [`producer-data-recommendations.md`](producer-data-recommendations.md): the
+   six-way `tx_count_type_*` EIP-2718 taxonomy, `tx_count_simple_transfer`,
+   `tx_count_contract_call`, `gas_delta_pct_hist` (`Array(Int32)`) and
+   `baseline_gas_used_sum` (`Nullable(UInt64)`). All eleven measured **100%
+   populated (zero nulls)** for both schedules and both `class` values over a
+   50,000-block probe.
+3. **BREAKING: `tx_count_creation` was redefined** to tx-level contract creations
+   (`to IS NULL`). Verified exactly (zero violating block rows in the probe):
+   - `tx_count_creation + tx_count_simple_transfer + tx_count_contract_call ==
+     tx_count` (the tx-**shape** partition), and
+   - `tx_count_no_state + tx_count_runtime_state == tx_count` (the **state-gas**
+     partition, closed by those two alone).
+
+   So `tx_count_authorization` and the redefined `tx_count_creation` are
+   **overlapping overlays**, members of neither partition. The v10-era 4-way sum
+   `no_state + runtime_state + creation + authorization` fails on **25,921**
+   eip-8037 and **23,005** eip-8038 blocks in the 50k probe.
+4. **No drill-in change.** `gas_analysis_divergence` is still **113** columns and
+   `gas_analysis_block_coverage` **22** — v11 was purely additive on
+   `block_summary`, exactly as the recommendations proposed.
+
+### What was re-confirmed
+
+- **The `[1,2,4,8]` manifest value is still wrong.** The v11 manifest still
+  reports it; measured `min_multiplier_to_succeed` runs **continuously** over
+  `0.0031 … 9.9979` on v11 data, re-confirming the real `{1×, 10×}` sweep and
+  `TOP_MULTIPLIER = 10`. Re-measured 2026-07-30 as a chunked `min()`/`max()` over
+  the **full** 1,000,000-block window (config `0x6617c5db…6ed3`, both schedules,
+  `min_multiplier_to_succeed IS NOT NULL`): `eip-8037` `0.0031496 … 9.997885714`,
+  `eip-8038` `0.0074975 … 3.9999984`. The v10 empirical max was 9.9979 — **the
+  v11 max is the same 9.9979**; the ceiling is unchanged and no value exceeds it.
+  ⚠️ An earlier revision of this addendum reported the range as `0.014 … 9.60`;
+  that was a small-probe artifact and is **retracted** — 9.60 is not reproducible
+  at any scale, and `groups.py`'s long-standing 9.9979 was correct all along.
+- **The partition predicates** in
+  [`../src/repricing_impact/groups.py`](../src/repricing_impact/groups.py) —
+  unchanged and still correct under v11.
+
+### Measured v11 G2 distributions (50,000-block probe)
+
+From `gas_delta_pct_hist` over `class = 'gas_only'`. Recorded for sanity-checking
+precompute output — **these are probe figures, not the full 1M-block window; do not
+hardcode them anywhere.**
+
+| measure | eip-8037 | eip-8038 |
+|---|---|---|
+| G2 `gas_only` txs | 1,571,778 | 6,288,929 |
+| modal bin | **`[100,200)` = 31.0%** | **`[25,50)` = 46.8%** |
+| other mass | `[25,50)` 20.7%, `[50,100)` 14.5%, `[200,500)` 1.2%, `[500,∞)` 0.02% | `[1,10)` 17.4%, `[10,25)` 9.2%, `[50,100)` 5.6%, `[100,200)` 0.0006%, nothing >200% |
+| negative bins (schedule cheaper) | 12.0% | 20.2% |
+| ratio-of-sums `gas_delta / baseline_gas_used` | **+38.59%** | **+13.66%** |
+
+⚠️ This **refutes** the "drill-ins skew more extreme than the bulk cohort" caveat
+in [`producer-data-recommendations.md`](producer-data-recommendations.md), which
+predicted a *thinner* `≥100%` tail in the bulk cohort. For eip-8037 the bulk
+`gas_only` cohort is far **fatter** (31.0% in `[100,200)` vs ~2.3% of drill-ins).
+It held for eip-8038.

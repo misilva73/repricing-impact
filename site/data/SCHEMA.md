@@ -113,8 +113,11 @@ bucket — emit raw counts, not percentages.
 
 ## 3. `gas_delta_hist.json`
 
-G2: real gas-unit histogram of **txs with a gas change**. G3/G4: signed log2
-per-tx histogram + percentiles + sum/min/max.
+G2: real gas-unit histogram of **txs with a gas change**, **plus** a
+percent-of-baseline histogram and an aggregate gas-change ratio over its aggregate
+cohort. G3/G4: signed log2 per-tx histogram + percentiles + sum/min/max, **plus** a
+percent-of-baseline histogram. **All three groups carry `pct_bins`** — see the
+cohort/route caveats below, and the machine-readable `pct_cohort` key.
 
 - **G2** (`signed: false`): covers `gas_delta != 0` only — the `gas_only` aggregate
   cohort (from `block_summary.gas_delta_log2_hist`) **+** the Succeeds-with-changes
@@ -129,13 +132,53 @@ per-tx histogram + percentiles + sum/min/max.
   integer exponent; the frontend plots `sign * bin_log2` on the x axis. They also
   carry a **`pct_bins`** percentage histogram of per-tx
   `100 * gas_delta / baseline_gas_used` (share of baseline gas used) over the fixed
-  signed edges `[-100,-50,-25,-10,-1,0,1,10,25,50,100,200,500]` (see
-  `docs/producer-data-recommendations.md`): each entry is `{ lo, hi, count }` with
-  `hi` **exclusive** and `hi: null` the `≥500%` **catch-all**. `pct_covered_count`
-  is the tx count with a usable (`> 0`) baseline denominator; rows without one are
-  excluded from `pct_bins`. This percentage view is computable **only** for the
-  G3/G4 drill-in cohorts (per-tx `baseline_gas_used`); the G2 `gas_only` cohort
-  cannot form a per-tx ratio, so it has **no** `pct_bins` and stays absolute.
+  signed edges `[-100,-50,-25,-10,-1,0,1,10,25,50,100,200,500]`: **13** bins, each
+  entry `{ lo, hi, count }`, **left-closed / right-open** (`hi` is **exclusive**),
+  with `hi: null` the `≥500%` **catch-all** and the whole range bounded below at
+  `-100%`. Computed **locally, per drill-in tx**, hence `pct_cohort: "drillin"` —
+  and their cohort is the **whole group** (every G3/G4 member is a per-tx drill-in
+  row). `pct_covered_count` is the tx count with a usable (`> 0`) baseline
+  denominator; rows without one are excluded from `pct_bins`.
+- **G2 percentage view** (`pct_cohort: "gas_only"`): group `"2"` **also** carries
+  `pct_bins` / `pct_covered_count` / `pct_note`, over the **same 13 edges** and the
+  **same `{ lo, hi, count }` entry shape** (left-closed/right-open, `hi: null` =
+  `≥500%` catch-all) as G3/G4 — but from a **different route** over a **different
+  cohort**. The route is the producer's class-grain
+  `block_summary.gas_delta_pct_hist` (a 13-bin closed-left histogram of
+  `100 * gas_delta / baseline_gas_used` whose bin sum equals the class `tx_count`),
+  summed element-wise across blocks. Those edges shipped as a real producer column
+  in **producer schema v11**; `docs/producer-data-recommendations.md` records the
+  historical *proposal* for them (under the never-shipped name `gas_diff_pct_hist`)
+  and is no longer the source of truth.
+
+**Cohort asymmetry on group `"2"` — read this before comparing its two histograms.**
+`gas_bins` covers the `gas_only` aggregate cohort **plus** the Succeeds-with-changes
+drill-in members. `pct_bins` covers the **`gas_only` aggregate cohort ONLY** — the
+drill-in members counted in `gas_bins` are **not** represented in `pct_bins`. The
+asymmetry is deliberate: neither view subsumes the other (`gas_bins` is the only
+cross-cohort view of the whole group; `pct_bins` is the only baseline-normalised one),
+which is why both are published and why `pct_cohort` exists to make the asymmetry
+machine-readable rather than prose-only. Consequently group `"2"`'s `pct_bins` sum to
+the **`gas_only` tx count** (`group_categories.g2.gas_only_count`), **not** to
+`count` — and for group `"2"` `pct_covered_count` is the number of `gas_only` txs
+actually represented: it **equals** `gas_only_count` when every block row carries a
+populated 13-element array, and is **lower** when any row was written pre-v11 (empty
+array, padded to zeros). That is a **different meaning** from the G3/G4
+`pct_covered_count` (per-tx rows with a usable `> 0` denominator), so the two numbers
+must **not** be compared across groups — `pct_cohort` names which meaning applies.
+
+Group `"2"` additionally publishes the aggregate gas change as a **ratio of sums**:
+`gas_delta_pct_of_baseline = 100 * sum_gas_delta_gas_only / baseline_gas_used_sum`
+(`float | null`, 4 dp), with **both inputs emitted alongside it** so the figure is
+re-derivable from its own keys without a warehouse query. It is **gas-weighted, and
+is NOT the mean of per-tx ratios** — the two differ a lot here, and a mean of per-tx
+ratios would be dominated by tiny transfers where a fixed overhead is a huge
+percentage. Sign follows `gas_delta`: **positive = the schedule is costlier**; no
+`+` is baked into the number. Numerator and denominator are accumulated over the
+**`gas_only` class rows only** — which is exactly why `sum_gas_delta_gas_only`
+exists as a separate key: the pre-existing `sum_gas_delta` spans **both** cohorts
+(`gas_only` + drill-in) and so does not divide into this denominator. The value is
+**`null`** when `baseline_gas_used_sum` is `0` or absent.
 
 ```jsonc
 {
@@ -153,18 +196,30 @@ per-tx histogram + percentiles + sum/min/max.
         { "lo": 512,  "hi": 1024, "count_gas_only": …,  "count_drillin": …, "count": … },
         { "lo": 1024, "hi": null, "count_gas_only": …,  "count_drillin": …, "count": … } // ≥1024 catch-all
       ],
-      "sum_gas_delta": 78557402000, "min_gas_delta": 12, "max_gas_delta": 4500000
+      "sum_gas_delta": 78557402000, "min_gas_delta": 12, "max_gas_delta": 4500000, // BOTH cohorts
+      "pct_cohort": "gas_only",                       // the pct_* keys below cover the gas_only cohort ONLY
+      "pct_bins": [                                   // exactly 13, hi exclusive, ascending lo, always all present
+        { "lo": -100, "hi": -50,  "count": … },        // bounded below at -100%
+        // … [-50,-25) [-25,-10) [-10,-1) [-1,0) [0,1) [1,10) [10,25) [25,50) [50,100) [100,200) [200,500)
+        { "lo": 500,  "hi": null, "count": … }         // ≥500% catch-all
+      ],
+      "pct_covered_count": 3512044,                   // sum of the 13 bin counts == gas_only txs represented
+      "pct_note": "…producer class-grain histogram over the gas_only cohort ONLY…",
+      "sum_gas_delta_gas_only": 77901554000,          // gas_only class rows only — ratio NUMERATOR
+      "baseline_gas_used_sum": 570220118000,          // gas_only class rows only — ratio DENOMINATOR
+      "gas_delta_pct_of_baseline": 13.6617            // float | null — RATIO OF SUMS, signed %, 4 dp
     },
     "3": { "label": "…", "signed": true, "count": …,
            "bins": [ { "bin_log2": 16, "sign": 1, "count": … },
                      { "bin_log2": 16, "sign": -1, "count": … } ],
            "percentiles": { "p01": …, …, "p99": … },   // all int
            "sum_gas_delta": …, "min_gas_delta": …, "max_gas_delta": …,
+           "pct_cohort": "drillin",                    // per-tx route, whole group
            "pct_bins": [ { "lo": -100, "hi": -50, "count": … },  // hi excl
                          // … [-1,0) [0,1) [1,10) … [200,500)
                          { "lo": 500,  "hi": null, "count": … } ], // ≥500% catch-all
            "pct_covered_count": …, "pct_note": "…" },
-    "4": { … "signed": true, "pct_bins": [ … ], "pct_covered_count": …, "pct_note": "…" … }
+    "4": { … "signed": true, "pct_cohort": "drillin", "pct_bins": [ … ], "pct_covered_count": …, "pct_note": "…" … }
   }
 }
 ```
@@ -190,7 +245,12 @@ All `*_mix` / pattern / category / break-reason lists are arrays of
     "count": 3570791,                              // full group (gas_only + drill-in)
     "gas_only_count": 3512044,                     // aggregate cohort (no per-tx rows)
     "drillin_count": 58747,                        // per-tx drill-in members
-    "state_driver_mix": [ { "key": "no_state", "count": … }, … ],   // gas_only cohort native driver counts: no_state|runtime_state|creation|authorization
+    "state_driver_mix": [ { "key": "no_state", "count": … }, { "key": "runtime_state", "count": … } ], // PARTITION of gas_only_count: no_state|runtime_state
+    "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ], // PARTITION of gas_only_count: simple_transfer|contract_call|contract_creation — THREE keys, NO authorization member (unlike g3/g4); contract_creation is the producer's tx-level tx_count_creation (to IS NULL)
+    "tx_type_mix": [ { "key": "legacy", "count": … }, … ],           // PARTITION of gas_only_count, EIP-2718: legacy|access_list|dynamic_fee|blob|set_code|unknown (zero-filled); unknown is the producer's tx_count_type_other
+    "gas_only_mix_note": "state_driver_mix, tx_shape_mix and tx_type_mix … gas_only aggregate cohort ONLY…", // cohort-scope caveat for the three partitions above
+    "tx_overlay_mix": [ { "key": "authorization", "count": … } ],    // OVERLAPPING OVERLAY, not a partition: authorization
+    "tx_overlay_note": "Overlay, NOT a partition…",
     "state_driver_mix_drillin": [ { "key": "authorization", "count": … }, … ], // drill-in subset: state_gas_category (access_list|authorization|contract_creation|transfer_new_account|none)
     "change_type_mix": [ { "key": "gas_changed", "count": … }, … ], // OVERLAPPING: gas_changed|event_logs_changed|output_changed|logs_bloom_changed|trace_only
     "change_type_note": "Change types are non-exclusive…"
@@ -200,8 +260,8 @@ All `*_mix` / pattern / category / break-reason lists are arrays of
     "count": 359646,
     "multiplier_histogram": [ { "multiplier": 2, "count": … }, { "multiplier": 4, … }, { "multiplier": 6, … }, { "multiplier": 8, … }, { "multiplier": 10, … } ], // measured min_mult (= schedule_gas_used/tx_gas_limit) binned over the real (1,10] sweep: (1,2](2,4](4,6](6,8](8,10]; top bin open-ended so bins total the whole G3 cohort
     "state_gas_category": [ { "key": "execution_bound", "count": … }, … ], // execution_bound|state_bound|mixed|unknown
-    "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ],  // simple_transfer|contract_call|contract_creation|authorization (mutually exclusive, zero-filled)
-    "tx_type_mix": [ { "key": "legacy", "count": … }, … ],            // EIP-2718: legacy|access_list|dynamic_fee|blob|set_code|unknown (zero-filled)
+    "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ],  // simple_transfer|contract_call|contract_creation|authorization (mutually exclusive, zero-filled) — FOUR keys over the WHOLE group; cf. g2's three, gas_only cohort only
+    "tx_type_mix": [ { "key": "legacy", "count": … }, … ],            // EIP-2718: legacy|access_list|dynamic_fee|blob|set_code|unknown (zero-filled) — same six keys as g2
     "is_create": { "true": 21578, "false": 338068 },
     "oog_pattern": [ { "key": "call_oog", "count": … }, … ],         // call_oog|top_level_oog|none
     "reservoir": {                               // 8037 only
@@ -217,8 +277,8 @@ All `*_mix` / pattern / category / break-reason lists are arrays of
     "oog_bottleneck_kind": [ { "key": "call_depth", "count": … }, … ], // call_depth|single_frame|unknown
     "status_flip": [ { "key": "success_to_fail", "count": … }, … ], // success_to_fail|fail_to_fail|fail_to_success
     "state_gas_category": [ { "key": "execution_bound", "count": … }, … ],
-    "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ],  // same taxonomy as g3 (zero-filled)
-    "tx_type_mix": [ { "key": "legacy", "count": … }, … ],            // same taxonomy as g3 (zero-filled)
+    "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ],  // same taxonomy as g3 (zero-filled) — four keys over the whole group; cf. g2's three
+    "tx_type_mix": [ { "key": "legacy", "count": … }, … ],            // same taxonomy as g3 (zero-filled) — same six keys as g2
     "reservoir": {                               // 8037 only
       "reservoir_exhausted": { "true": …, "false": … },
       "avg_initial_reservoir": 380000,
@@ -227,6 +287,78 @@ All `*_mix` / pattern / category / break-reason lists are arrays of
   }
 }
 ```
+
+**`g2`: three partitions, one overlay.** The three `g2` `*_mix` partitions are
+producer **class-grain** counts read off `gas_analysis_block_summary`, aggregated over
+the **`gas_only` cohort only** — none of them cover the `drillin_count` members, and
+none of them sum to `count`. Each is a true **partition** of that cohort, emitted in
+a **fixed declared taxonomy order** (not count-sorted), and — where noted —
+zero-filled so every declared key is always present:
+
+- **`state_driver_mix`** — `no_state` | `runtime_state`, in that order. Producer
+  invariant: `tx_count_no_state + tx_count_runtime_state == tx_count` per class row
+  (exact, 0 violating rows), so the two counts sum **exactly** to `gas_only_count`.
+- **`tx_shape_mix`** — `simple_transfer` | `contract_call` | `contract_creation`, in
+  that order. Producer invariant:
+  `tx_count_simple_transfer + tx_count_contract_call + tx_count_creation == tx_count`
+  (exact), so the three sum **exactly** to `gas_only_count`.
+  `simple_transfer` is a non-create tx with **empty calldata** (the
+  destination may still be a contract); `contract_call` is a non-create tx with
+  non-empty calldata.
+- **`tx_type_mix`** — `legacy` | `access_list` | `dynamic_fee` | `blob` | `set_code` |
+  `unknown`, in that order, **zero-filled**. Producer invariant: the six EIP-2718
+  type counts sum to `tx_count`, so the six sum **exactly** to `gas_only_count`.
+  `unknown` is the producer's residual bucket `tx_count_type_other` ("any other
+  EIP-2718 type"), emitted under this repo's existing `unknown` key name so that
+  `g2`/`g3`/`g4` stay key-identical **and** order-identical.
+
+**`tx_overlay_mix` is NOT a partition.** It must never be added to any of the three
+mixes above, and never rendered as a chart of equal weight beside them. It carries
+exactly **one** member today — `authorization`, the `gas_only` txs bearing an
+EIP-7702 authorization list — which **overlaps** `tx_shape_mix` and `tx_type_mix`
+(an authorization tx is *also* counted under `contract_call`, or under
+`simple_transfer` when its calldata is empty). By definition `tx_overlay_mix` holds
+only counts that belong to **no** partition, which is why the redefined
+`tx_count_creation` is **not** duplicated into it — that count appears exactly once
+in the payload, as `tx_shape_mix.contract_creation`, where it *is* a legitimate
+partition member. The caveat travels **in the payload** as the sibling
+`tx_overlay_note` string, and the cohort-scope caveat for the three partitions
+travels as `gas_only_mix_note`; both follow the `change_type_mix` /
+`change_type_note` precedent and are rendered verbatim as prose (`textContent`),
+never hardcoded in the HTML.
+
+**BREAKING — `tx_count_creation` was REDEFINED by producer schema v11.** It used to
+be a **state-op creation** count; under v11 it is a **tx-level contract-creation**
+count (`to IS NULL`). This **silently changes the meaning** of any previously
+published number derived from it. Consequences for this contract: the pre-v11
+four-key `state_driver_mix`
+(`no_state|runtime_state|creation|authorization`) was **never a partition under
+v11** — it double-counted, because `creation` and `authorization` are *overlays* over
+the state split, not members of it — so it has been **replaced** by the two-key
+partition above, with the creation count moving to `tx_shape_mix.contract_creation`
+and the authorization count moving to `tx_overlay_mix`. Committed JSON generated
+before this change still carries the old four-key `state_driver_mix` and **none** of
+the new keys, so the frontend guards every new read (`|| []`, `|| ''`).
+
+**`tx_shape_mix` / `tx_type_mix`: `g2` vs `g3`/`g4`.** Same key names and the same
+declared order, but two different routes over two different cohorts — and one
+deliberate key-set difference:
+
+- **Cohort.** `g3`/`g4`'s mixes cover the **whole group** (every member is a per-tx
+  drill-in row). `g2`'s cover the **`gas_only` cohort only** and never the drill-in
+  members — hence they sum to `gas_only_count`, not `count`.
+- **Route.** `g3`/`g4` are derived locally from per-tx `divergence_tx` **`CASE`
+  expressions**; `g2` is read straight off the producer's class-grain
+  `block_summary` counts.
+- **Key set.** `g3`/`g4` `tx_shape_mix` has **four** keys, because the drill-in
+  `CASE` gives `authorization` its own precedence slot **ahead of** `contract_call`.
+  The producer's 3-way partition does **not** carve authorizations out, so `g2`'s
+  `tx_shape_mix` has **three** keys and `authorization` is **absent** from it — not
+  emitted as `0`, not as `null`. (A `0` would be an affirmative *false* claim: `g2`
+  does contain EIP-7702 txs, and their count is in `tx_overlay_mix`.) A corollary
+  worth stating plainly: `g2`'s `contract_call` **still contains** authorization txs
+  whereas `g3`/`g4`'s does not, so that one key is not directly comparable across
+  groups. `tx_type_mix` is **six** keys in all three groups.
 
 ---
 
@@ -334,11 +466,18 @@ enrichment fields; `source`/`confidence`/`is_mev_bot`/`mev_role`/`is_proxy`/
 - **`halt_rate`** — `halt_count / total_tx` rounded to 6 dp, or **`null`** when
   `total_tx` is `null` or `0`.
 
-**Caveat (biases `halt_rate` low):** the `_divergence` drill-in cap
-(`max_divergences_per_block = 1024`) can under-report halts for busy recipients
-on truncated blocks, so `halt_count` — and therefore `halt_rate` — is a lower
-bound for high-traffic entry contracts. See `meta.truncation.truncated_share`
-for the truncated-block share.
+**Caveat (biases `halt_rate` low):** the producer's per-block drill-in cap
+(`max_divergences_per_block`) can under-report halts for busy recipients on
+truncated blocks, so `halt_count` — and therefore `halt_rate` — is a lower bound for
+high-traffic entry contracts. The cap's **pinned value is deliberately not repeated
+here** so it cannot go stale — it lives in `AGENTS.md` (Key facts) and
+[`../../docs/warehouse.md`](../../docs/warehouse.md). Note the cap was **raised
+substantially** by the producer schema v11 run, so far fewer blocks truncate and the
+bias is correspondingly **much weaker** than under the earlier run: treat this as a
+narrow-but-real lower bound, not a large one. The **direction** is unchanged, and the
+caveat still applies to whichever blocks do truncate. Read the actual severity for
+the run in front of you off `meta.truncation.truncated_share` rather than assuming a
+magnitude — and note the currently published JSON may predate the raised cap.
 
 **`oog_recipient_rate_leaderboard`** is the *same rows* re-ranked by `halt_rate`
 descending instead of `halt_count`. It surfaces the entry contracts where a halt
@@ -817,6 +956,19 @@ frontend dev when the real JSON is unavailable.
 order statistics. Each group object carries a `note` field describing its source
 (magnitude-only for G2, signed per-tx for G3/G4); the overview page surfaces
 these notes beside the percentile table.
+
+The **G2 percentage view** (`pct_bins` under `pct_cohort: "gas_only"`) is not a
+locally-computed per-tx distribution at all: it is a **producer-side class-grain
+histogram**, whose bins were accumulated inside the producer over per-block aggregate
+rows and are merely summed element-wise here. It therefore carries **no
+percentiles** — `percentiles` stays a `"3"`/`"4"`-only key — and none can be recovered
+from it beyond crude bin-edge interpolation. Its provenance is also not comparable to
+the G3/G4 `pct_bins`, which are binned locally from real per-tx ratios even though the
+bin edges and entry shape are identical; `pct_cohort` is the key that tells the two
+routes apart. The same holds for `gas_delta_pct_of_baseline`: it is an exact
+**ratio of sums** over the `gas_only` class rows, not a percentile or an average of
+per-tx percentages, so it is not derivable from `pct_bins` and need not sit at any
+bin's midpoint.
 
 ## Note on categorical enum values
 

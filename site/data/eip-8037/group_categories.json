@@ -3,9 +3,9 @@
   "flavour": "state",
   "g2": {
     "label": "Succeeds with changes",
-    "count": 40049141,
+    "count": 40049252,
     "gas_only_count": 38414804,
-    "drillin_count": 1634337,
+    "drillin_count": 1634448,
     "state_driver_mix": [
       {
         "key": "no_state",
@@ -14,24 +14,64 @@
       {
         "key": "runtime_state",
         "count": 20085114
+      }
+    ],
+    "tx_shape_mix": [
+      {
+        "key": "simple_transfer",
+        "count": 307194
       },
       {
-        "key": "creation",
-        "count": 9507
+        "key": "contract_call",
+        "count": 38098103
       },
+      {
+        "key": "contract_creation",
+        "count": 9507
+      }
+    ],
+    "tx_type_mix": [
+      {
+        "key": "legacy",
+        "count": 2783062
+      },
+      {
+        "key": "access_list",
+        "count": 62451
+      },
+      {
+        "key": "dynamic_fee",
+        "count": 33713044
+      },
+      {
+        "key": "blob",
+        "count": 282235
+      },
+      {
+        "key": "set_code",
+        "count": 1574012
+      },
+      {
+        "key": "unknown",
+        "count": 0
+      }
+    ],
+    "gas_only_mix_note": "state_driver_mix, tx_shape_mix and tx_type_mix are producer class-grain counts over the gas_only aggregate cohort ONLY \u2014 each is a true partition summing to gas_only_count, and none of them cover the drill-in members. contract_creation is the tx-level creation count (to IS NULL). Unlike the g3/g4 taxonomy, EIP-7702 authorization txs are NOT carved out here: they fall in contract_call (or simple_transfer when calldata is empty); their count is in tx_overlay_mix.",
+    "tx_overlay_mix": [
       {
         "key": "authorization",
         "count": 1574012
       }
     ],
+    "tx_overlay_note": "Overlay, NOT a partition: authorization counts gas_only txs carrying an EIP-7702 authorization list. It overlaps tx_shape_mix and tx_type_mix and must not be added to either.",
     "state_driver_mix_drillin": [
       {
         "key": "none",
-        "count": 1438099
+        "count": 1438188
       },
       {
         "key": "authorization",
-        "count": 195976
+        "count": 195998
       },
       {
         "key": "contract_creation",
@@ -41,46 +81,46 @@
     "change_type_mix": [
       {
         "key": "gas_changed",
-        "count": 39875667
+        "count": 39875773
       },
       {
         "key": "event_logs_changed",
-        "count": 1252778
+        "count": 1252873
       },
       {
         "key": "output_changed",
-        "count": 430282
+        "count": 430301
       },
       {
         "key": "logs_bloom_changed",
-        "count": 908100
+        "count": 908172
       },
       {
         "key": "trace_only",
-        "count": 6230
+        "count": 6231
       }
     ],
     "change_type_note": "Change types are non-exclusive: a tx can be counted under several (e.g. a gas change plus a logs-bloom change), so they do not sum to the group total. gas_changed spans the gas_only cohort and drill-in members with gas_delta != 0; the other flags exist only on drill-in members."
   },
   "g3": {
     "label": "Fixable with gas-limit increase",
-    "count": 50684649,
+    "count": 50754721,
     "multiplier_histogram": [
       {
         "multiplier": 2,
-        "count": 35169140
+        "count": 35237593
       },
       {
         "multiplier": 4,
-        "count": 14748726
+        "count": 14750282
       },
       {
         "multiplier": 6,
-        "count": 646813
+        "count": 646859
       },
       {
         "multiplier": 8,
-        "count": 118841
+        "count": 118858
       },
       {
         "multiplier": 10,
@@ -90,11 +130,11 @@
     "state_gas_category": [
       {
         "key": "authorization",
-        "count": 710899
+        "count": 710964
       },
       {
         "key": "contract_creation",
-        "count": 230486
+        "count": 230505
       },
       {
         "key": "transfer_new_account",
@@ -108,37 +148,37 @@
       },
       {
         "key": "contract_call",
-        "count": 49734828
+        "count": 49804816
       },
       {
         "key": "contract_creation",
-        "count": 230486
+        "count": 230505
       },
       {
         "key": "authorization",
-        "count": 710899
+        "count": 710964
       }
     ],
     "tx_type_mix": [
       {
         "key": "legacy",
-        "count": 5592313
+        "count": 5593459
       },
       {
         "key": "access_list",
-        "count": 61394
+        "count": 61399
       },
       {
         "key": "dynamic_fee",
-        "count": 44119267
+        "count": 44188109
       },
       {
         "key": "blob",
-        "count": 200776
+        "count": 200790
       },
       {
         "key": "set_code",
-        "count": 710899
+        "count": 710964
       },
       {
         "key": "unknown",
@@ -146,8 +186,8 @@
       }
     ],
     "is_create": {
-      "true": 230486,
-      "false": 50454163
+      "true": 230505,
+      "false": 50524216
     },
     "oog_pattern": [
       {
@@ -173,19 +213,19 @@
     ],
     "reservoir": {
       "reservoir_exhausted": {
-        "true": 43408419,
-        "false": 7276230
+        "true": 43412760,
+        "false": 7341961
       },
-      "avg_runtime_state_gas_spillover": 422692
+      "avg_runtime_state_gas_spillover": 422135
     }
   },
   "g4": {
     "label": "Potentially broken",
-    "count": 1282144,
+    "count": 1282245,
     "fixability": [
       {
         "key": "not_gas_fixable",
-        "count": 1281886
+        "count": 1281987
       },
       {
         "key": "still_oog_at_ceiling",
@@ -199,11 +239,11 @@
     "break_reason": [
       {
         "key": "oog",
-        "count": 336890
+        "count": 336911
       },
       {
         "key": "non_oog_revert",
-        "count": 945254
+        "count": 945334
       },
       {
         "key": "other",
@@ -213,17 +253,17 @@
     "oog_bottleneck_kind": [
       {
         "key": "FractionalGas",
-        "count": 241555
+        "count": 241567
       },
       {
         "key": "FixedGas",
-        "count": 60313
+        "count": 60320
       }
     ],
     "status_flip": [
       {
         "key": "success_to_fail",
-        "count": 1282144
+        "count": 1282245
       },
       {
         "key": "fail_to_fail",
@@ -237,7 +277,7 @@
     "state_gas_category": [
       {
         "key": "authorization",
-        "count": 195002
+        "count": 195012
       },
       {
         "key": "contract_creation",
@@ -251,7 +291,7 @@
       },
       {
         "key": "contract_call",
-        "count": 1087140
+        "count": 1087231
       },
       {
         "key": "contract_creation",
@@ -259,7 +299,7 @@
       },
       {
         "key": "authorization",
-        "count": 195002
+        "count": 195012
       }
     ],
     "tx_type_mix": [
@@ -273,7 +313,7 @@
       },
       {
         "key": "dynamic_fee",
-        "count": 1082094
+        "count": 1082185
       },
       {
         "key": "blob",
@@ -281,7 +321,7 @@
       },
       {
         "key": "set_code",
-        "count": 195002
+        "count": 195012
       },
       {
         "key": "unknown",
@@ -291,7 +331,7 @@
     "reservoir": {
       "reservoir_exhausted": {
         "true": 0,
-        "false": 1282144
+        "false": 1282245
       },
       "avg_runtime_state_gas_spillover": 0,
       "avg_initial_reservoir": 0

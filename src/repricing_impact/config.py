@@ -35,10 +35,10 @@ from .clickhouse import get_engine, run_query
 CHAIN_ID = 1  # mainnet — only chain present in the warehouse
 
 # Focus schedules for the dashboard. A pinned config must cover BOTH of these.
+# Under producer v11 these are also the *only* schedules in the warehouse — the
+# `7904-prelim` schedule (and the `ALL_SCHEDULES` constant that listed it) is
+# gone as of 2026-07-29, so there is no longer an "all vs focus" distinction.
 FOCUS_SCHEDULES = ["eip-8037", "eip-8038"]
-
-# All schedules present in the warehouse (for reference; 7904 is out of focus).
-ALL_SCHEDULES = ["7904-prelim", "eip-8037", "eip-8038"]
 
 # Env var override: if set, the resolver returns this hash without querying.
 CONFIG_HASH_ENV_VAR = "REPRICING_CONFIG_HASH"

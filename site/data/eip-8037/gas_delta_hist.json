@@ -5,7 +5,7 @@
       "label": "Succeeds with changes",
       "signed": false,
       "note": "Txs with a gas change (gas_delta != 0): block_summary gas_only cohort + Succeeds-with-changes drill-in members, binned by the producer log2 bucket. The >=1024-gas bin is a catch-all \u2014 the aggregate cohort has no finer resolution above 1024 gas.",
-      "count": 39875667,
+      "count": 39875773,
       "gas_bins": [
         {
           "lo": 1,
@@ -81,19 +81,92 @@
           "lo": 1024,
           "hi": null,
           "count_gas_only": 36259821,
-          "count_drillin": 1452639,
-          "count": 37712460
+          "count_drillin": 1452745,
+          "count": 37712566
         }
       ],
-      "sum_gas_delta": 3384446632083,
+      "sum_gas_delta": 3384460317778,
       "min_gas_delta": -13420055,
-      "max_gas_delta": 13497792
+      "max_gas_delta": 13497792,
+      "pct_cohort": "gas_only",
+      "pct_bins": [
+        {
+          "lo": -100,
+          "hi": -50,
+          "count": 3049
+        },
+        {
+          "lo": -50,
+          "hi": -25,
+          "count": 28612
+        },
+        {
+          "lo": -25,
+          "hi": -10,
+          "count": 847814
+        },
+        {
+          "lo": -10,
+          "hi": -1,
+          "count": 2116007
+        },
+        {
+          "lo": -1,
+          "hi": 0,
+          "count": 372197
+        },
+        {
+          "lo": 0,
+          "hi": 1,
+          "count": 406722
+        },
+        {
+          "lo": 1,
+          "hi": 10,
+          "count": 11239588
+        },
+        {
+          "lo": 10,
+          "hi": 25,
+          "count": 3317985
+        },
+        {
+          "lo": 25,
+          "hi": 50,
+          "count": 6301103
+        },
+        {
+          "lo": 50,
+          "hi": 100,
+          "count": 4113560
+        },
+        {
+          "lo": 100,
+          "hi": 200,
+          "count": 9052251
+        },
+        {
+          "lo": 200,
+          "hi": 500,
+          "count": 607071
+        },
+        {
+          "lo": 500,
+          "hi": null,
+          "count": 8845
+        }
+      ],
+      "pct_covered_count": 38414804,
+      "pct_note": "Class-grain producer histogram of 100*gas_delta/baseline_gas_used per tx over the gas_only aggregate cohort ONLY (block_summary.gas_delta_pct_hist); the drill-in members counted in gas_bins are not included. Fixed signed bins; bounded below at -100%; the >=500% bin is a catch-all.",
+      "sum_gas_delta_gas_only": 3224768322601,
+      "baseline_gas_used_sum": 8294519232822,
+      "gas_delta_pct_of_baseline": 38.8783
     },
     "3": {
       "label": "Fixable with gas-limit increase",
       "signed": true,
       "note": "Signed exact per-tx gas_delta (negative = schedule cheaper).",
-      "count": 50684649,
+      "count": 50754721,
       "bins": [
         {
           "bin_log2": 5,
@@ -113,87 +186,87 @@
         {
           "bin_log2": 8,
           "sign": 1,
-          "count": 117310
+          "count": 117319
         },
         {
           "bin_log2": 9,
           "sign": 1,
-          "count": 1108261
+          "count": 1109175
         },
         {
           "bin_log2": 10,
           "sign": 1,
-          "count": 3721739
+          "count": 3786222
         },
         {
           "bin_log2": 11,
           "sign": 1,
-          "count": 112317
+          "count": 112353
         },
         {
           "bin_log2": 12,
           "sign": 1,
-          "count": 145850
+          "count": 145868
         },
         {
           "bin_log2": 13,
           "sign": 1,
-          "count": 235886
+          "count": 235916
         },
         {
           "bin_log2": 14,
           "sign": 1,
-          "count": 257342
+          "count": 257384
         },
         {
           "bin_log2": 15,
           "sign": 1,
-          "count": 580658
+          "count": 580765
         },
         {
           "bin_log2": 16,
           "sign": 1,
-          "count": 29896778
+          "count": 29899483
         },
         {
           "bin_log2": 17,
           "sign": 1,
-          "count": 7899329
+          "count": 7900565
         },
         {
           "bin_log2": 18,
           "sign": 1,
-          "count": 2677606
+          "count": 2677816
         },
         {
           "bin_log2": 19,
           "sign": 1,
-          "count": 1848189
+          "count": 1848327
         },
         {
           "bin_log2": 20,
           "sign": 1,
-          "count": 1042176
+          "count": 1042264
         },
         {
           "bin_log2": 21,
           "sign": 1,
-          "count": 420510
+          "count": 420532
         },
         {
           "bin_log2": 22,
           "sign": 1,
-          "count": 259248
+          "count": 259266
         },
         {
           "bin_log2": 23,
           "sign": 1,
-          "count": 169223
+          "count": 169234
         },
         {
           "bin_log2": 24,
           "sign": 1,
-          "count": 103375
+          "count": 103380
         },
         {
           "bin_log2": 25,
@@ -208,16 +281,17 @@
       ],
       "percentiles": {
         "p01": 768,
-        "p10": 6144,
+        "p10": 3072,
         "p25": 98304,
         "p50": 98304,
         "p75": 196608,
         "p90": 393216,
         "p99": 6291456
       },
-      "sum_gas_delta": 19290990924886,
+      "sum_gas_delta": 19292322009849,
       "min_gas_delta": 54,
       "max_gas_delta": 119966486,
+      "pct_cohort": "drillin",
       "pct_bins": [
         {
           "lo": -100,
@@ -252,47 +326,47 @@
         {
           "lo": 1,
           "hi": 10,
-          "count": 5122893
+          "count": 5188323
         },
         {
           "lo": 10,
           "hi": 25,
-          "count": 381391
+          "count": 381444
         },
         {
           "lo": 25,
           "hi": 50,
-          "count": 2481674
+          "count": 2481940
         },
         {
           "lo": 50,
           "hi": 100,
-          "count": 5618133
+          "count": 5618784
         },
         {
           "lo": 100,
           "hi": 200,
-          "count": 31592607
+          "count": 31595736
         },
         {
           "lo": 200,
           "hi": 500,
-          "count": 5232793
+          "count": 5233309
         },
         {
           "lo": 500,
           "hi": null,
-          "count": 255049
+          "count": 255076
         }
       ],
-      "pct_covered_count": 50684649,
+      "pct_covered_count": 50754721,
       "pct_note": "Per-tx 100*gas_delta/baseline_gas_used (share of baseline gas used; negative = schedule cheaper), fixed signed bins. Bounded below at -100%; the >=500% bin is a catch-all."
     },
     "4": {
       "label": "Potentially broken",
       "signed": true,
       "note": "Signed exact per-tx gas_delta (negative = schedule cheaper).",
-      "count": 1282144,
+      "count": 1282245,
       "bins": [
         {
           "bin_log2": 0,
@@ -387,12 +461,12 @@
         {
           "bin_log2": 9,
           "sign": 1,
-          "count": 1855
+          "count": 1857
         },
         {
           "bin_log2": 10,
           "sign": -1,
-          "count": 5468
+          "count": 5470
         },
         {
           "bin_log2": 10,
@@ -412,67 +486,67 @@
         {
           "bin_log2": 12,
           "sign": -1,
-          "count": 13406
+          "count": 13407
         },
         {
           "bin_log2": 12,
           "sign": 1,
-          "count": 11452
+          "count": 11453
         },
         {
           "bin_log2": 13,
           "sign": -1,
-          "count": 75154
+          "count": 75158
         },
         {
           "bin_log2": 13,
           "sign": 1,
-          "count": 20176
+          "count": 20177
         },
         {
           "bin_log2": 14,
           "sign": -1,
-          "count": 63710
+          "count": 63717
         },
         {
           "bin_log2": 14,
           "sign": 1,
-          "count": 15184
+          "count": 15185
         },
         {
           "bin_log2": 15,
           "sign": -1,
-          "count": 334477
+          "count": 334516
         },
         {
           "bin_log2": 15,
           "sign": 1,
-          "count": 103062
+          "count": 103067
         },
         {
           "bin_log2": 16,
           "sign": -1,
-          "count": 193220
+          "count": 193237
         },
         {
           "bin_log2": 16,
           "sign": 1,
-          "count": 106064
+          "count": 106066
         },
         {
           "bin_log2": 17,
           "sign": -1,
-          "count": 132617
+          "count": 132628
         },
         {
           "bin_log2": 17,
           "sign": 1,
-          "count": 17539
+          "count": 17540
         },
         {
           "bin_log2": 18,
           "sign": -1,
-          "count": 127040
+          "count": 127047
         },
         {
           "bin_log2": 18,
@@ -539,49 +613,50 @@
         "p90": 393216,
         "p99": 1572864
       },
-      "sum_gas_delta": -44689667507,
+      "sum_gas_delta": -44697223600,
       "min_gas_delta": -13109442,
       "max_gas_delta": 16306030,
+      "pct_cohort": "drillin",
       "pct_bins": [
         {
           "lo": -100,
           "hi": -50,
-          "count": 232226
+          "count": 232240
         },
         {
           "lo": -50,
           "hi": -25,
-          "count": 405120
+          "count": 405172
         },
         {
           "lo": -25,
           "hi": -10,
-          "count": 245474
+          "count": 245492
         },
         {
           "lo": -10,
           "hi": -1,
-          "count": 78734
+          "count": 78737
         },
         {
           "lo": -1,
           "hi": 0,
-          "count": 14074
+          "count": 14075
         },
         {
           "lo": 0,
           "hi": 1,
-          "count": 7642
+          "count": 7644
         },
         {
           "lo": 1,
           "hi": 10,
-          "count": 45667
+          "count": 45670
         },
         {
           "lo": 10,
           "hi": 25,
-          "count": 67121
+          "count": 67126
         },
         {
           "lo": 25,
@@ -591,7 +666,7 @@
         {
           "lo": 50,
           "hi": 100,
-          "count": 73685
+          "count": 73688
         },
         {
           "lo": 100,
@@ -609,7 +684,7 @@
           "count": 11842
         }
       ],
-      "pct_covered_count": 1282144,
+      "pct_covered_count": 1282245,
       "pct_note": "Per-tx 100*gas_delta/baseline_gas_used (share of baseline gas used; negative = schedule cheaper), fixed signed bins. Bounded below at -100%; the >=500% bin is a catch-all."
     }
   }

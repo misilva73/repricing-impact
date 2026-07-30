@@ -123,10 +123,13 @@ and that `halt_rate` is `null` when `total_tx` is 0 or unavailable.
   read-only, bounded to the pinned block range, and documented in AGENTS.md /
   warehouse.md so it's a sanctioned exception, not silent drift.
 - **Drill-in cap undercounts the numerator.** `_divergence` drill-ins are capped
-  at `max_divergences_per_block = 1024`; blocks with `drill_ins_truncated = true`
-  ([warehouse.md:104](warehouse.md#L104)) can under-report halts for a busy
-  recipient, biasing `halt_rate` **low**. Note this in the card/schema; consider
-  surfacing the truncated-block share as a confidence caveat.
+  at the producer's per-block drill-in cap (`max_divergences_per_block`; the live
+  value is pinned in [`../AGENTS.md`](../AGENTS.md) and
+  [`warehouse.md`](warehouse.md) — it has already been raised once by a producer
+  bump, so do not hardcode it here). Blocks with `drill_ins_truncated = true` can
+  under-report halts for a busy recipient, biasing `halt_rate` **low**. Note this
+  in the card/schema; consider surfacing the truncated-block share as a confidence
+  caveat.
 - **Recipient vs halt site.** `recipient` (entry) ≠ `oog_contract` (halt site).
   The new card is deliberately entry-keyed; the Sankey already shows the mapping.
 - **Denominator scope.** `total_tx` counts every mainnet tx to the recipient

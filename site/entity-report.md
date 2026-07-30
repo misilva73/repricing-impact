@@ -40,7 +40,7 @@ right action differs for each:
    automatically. **Low urgency.**
 
 Two data caveats apply throughout: (a) for high-traffic contracts, halt/revert
-counts are a **lower bound** (per-block drill-in cap of 1024); (b) many shards
+counts are a **lower bound** (the producer's per-block drill-in cap); (b) many shards
 have **no `failure_rate`** (no Xatu total-tx denominator), so we report absolute
 G4 counts and flag where a percentage-of-traffic figure is unavailable.
 
@@ -579,13 +579,20 @@ already counted under eth-infinitism). Listed for completeness, not for outreach
 - **Source.** `site/data/{eip-8037,eip-8038}/affected/` — per-contract G4
   failure-mode shards + `index.json` + `deploy_oog.json`. Pinned config
   `0xc17ac709…f37d2`, blocks 24,319,986 → 25,319,985 (~2026-01-26 → 2026-06-15).
+- **Provenance (noted 2026-07-29).** Every figure in this report was computed
+  from the **producer-v10** run under the config hash above — that is the data
+  these numbers came from, which is why the hash is recorded here unchanged. The
+  warehouse has since moved to **producer schema v11** under config
+  `0x6617c5db…6ed3` (now the hash pinned in [`AGENTS.md`](../AGENTS.md)); the v10
+  hash no longer exists in the warehouse. The block range is identical across
+  both runs. This report will be regenerated with the next data refresh.
 - **Scope = G4 only** (Potentially broken): `baseline_success=true AND
   schedule_success=false AND min_multiplier_to_succeed IS NULL`. Excludes G3
   (fixable with more gas) and AF (already failing).
 - **One agent per entity.** 21 dedicated analyses (above); each read only its own
   contract's shard(s) and grounded every figure in that data.
-- **Lower bounds.** For high-traffic contracts the per-block drill-in cap (1024)
-  under-reports halts — counts are floors.
+- **Lower bounds.** For high-traffic contracts the producer's per-block drill-in
+  cap under-reports halts — counts are floors.
 - **Missing rates.** Many shards have no `failure_rate` (no Xatu total-tx
   denominator, esp. for pure halt/revert *sites*) — those report absolute counts
   only. Where a rate exists, it's flagged.
