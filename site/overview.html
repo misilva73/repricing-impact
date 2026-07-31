@@ -76,11 +76,6 @@
       </div>
     </div>
     <div class="panel">
-      <h3>State-gas driver</h3>
-      <p class="note">Whether the transaction touched runtime state gas at all. A partition of the aggregate cohort.</p>
-      <div id="g2state" class="chart"><p class="loading">Loading…</p></div>
-    </div>
-    <div class="panel">
       <h3>Gas-diff distribution</h3>
       <p class="note" id="g2gasNote"></p>
       <div id="g2gashist" class="chart"><p class="loading">Loading…</p></div>
@@ -203,30 +198,26 @@
       const g2 = cats.g2;
       document.getElementById('g2changeNote').textContent = g2.change_type_note;
       renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
-      // The three gas_only *_mix charts. Each is a TRUE partition of gas_only_count;
+      // The gas_only *_mix charts. Each is a TRUE partition of gas_only_count;
       // tx_overlay_mix is an OVERLAPPING overlay and is deliberately never charted —
       // it is printed as prose only, so a one-bar overlay cannot be read as a
       // partition member with the same visual weight as one.
       //
       // tx_shape_mix is the marker for producer-v11-shaped output. Pre-v11 JSON has
-      // no tx_shape_mix/tx_type_mix at all, and its state_driver_mix is the OLD
-      // 4-key list (no_state|runtime_state|creation|authorization) which is NOT a
-      // partition — drawing it under these captions would reproduce the exact
-      // double-count this section exists to correct. So on pre-v11 data we print a
-      // note in each panel instead of drawing anything.
+      // no tx_shape_mix/tx_type_mix at all, so on pre-v11 data we print a note in
+      // each panel instead of drawing anything.
       const drawG2Mixes = () => {
         document.getElementById('g2mixNote').textContent = g2.gas_only_mix_note || '';
         document.getElementById('g2overlayNote').textContent = g2.tx_overlay_note || '';
         if (!Array.isArray(g2.tx_shape_mix)) {
-          const stale = 'Not available in this data build — the aggregate-cohort shape, '
-            + 'type and state-gas partitions need the producer class-grain columns. '
+          const stale = 'Not available in this data build — the aggregate-cohort shape '
+            + 'and type partitions need the producer class-grain columns. '
             + 'Re-run precompute to populate them.';
-          ['g2state', 'g2shape', 'g2type'].forEach(id => {
+          ['g2shape', 'g2type'].forEach(id => {
             document.getElementById(id).innerHTML = `<p class="loading">${escHtml(stale)}</p>`;
           });
           return;
         }
-        renderHBar('g2state', g2.state_driver_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(1) });
         renderHBar('g2shape', g2.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(1) });
         renderHBar('g2type', g2.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(1) });
       };
