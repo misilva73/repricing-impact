@@ -16,12 +16,63 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 2
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00cbb7c0",
+      "selector_signature": null,
+      "entry_selector": "0x00cbb7c0",
+      "entry_signature": null,
+      "where_contract": "0x7d6c3860b71cf82e2e1e8d5d104cf77f5b84f93a",
+      "where_label": "0x7d6c3860b71cf82e2e1e8d5d104cf77f5b84f93a",
+      "where_category": null,
+      "opcode": "RETURNDATASIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 9,
+      "revert_decoded": "Error(string): no profit",
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": -137639,
+        "p50": -137639,
+        "p90": -137639
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 26,
+          "p90": 26
+        },
+        "sload": {
+          "p50": 123,
+          "p90": 123
+        },
+        "sstore": {
+          "p50": 12,
+          "p90": 12
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xe216fd0f2991fc8e3bd9cb04129e104fc41f195c5ef027165c5cd55517ffaeb6",
+          "block_number": 24160696,
+          "gas_delta": -137639
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -38,8 +89,8 @@
       "call_depth": 9,
       "revert_decoded": "Error(string): TR",
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
         "avg": 422450,
         "p50": 422450,
@@ -85,15 +136,21 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24572963,
+    "block_span_start": 24160696,
     "block_span_end": 24572963,
-    "distinct_blocks": 1,
+    "distinct_blocks": 2,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0x00000f91109c4d0007e90000d9facad5298a0cac",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
+        "count": 1
+      },
       {
         "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
         "label": "StrategyExecutor",

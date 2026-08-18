@@ -16,18 +16,18 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 11
+      "revert_count": 46
     }
   },
-  "distinct_cluster_count": 10,
-  "clusters_shown_share": 0.8182,
+  "distinct_cluster_count": 20,
+  "clusters_shown_share": 0.7391,
   "failure_clusters": [
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0x00000000",
+      "selector": "0x0ab35bb0",
       "selector_signature": null,
-      "entry_selector": "0x00000000",
+      "entry_selector": "0x0ab35bb0",
       "entry_signature": null,
       "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
       "where_label": "sushi",
@@ -36,51 +36,109 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 3,
-      "revert_decoded": "Error(string): TR",
-      "count": 2,
-      "share_of_role": 0.1818,
-      "share_of_contract": 0.1818,
+      "revert_decoded": "empty",
+      "count": 24,
+      "share_of_role": 0.5217,
+      "share_of_contract": 0.5217,
       "gas_delta": {
-        "avg": 782952,
-        "p50": 782952,
-        "p90": 889974
+        "avg": 154344,
+        "p50": 169753,
+        "p90": 185305
       },
       "drivers": {
-        "state_gas_category": [
-          {
-            "key": "access_list",
-            "count": 2
-          }
-        ],
         "cold_account": {
-          "p50": 0,
-          "p90": 0
+          "p50": 12,
+          "p90": 13
         },
         "sload": {
-          "p50": 0,
-          "p90": 0
+          "p50": 73,
+          "p90": 75
         },
         "sstore": {
           "p50": 0,
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 218,
-          "p90": 255
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 500,
+          "sum": 500
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x9b5fb49d4fa6f7dbccbdf01d03de37834e1b480a10ad67c81a6787e5fb1e0f96",
-          "block_number": 25260454,
-          "gas_delta": 649175
+          "tx_hash": "0x19ee15efbe1820d4bacec152ac3b9fc5f341d1eabcaf1bee7768b88de924eb45",
+          "block_number": 23409924,
+          "gas_delta": 172253
         },
         {
-          "tx_hash": "0xafbc19a3c761485f1183af93f94ee289df15ba5285b6e0fb88856e74ae64c6ab",
-          "block_number": 25236117,
-          "gas_delta": 916730
+          "tx_hash": "0xce667ca375ad762284ccb2ae3140792e58a6c686accc29f5a995f7ebb46000cd",
+          "block_number": 23386119,
+          "gas_delta": 189653
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x88b97778",
+      "selector_signature": null,
+      "entry_selector": "0x88b97778",
+      "entry_signature": null,
+      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": "empty",
+      "count": 2,
+      "share_of_role": 0.0435,
+      "share_of_contract": 0.0435,
+      "gas_delta": {
+        "avg": 307238,
+        "p50": 307238,
+        "p90": 322446
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 18,
+          "p90": 20
+        },
+        "sload": {
+          "p50": 109,
+          "p90": 111
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 1
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xd7c453d4ba30d9a7b279472112a5459d3c8c4808a4f68e7cfed6209657d4ba00",
+          "block_number": 23507819,
+          "gas_delta": 288229
+        },
+        {
+          "tx_hash": "0xe7fcb0bdadc7be4555b2aa3bc8698bb74d70c60e196c65ae9bc19e447ba55f52",
+          "block_number": 23650220,
+          "gas_delta": 326248
         }
       ]
     },
@@ -99,13 +157,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 5,
       "revert_decoded": "empty",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
+      "count": 2,
+      "share_of_role": 0.0435,
+      "share_of_contract": 0.0435,
       "gas_delta": {
-        "avg": 70753,
-        "p50": 70753,
-        "p90": 70753
+        "avg": 45757,
+        "p50": 45757,
+        "p90": 45760
       },
       "drivers": {
         "cold_account": {
@@ -129,18 +187,256 @@
       },
       "examples": [
         {
+          "tx_hash": "0x1f72c164a6971aacb18a04d81a6bb5dc1042bc78875bab12c02a758bbf4a5a3b",
+          "block_number": 23785967,
+          "gas_delta": 45761
+        },
+        {
           "tx_hash": "0x3223e6e952f6faed8e53b6f6107523ed7ba5fafb5b2ca8da11ef15c7211bc90a",
           "block_number": 24403088,
-          "gas_delta": 70753
+          "gas_delta": 45753
         }
       ]
     },
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0x0b8b0afa",
+      "selector": "0x85c496b0",
       "selector_signature": null,
-      "entry_selector": "0x0b8b0afa",
+      "entry_selector": "0x85c496b0",
+      "entry_signature": null,
+      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): rltc",
+      "count": 2,
+      "share_of_role": 0.0435,
+      "share_of_contract": 0.0435,
+      "gas_delta": {
+        "avg": 656288,
+        "p50": 656288,
+        "p90": 918728
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 2
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 4,
+          "p90": 6
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 220,
+          "p90": 298
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x34ac12e05f01dc21bbdf47466a1484115fe84a67c762eec72711255d869cfc2a",
+          "block_number": 24118816,
+          "gas_delta": 328238
+        },
+        {
+          "tx_hash": "0xa54e8f043b9dec52c30aa050fbd6fc94fbb0912bf94c82fb4f131a8c6b97bac3",
+          "block_number": 24179936,
+          "gas_delta": 984338
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x68c5be0f",
+      "selector_signature": null,
+      "entry_selector": "0x68c5be0f",
+      "entry_signature": null,
+      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "custom:0x00000000",
+      "count": 1,
+      "share_of_role": 0.0217,
+      "share_of_contract": 0.0217,
+      "gas_delta": {
+        "avg": 78511,
+        "p50": 78511,
+        "p90": 78511
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 23,
+          "p90": 23
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xdaad26788e9914612afb060d8302436df9175621445bbbcd703f57a6ec38c1e9",
+          "block_number": 23356074,
+          "gas_delta": 78511
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x68c14397",
+      "selector_signature": null,
+      "entry_selector": "0x68c14397",
+      "entry_signature": null,
+      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "custom:0x00000000",
+      "count": 1,
+      "share_of_role": 0.0217,
+      "share_of_contract": 0.0217,
+      "gas_delta": {
+        "avg": 78511,
+        "p50": 78511,
+        "p90": 78511
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 23,
+          "p90": 23
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xe05ade624c50a9613ed68c1ef92f1d0462f185fb72f6bd12978a68ece817da1b",
+          "block_number": 23331772,
+          "gas_delta": 78511
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x68d1d39f",
+      "selector_signature": null,
+      "entry_selector": "0x68d1d39f",
+      "entry_signature": null,
+      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "custom:0x00000000",
+      "count": 1,
+      "share_of_role": 0.0217,
+      "share_of_contract": 0.0217,
+      "gas_delta": {
+        "avg": 78511,
+        "p50": 78511,
+        "p90": 78511
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 23,
+          "p90": 23
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xd0efae1bc23ce4f076542f6bdce96348a84faf86b38b0c487f3ccccc5940754d",
+          "block_number": 23421681,
+          "gas_delta": 78511
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x3f182b8f",
+      "selector_signature": null,
+      "entry_selector": "0x3f182b8f",
       "entry_signature": null,
       "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
       "where_label": "sushi",
@@ -149,295 +445,46 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 5,
-      "revert_decoded": "short:0x000000",
+      "revert_decoded": "custom:0x93505cb3",
       "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
+      "share_of_role": 0.0217,
+      "share_of_contract": 0.0217,
       "gas_delta": {
-        "avg": 543868,
-        "p50": 543868,
-        "p90": 543868
+        "avg": 164510,
+        "p50": 164510,
+        "p90": 164510
       },
       "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
         "cold_account": {
-          "p50": 21,
-          "p90": 21
-        },
-        "sload": {
-          "p50": 144,
-          "p90": 144
-        },
-        "sstore": {
-          "p50": 1,
-          "p90": 1
-        },
-        "access_list_entries": {
           "p50": 0,
           "p90": 0
         },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x9b5ec1b611253ff1da8c31a0250be86bed22f882b374c060585f408a96cabf72",
-          "block_number": 24380821,
-          "gas_delta": 543868
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x0992d6c1",
-      "selector_signature": null,
-      "entry_selector": "0x0992d6c1",
-      "entry_signature": null,
-      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 5,
-      "revert_decoded": "custom:0x00000000",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
-      "gas_delta": {
-        "avg": 492268,
-        "p50": 492268,
-        "p90": 492268
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 20,
-          "p90": 20
-        },
         "sload": {
-          "p50": 135,
-          "p90": 135
-        },
-        "sstore": {
-          "p50": 1,
-          "p90": 1
-        },
-        "access_list_entries": {
           "p50": 0,
           "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xc6a5fe1d59eebfa708a689afdb31a9f61fa6c6349d19fb1b586a8e44297ba9a7",
-          "block_number": 24415139,
-          "gas_delta": 492268
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x06b5de0c",
-      "selector_signature": null,
-      "entry_selector": "0x06b5de0c",
-      "entry_signature": null,
-      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 3,
-      "revert_decoded": "custom:0x00000000",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
-      "gas_delta": {
-        "avg": 251044,
-        "p50": 251044,
-        "p90": 251044
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 12,
-          "p90": 12
-        },
-        "sload": {
-          "p50": 65,
-          "p90": 65
         },
         "sstore": {
           "p50": 0,
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 0,
-          "p90": 0
+          "p50": 59,
+          "p90": 59
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x29819dd39bbeb17c2accec8f97046fc4ffe9a5fbdf0be9cd06a899e9be11edb6",
-          "block_number": 24493328,
-          "gas_delta": 251044
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x078b0afa",
-      "selector_signature": null,
-      "entry_selector": "0x078b0afa",
-      "entry_signature": null,
-      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 3,
-      "revert_decoded": "custom:0x00000000",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
-      "gas_delta": {
-        "avg": 394844,
-        "p50": 394844,
-        "p90": 394844
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 16,
-          "p90": 16
-        },
-        "sload": {
-          "p50": 112,
-          "p90": 112
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xf07c93d6e36c0ce5682dac4c645b1614f80fd21903cc65937db2895be1c40ec7",
-          "block_number": 24487574,
-          "gas_delta": 394844
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x0ab35bb0",
-      "selector_signature": null,
-      "entry_selector": "0x0ab35bb0",
-      "entry_signature": null,
-      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 3,
-      "revert_decoded": "empty",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
-      "gas_delta": {
-        "avg": 299236,
-        "p50": 299236,
-        "p90": 299236
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 13,
-          "p90": 13
-        },
-        "sload": {
-          "p50": 83,
-          "p90": 83
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x285a9388f09998d05cebda8bc68f477c0ccfb013e69456c031970a8bada9e356",
-          "block_number": 24705918,
-          "gas_delta": 299236
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x0ab35bb0",
-      "selector_signature": null,
-      "entry_selector": "0x0ab35bb0",
-      "entry_signature": null,
-      "where_contract": "0xe4ebd836832f1a8a81641111a5b081a2f90b9430",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 8,
-      "revert_decoded": "empty",
-      "count": 1,
-      "share_of_role": 0.0909,
-      "share_of_contract": 0.0909,
-      "gas_delta": {
-        "avg": 62633,
-        "p50": 62633,
-        "p90": 62633
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 5,
-          "p90": 5
-        },
-        "sload": {
-          "p50": 30,
-          "p90": 30
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xa199cee2f1064ba5c209e236cc55482898d90443dae5ef39322fedd6dbeee1e6",
-          "block_number": 24909627,
-          "gas_delta": 62633
+          "tx_hash": "0x9001661257070046d7cc04ff7d807e6210620dd758e52747cdcb4a7edbddb49a",
+          "block_number": 23449498,
+          "gas_delta": 164510
         }
       ]
     }
@@ -453,9 +500,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24380821,
-    "block_span_end": 25260454,
-    "distinct_blocks": 11,
+    "block_span_start": 23331772,
+    "block_span_end": 25249562,
+    "distinct_blocks": 45,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -463,34 +510,52 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0xd3987e01ae4ce6664ddc5634fece622bf6004dc6",
+        "label": "0xd3987e01ae4ce6664ddc5634fece622bf6004dc6",
+        "category": null,
+        "count": 17
+      },
+      {
         "contract": "0xd5adabc8f98a485c8efa50599afbe926b3e6dd49",
         "label": "Contract Deployer",
         "category": "infra",
         "count": 6
       },
       {
-        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
-        "label": "StrategyExecutor",
-        "category": "swap_dex",
-        "count": 2
-      },
-      {
-        "contract": "0x0708b29cfaba8e551c710991026c38e9179dce1e",
-        "label": "Balancer v2 Flashloan User",
-        "category": "infra",
-        "count": 1
+        "contract": "0x2b874e6d867e41a9ea3e07f7cfe6c95e242899f1",
+        "label": "0x2b874e6d867e41a9ea3e07f7cfe6c95e242899f1",
+        "category": null,
+        "count": 4
       },
       {
         "contract": "0xa51eb971881af370c59acc19a130a226f1191c9e",
         "label": "0xa51eb971881af370c59acc19a130a226f1191c9e",
         "category": null,
-        "count": 1
+        "count": 4
       },
       {
-        "contract": "0x3a6776ee3d15224e1d2e921080811365a50fde60",
-        "label": "0x3a6776ee3d15224e1d2e921080811365a50fde60",
+        "contract": "0xbb365c77487cde86efd1e330f334df9f03173a83",
+        "label": "0xbb365c77487cde86efd1e330f334df9f03173a83",
         "category": null,
-        "count": 1
+        "count": 3
+      },
+      {
+        "contract": "0x0000000000efa780a8e6f50fc5de9c1497bfd175",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
+        "count": 3
+      },
+      {
+        "contract": "0x0708b29cfaba8e551c710991026c38e9179dce1e",
+        "label": "Balancer v2 Flashloan User",
+        "category": "infra",
+        "count": 3
+      },
+      {
+        "contract": "0x12b143d55340c36695adb95bf63ad685eacc7890",
+        "label": "0x12b143d55340c36695adb95bf63ad685eacc7890",
+        "category": null,
+        "count": 2
       }
     ]
   }

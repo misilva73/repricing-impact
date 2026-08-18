@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 4
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 5,
       "revert_decoded": "Error(string): TR",
       "count": 2,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
         "avg": 395890,
         "p50": 395890,
@@ -77,6 +77,108 @@
           "gas_delta": 184202
         }
       ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x60642803",
+      "selector_signature": null,
+      "entry_selector": "0x60642803",
+      "entry_signature": null,
+      "where_contract": "0x1d5d2539a49154c5659737151f53b21a98b4834f",
+      "where_label": "0x1d5d2539a49154c5659737151f53b21a98b4834f",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "Panic(0x11)",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": 9289,
+        "p50": 9289,
+        "p90": 9289
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
+        },
+        "sload": {
+          "p50": 30,
+          "p90": 30
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x0f0fdeac4fc2c6340718cbaf34370da4d82bcedd27f2215fe41dcd60e22b2398",
+          "block_number": 24078506,
+          "gas_delta": 9289
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xf15b73e7",
+      "selector_signature": null,
+      "entry_selector": "0xf15b73e7",
+      "entry_signature": null,
+      "where_contract": "0x1d5d2539a49154c5659737151f53b21a98b4834f",
+      "where_label": "0x1d5d2539a49154c5659737151f53b21a98b4834f",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "empty",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": -1223,
+        "p50": -1223,
+        "p90": -1223
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 1,
+          "p90": 1
+        },
+        "sload": {
+          "p50": 6,
+          "p90": 6
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 58,
+          "p90": 58
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xac7af5b5096de2e0829ed6b1b565467d10f552b8c478fa0b61ece03bc5ff6639",
+          "block_number": 24201370,
+          "gas_delta": -1223
+        }
+      ]
     }
   ],
   "context": {
@@ -90,9 +192,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24736623,
+    "block_span_start": 24078506,
     "block_span_end": 25279961,
-    "distinct_blocks": 2,
+    "distinct_blocks": 4,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -104,6 +206,18 @@
         "label": "StrategyExecutor",
         "category": "swap_dex",
         "count": 2
+      },
+      {
+        "contract": "0xe5f279c14687ed4dc830851c721c2e410d4bb488",
+        "label": "0xe5f279c14687ed4dc830851c721c2e410d4bb488",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0x420cafe478ebb83542a70089e5a65da67cc829ac",
+        "label": "0x420cafe478ebb83542a70089e5a65da67cc829ac",
+        "category": null,
+        "count": 1
       }
     ]
   }

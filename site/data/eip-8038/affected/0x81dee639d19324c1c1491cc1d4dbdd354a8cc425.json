@@ -16,7 +16,7 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 5
     }
   },
   "distinct_cluster_count": 2,
@@ -37,22 +37,22 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "custom:0xc4d4ca13",
-      "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "count": 3,
+      "share_of_role": 0.6,
+      "share_of_contract": 0.6,
       "gas_delta": {
-        "avg": 378027,
-        "p50": 378027,
-        "p90": 378027
+        "avg": 223960,
+        "p50": 183027,
+        "p90": 282867
       },
       "drivers": {
         "cold_account": {
-          "p50": 20,
-          "p90": 20
+          "p50": 10,
+          "p90": 18
         },
         "sload": {
-          "p50": 78,
-          "p90": 78
+          "p50": 49,
+          "p90": 72
         },
         "sstore": {
           "p50": 0,
@@ -67,18 +67,23 @@
       },
       "examples": [
         {
-          "tx_hash": "0xb8874110334bf58808c10269a7c60453f5d4d9fadaaf05459ccdcd6b4af57603",
-          "block_number": 24576820,
-          "gas_delta": 378027
+          "tx_hash": "0x38e3ad9b19aff1c387dcd86b7e0679bff0163c12ca9a64d523bd61967ed0a371",
+          "block_number": 24120221,
+          "gas_delta": 181027
+        },
+        {
+          "tx_hash": "0x3cdd18aea93f92f40c555c1b72a86170a13a4e3f21a4a65889b64896a88e2947",
+          "block_number": 24307154,
+          "gas_delta": 183027
         }
       ]
     },
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0x00000000",
+      "selector": "0x85c496b0",
       "selector_signature": null,
-      "entry_selector": "0x00000000",
+      "entry_selector": "0x85c496b0",
       "entry_signature": null,
       "where_contract": "0x81dee639d19324c1c1491cc1d4dbdd354a8cc425",
       "where_label": "0x81dee639d19324c1c1491cc1d4dbdd354a8cc425",
@@ -87,20 +92,20 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 3,
-      "revert_decoded": "Error(string): TR",
-      "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "revert_decoded": "Error(string): rltc",
+      "count": 2,
+      "share_of_role": 0.4,
+      "share_of_contract": 0.4,
       "gas_delta": {
-        "avg": 306430,
-        "p50": 306430,
-        "p90": 306430
+        "avg": 245642,
+        "p50": 245642,
+        "p90": 255802
       },
       "drivers": {
         "state_gas_category": [
           {
             "key": "access_list",
-            "count": 1
+            "count": 2
           }
         ],
         "cold_account": {
@@ -116,17 +121,22 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 68,
-          "p90": 68
+          "p50": 73,
+          "p90": 74
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0xb246d4c895f040d33ef918df1667634e505486ac24ef39016b1f6489e3127c7a",
-          "block_number": 25179110,
-          "gas_delta": 306430
+          "tx_hash": "0x6bc4bc3715226d9931d00c1ae8dc9b8e31180ea4f2808c21ee17b1e42c518800",
+          "block_number": 24109131,
+          "gas_delta": 258342
+        },
+        {
+          "tx_hash": "0x155236f0ca26f391e87b41b742cfa1ed72315c583e224cd63662cc7a2497c109",
+          "block_number": 24247481,
+          "gas_delta": 232941
         }
       ]
     }
@@ -142,9 +152,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24576820,
-    "block_span_end": 25179110,
-    "distinct_blocks": 2,
+    "block_span_start": 24109131,
+    "block_span_end": 24576820,
+    "distinct_blocks": 5,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -155,13 +165,13 @@
         "contract": "0x49e55995ef73717895a638074de5af89fa1e301c",
         "label": "Aave v3 Flashloan User",
         "category": "infra",
-        "count": 1
+        "count": 3
       },
       {
-        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
-        "label": "StrategyExecutor",
-        "category": "swap_dex",
-        "count": 1
+        "contract": "0xfc9642049d1151868e45946330215e3df3ae69c2",
+        "label": "Balancer v2 Flashloan User",
+        "category": "infra",
+        "count": 2
       }
     ]
   }

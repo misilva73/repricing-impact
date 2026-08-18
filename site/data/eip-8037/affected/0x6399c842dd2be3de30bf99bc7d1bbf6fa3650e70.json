@@ -16,13 +16,13 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 1
+      "halt_count": 3
     },
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 3
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 4,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -40,13 +40,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": null,
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "count": 2,
+      "share_of_role": 0.6667,
+      "share_of_contract": 0.3333,
       "gas_delta": {
-        "avg": 10846,
-        "p50": 10846,
-        "p90": 10846
+        "avg": -4454,
+        "p50": -4454,
+        "p90": 7786
       },
       "drivers": {
         "cold_account": {
@@ -62,8 +62,8 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 29,
-          "p90": 29
+          "p50": 42,
+          "p90": 52
         },
         "surcharge_at_oog": {
           "p50": 0,
@@ -77,6 +77,11 @@
         "spillover_share": 0.0
       },
       "examples": [
+        {
+          "tx_hash": "0xb2ee9f7a7a629b80f3f1a4852419b5dcb1501f5d2fbef9d7dd1e7237026ff712",
+          "block_number": 24135317,
+          "gas_delta": -19755
+        },
         {
           "tx_hash": "0x73194c011209641bbfcb12d2e9d3b5946356eccbd42dea1001446ef68ff3b22c",
           "block_number": 24939984,
@@ -99,13 +104,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "Error(string): ERC20: transfer amount exceeds allowance",
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "count": 2,
+      "share_of_role": 0.6667,
+      "share_of_contract": 0.3333,
       "gas_delta": {
-        "avg": 10846,
-        "p50": 10846,
-        "p90": 10846
+        "avg": -4454,
+        "p50": -4454,
+        "p90": 7786
       },
       "drivers": {
         "cold_account": {
@@ -121,8 +126,8 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 29,
-          "p90": 29
+          "p50": 42,
+          "p90": 52
         },
         "surcharge_at_oog": {
           "p50": 0,
@@ -137,27 +142,150 @@
       },
       "examples": [
         {
+          "tx_hash": "0xb2ee9f7a7a629b80f3f1a4852419b5dcb1501f5d2fbef9d7dd1e7237026ff712",
+          "block_number": 24135317,
+          "gas_delta": -19755
+        },
+        {
           "tx_hash": "0x73194c011209641bbfcb12d2e9d3b5946356eccbd42dea1001446ef68ff3b22c",
           "block_number": 24939984,
           "gas_delta": 10846
         }
       ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x13d79a0b",
+      "selector_signature": null,
+      "entry_selector": "0x13d79a0b",
+      "entry_signature": null,
+      "where_contract": "0x6399c842dd2be3de30bf99bc7d1bbf6fa3650e70",
+      "where_label": "0x6399c842dd2be3de30bf99bc7d1bbf6fa3650e70",
+      "where_category": null,
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.1667,
+      "gas_delta": {
+        "avg": -38017,
+        "p50": -38017,
+        "p90": -38017
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 64,
+          "p90": 64
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x63064e2f4a1865f075b35fcc60caf16ed86fb8fc635894cea489bf81e2c08d4a",
+          "block_number": 23592922,
+          "gas_delta": -38017
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x13d79a0b",
+      "selector_signature": null,
+      "entry_selector": "0x13d79a0b",
+      "entry_signature": null,
+      "where_contract": "0x6399c842dd2be3de30bf99bc7d1bbf6fa3650e70",
+      "where_label": "0x6399c842dd2be3de30bf99bc7d1bbf6fa3650e70",
+      "where_category": null,
+      "opcode": "SSTORE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": "Error(string): ERC20: transfer amount exceeds allowance",
+      "count": 1,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.1667,
+      "gas_delta": {
+        "avg": -38017,
+        "p50": -38017,
+        "p90": -38017
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 64,
+          "p90": 64
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x63064e2f4a1865f075b35fcc60caf16ed86fb8fc635894cea489bf81e2c08d4a",
+          "block_number": 23592922,
+          "gas_delta": -38017
+        }
+      ]
     }
   ],
   "context": {
-    "g3_tx_count": 44,
+    "g3_tx_count": 135,
     "g2_drillin_tx_count": 0,
     "af_tx_count": 0,
-    "status_flips": 44,
+    "status_flips": 135,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24939984,
+    "block_span_start": 23592922,
     "block_span_end": 24939984,
-    "distinct_blocks": 1,
+    "distinct_blocks": 3,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -168,6 +296,12 @@
         "contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
         "label": "GPv2Settlement",
         "category": "swap_dex",
+        "count": 2
+      },
+      {
+        "contract": "0x3980daa7eaad0b7e0c53cfc5c2760037270da54d",
+        "label": "0x3980daa7eaad0b7e0c53cfc5c2760037270da54d",
+        "category": null,
         "count": 1
       }
     ]

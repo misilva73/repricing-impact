@@ -16,18 +16,18 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 3
+      "revert_count": 2
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0xeca2a317",
+      "selector": "0x01180204",
       "selector_signature": null,
-      "entry_selector": "0xeca2a317",
+      "entry_selector": "0x01180204",
       "entry_signature": null,
       "where_contract": "0xbbbbbbb520d69a9775e85b458c58c648259fad5f",
       "where_label": "BebopSettlement",
@@ -36,23 +36,23 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 3,
-      "revert_decoded": "custom:0x90b8ec18",
-      "count": 3,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "revert_decoded": "Error(string): DK",
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
-        "avg": -1915,
-        "p50": -2648,
-        "p90": -888
+        "avg": 62462,
+        "p50": 62462,
+        "p90": 62462
       },
       "drivers": {
         "cold_account": {
-          "p50": 9,
-          "p90": 10
+          "p50": 4,
+          "p90": 4
         },
         "sload": {
-          "p50": 18,
-          "p90": 20
+          "p50": 17,
+          "p90": 17
         },
         "sstore": {
           "p50": 0,
@@ -62,11 +62,54 @@
           "p50": 0,
           "p90": 0
         },
-        "surcharge_at_oog": {
-          "p50": 200,
-          "sum": 600
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x6f392bef4d6a3c892f09edd0e7f981f05e61c028e14f800626a1a838a63d7bd5",
+          "block_number": 23741821,
+          "gas_delta": 62462
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x012f0204",
+      "selector_signature": null,
+      "entry_selector": "0x012f0204",
+      "entry_signature": null,
+      "where_contract": "0xbbbbbbb520d69a9775e85b458c58c648259fad5f",
+      "where_label": "BebopSettlement",
+      "where_category": "swap_dex",
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): DK",
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": 70869,
+        "p50": 70869,
+        "p90": 70869
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 7,
+          "p90": 7
         },
-        "gas_remaining_at_oog": {
+        "sload": {
+          "p50": 23,
+          "p90": 23
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
           "p50": 0,
           "p90": 0
         },
@@ -75,32 +118,27 @@
       },
       "examples": [
         {
-          "tx_hash": "0x9503a6326b33329a07ef85e6749fbdb6c394878073300e08ff28b4336bc7ed32",
-          "block_number": 24363781,
-          "gas_delta": -2648
-        },
-        {
-          "tx_hash": "0xd836b6e3d135533b8bf003a4e3634b115e5e56a20b5b4e055343bb3b45165426",
-          "block_number": 24376200,
-          "gas_delta": -448
+          "tx_hash": "0xf8dec49f7fba4b627fc5eafaa81cfa79f0c8802e15bf8e630dc9f218d6fb08c2",
+          "block_number": 24188189,
+          "gas_delta": 70869
         }
       ]
     }
   ],
   "context": {
-    "g3_tx_count": 216,
+    "g3_tx_count": 299,
     "g2_drillin_tx_count": 0,
-    "af_tx_count": 1367,
-    "status_flips": 216,
+    "af_tx_count": 1515,
+    "status_flips": 299,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24363781,
-    "block_span_end": 24377210,
-    "distinct_blocks": 3,
+    "block_span_start": 23741821,
+    "block_span_end": 24188189,
+    "distinct_blocks": 2,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -108,10 +146,16 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
-        "contract": "0xae68b7117be0026cbd4366303f74eecbb19e4042",
-        "label": "0xae68b7117be0026cbd4366303f74eecbb19e4042",
+        "contract": "0xfa346a9abd9b76c612884f78957a55dcf34ad391",
+        "label": "0xfa346a9abd9b76c612884f78957a55dcf34ad391",
         "category": null,
-        "count": 3
+        "count": 1
+      },
+      {
+        "contract": "0x123764ddfdf3a085ef6be71364cd611baf11ce25",
+        "label": "0x123764ddfdf3a085ef6be71364cd611baf11ce25",
+        "category": null,
+        "count": 1
       }
     ]
   }

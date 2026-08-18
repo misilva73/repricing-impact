@@ -19,9 +19,12 @@
       "g4_tx_count": 2,
       "g4_oog_count": 0,
       "g4_nonoog_count": 2
+    },
+    "revert_site": {
+      "revert_count": 1
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -31,17 +34,17 @@
       "selector_signature": null,
       "entry_selector": "0x601881f3",
       "entry_signature": null,
-      "where_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      "where_label": "Circle USDC",
-      "where_category": "stablecoin",
+      "where_contract": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+      "where_label": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+      "where_category": null,
       "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 14,
+      "call_depth": 2,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
       "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_contract": 0.3333,
       "gas_delta": {
         "avg": -825739,
         "p50": -825739,
@@ -82,17 +85,17 @@
       "selector_signature": null,
       "entry_selector": "0x601881f3",
       "entry_signature": null,
-      "where_contract": "0x5455c918e405a2831fbff8595c0aae35ee3db9d1",
-      "where_label": "0x5455c918e405a2831fbff8595c0aae35ee3db9d1",
-      "where_category": null,
-      "opcode": "DUP1",
+      "where_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "where_label": "Circle USDC",
+      "where_category": "stablecoin",
+      "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 9,
+      "call_depth": 11,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
       "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_contract": 0.3333,
       "gas_delta": {
         "avg": -522230,
         "p50": -522230,
@@ -123,6 +126,57 @@
           "tx_hash": "0xf36549696cc834f4f13ed14c9ae885458e5c5dc8274936a1979386b92bd530ed",
           "block_number": 24667463,
           "gas_delta": -522230
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x601881f3",
+      "selector_signature": null,
+      "entry_selector": "0x601881f3",
+      "entry_signature": null,
+      "where_contract": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+      "where_label": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+      "where_category": null,
+      "opcode": "RETURNDATASIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 2,
+      "revert_decoded": "Panic(0x11)",
+      "count": 1,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.3333,
+      "gas_delta": {
+        "avg": -825739,
+        "p50": -825739,
+        "p90": -825739
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 1,
+          "p90": 1
+        },
+        "sload": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x2c444c0f54bb3fb6ba4bb84f15e08b5cbc5793a0e75199a5781bd28d4b7b615f",
+          "block_number": 24667442,
+          "gas_delta": -825739
         }
       ]
     }
@@ -159,18 +213,25 @@
     "halt_contracts": [],
     "revert_contracts": [
       {
+        "contract": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+        "label": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+        "category": null,
+        "count": 1
+      },
+      {
         "contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "label": "Circle USDC",
         "category": "stablecoin",
         "count": 1
-      },
+      }
+    ],
+    "entry_contracts": [
       {
-        "contract": "0x5455c918e405a2831fbff8595c0aae35ee3db9d1",
-        "label": "0x5455c918e405a2831fbff8595c0aae35ee3db9d1",
+        "contract": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
+        "label": "0xde3ce91f0ea90deafcf9802d390ed65231b78756",
         "category": null,
         "count": 1
       }
-    ],
-    "entry_contracts": []
+    ]
   }
 }

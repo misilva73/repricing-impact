@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 3
+      "revert_count": 4
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,12 +38,12 @@
       "call_depth": 3,
       "revert_decoded": "custom:0xc4d4ca13",
       "count": 2,
-      "share_of_role": 0.6667,
-      "share_of_contract": 0.6667,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
-        "avg": 149177,
-        "p50": 149177,
-        "p90": 172017
+        "avg": 123977,
+        "p50": 123977,
+        "p90": 143937
       },
       "drivers": {
         "cold_account": {
@@ -69,12 +69,69 @@
         {
           "tx_hash": "0x733969e28022685a01a35d3ee172cb8e36df4ae0b4f1229948eb0eeac374001a",
           "block_number": 24624278,
-          "gas_delta": 177727
+          "gas_delta": 148927
         },
         {
           "tx_hash": "0xaa2b54b6c2ece00dba45925f8ccf856ef7106db424b11990e46b54c4b1c31e51",
           "block_number": 24624381,
-          "gas_delta": 120627
+          "gas_delta": 99027
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x94385268",
+      "selector_signature": null,
+      "entry_selector": "0x94385268",
+      "entry_signature": null,
+      "where_contract": "0x94385268a526349ac18edf41c01878774133c164",
+      "where_label": "0x94385268a526349ac18edf41c01878774133c164",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "empty",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": 234793,
+        "p50": 234793,
+        "p90": 234793
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 29,
+          "p90": 29
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 23,
+          "p90": 23
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x4d56d4dd620297b94d884284d2eab94d77af6ba8805ff8090b55198026107ba9",
+          "block_number": 24575325,
+          "gas_delta": 234793
         }
       ]
     },
@@ -94,12 +151,12 @@
       "call_depth": 3,
       "revert_decoded": "Error(string): rltc",
       "count": 1,
-      "share_of_role": 0.3333,
-      "share_of_contract": 0.3333,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
       "gas_delta": {
-        "avg": 113325,
-        "p50": 113325,
-        "p90": 113325
+        "avg": 90325,
+        "p50": 90325,
+        "p90": 90325
       },
       "drivers": {
         "state_gas_category": [
@@ -131,7 +188,7 @@
         {
           "tx_hash": "0xb6a9d1d5486208cd3fed96dfee268c702aba895bf91dd00816479bf842391237",
           "block_number": 24610994,
-          "gas_delta": 113325
+          "gas_delta": 90325
         }
       ]
     }
@@ -147,9 +204,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24610994,
+    "block_span_start": 24575325,
     "block_span_end": 24624381,
-    "distinct_blocks": 3,
+    "distinct_blocks": 4,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -161,6 +218,12 @@
         "label": "Aave v3 Flashloan User",
         "category": "infra",
         "count": 2
+      },
+      {
+        "contract": "0x420cafeaa7a2e44a404340397ac45b2f55fc8f73",
+        "label": "0x420cafeaa7a2e44a404340397ac45b2f55fc8f73",
+        "category": null,
+        "count": 1
       },
       {
         "contract": "0xfc9642049d1151868e45946330215e3df3ae69c2",

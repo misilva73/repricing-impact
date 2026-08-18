@@ -15,75 +15,13 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
-    "oog_site": {
-      "halt_count": 1
-    },
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 2
     }
   },
   "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
-    {
-      "role": "oog_site",
-      "kind": "oog",
-      "selector": "0x1bc74526",
-      "selector_signature": null,
-      "entry_selector": "0x1bc74526",
-      "entry_signature": null,
-      "where_contract": "0xc558f600b34a5f69dd2f0d06cb8a88d829b7420a",
-      "where_label": "sushi",
-      "where_category": null,
-      "opcode": "CALL",
-      "pattern_or_reason": "call_chain",
-      "oog_bottleneck_kind": "FractionalGas",
-      "call_depth": 15,
-      "revert_decoded": null,
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
-      "gas_delta": {
-        "avg": 587656,
-        "p50": 587656,
-        "p90": 587656
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 29,
-          "p90": 29
-        },
-        "sload": {
-          "p50": 253,
-          "p90": 253
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "surcharge_at_oog": {
-          "p50": 4400,
-          "sum": 4400
-        },
-        "gas_remaining_at_oog": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xeb30ef7424bc3b64fa2b6d0c6551f78d140a2b25059adb645ade22920a922e60",
-          "block_number": 24752666,
-          "gas_delta": 587656
-        }
-      ]
-    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -100,12 +38,12 @@
       "call_depth": 5,
       "revert_decoded": "short:0x000000",
       "count": 1,
-      "share_of_role": 1.0,
+      "share_of_role": 0.5,
       "share_of_contract": 0.5,
       "gas_delta": {
-        "avg": 565968,
-        "p50": 565968,
-        "p90": 565968
+        "avg": 454268,
+        "p50": 454268,
+        "p90": 454268
       },
       "drivers": {
         "cold_account": {
@@ -131,7 +69,58 @@
         {
           "tx_hash": "0xa817ee842e2e3f75efac26d5125910f11e47b278e7970855e9b6cda1f8d7218f",
           "block_number": 24365914,
-          "gas_delta": 565968
+          "gas_delta": 454268
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x04e7c6bf",
+      "selector_signature": null,
+      "entry_selector": "0x04e7c6bf",
+      "entry_signature": null,
+      "where_contract": "0xc558f600b34a5f69dd2f0d06cb8a88d829b7420a",
+      "where_label": "sushi",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "short:0x000000",
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": 130001,
+        "p50": 130001,
+        "p90": 130001
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 10,
+          "p90": 10
+        },
+        "sload": {
+          "p50": 48,
+          "p90": 48
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x7ed835d3159bbfd68e753aa6da53df0db62e4ddce4ecaf2c1f88b453b0b98624",
+          "block_number": 24317711,
+          "gas_delta": 130001
         }
       ]
     }
@@ -147,8 +136,8 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24365914,
-    "block_span_end": 24752666,
+    "block_span_start": 24317711,
+    "block_span_end": 24365914,
     "distinct_blocks": 2,
     "failure_rate": null,
     "entry_functions": [],
@@ -157,16 +146,10 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
-        "contract": "0x9ccc2f3ecde026230e11a5c8799ac7524f2bb294",
-        "label": "Proxy contract",
-        "category": null,
-        "count": 1
-      },
-      {
         "contract": "0xd5adabc8f98a485c8efa50599afbe926b3e6dd49",
         "label": "Contract Deployer",
         "category": "infra",
-        "count": 1
+        "count": 2
       }
     ]
   }

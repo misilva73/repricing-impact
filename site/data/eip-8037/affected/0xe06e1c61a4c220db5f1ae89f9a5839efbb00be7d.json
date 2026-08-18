@@ -16,12 +16,68 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 7
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xf9383d20",
+      "selector_signature": null,
+      "entry_selector": "0xf9383d20",
+      "entry_signature": null,
+      "where_contract": "0xe06e1c61a4c220db5f1ae89f9a5839efbb00be7d",
+      "where_label": "0xe06e1c61a4c220db5f1ae89f9a5839efbb00be7d",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "custom:0x4e47f8ea",
+      "count": 5,
+      "share_of_role": 0.7143,
+      "share_of_contract": 0.7143,
+      "gas_delta": {
+        "avg": -5832,
+        "p50": -13775,
+        "p90": 16444
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 13,
+          "p90": 15
+        },
+        "sload": {
+          "p50": 63,
+          "p90": 69
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 2
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x5a3d9373786a75d558e26feab564373635cf72ac61e56addd6e1f590cb92ca83",
+          "block_number": 23719383,
+          "gas_delta": -20196
+        },
+        {
+          "tx_hash": "0x04fe6a044c1a4d6e96fa6218eba04e49b0966e7beccc63b485e35eec5c0d3fc5",
+          "block_number": 23793413,
+          "gas_delta": -13775
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -37,13 +93,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 7,
       "revert_decoded": "custom:0x4e47f8ea",
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 2,
+      "share_of_role": 0.2857,
+      "share_of_contract": 0.2857,
       "gas_delta": {
-        "avg": -32501,
-        "p50": -32501,
-        "p90": -32501
+        "avg": -41051,
+        "p50": -41051,
+        "p90": -34211
       },
       "drivers": {
         "cold_account": {
@@ -51,12 +107,12 @@
           "p90": 10
         },
         "sload": {
-          "p50": 49,
-          "p90": 49
+          "p50": 46,
+          "p90": 48
         },
         "sstore": {
           "p50": 0,
-          "p90": 0
+          "p90": 1
         },
         "access_list_entries": {
           "p50": 0,
@@ -67,6 +123,11 @@
       },
       "examples": [
         {
+          "tx_hash": "0xff045eb4f6a9a61ae735640f71cc5541b93f83bcac2a27a2ea7f72303d3e437d",
+          "block_number": 24279240,
+          "gas_delta": -49601
+        },
+        {
           "tx_hash": "0x828a089f73eae25d65a35c97b22505f314dd7cd82cdf4ad06ef5a0fa737f4e16",
           "block_number": 24329116,
           "gas_delta": -32501
@@ -75,19 +136,19 @@
     }
   ],
   "context": {
-    "g3_tx_count": 0,
+    "g3_tx_count": 3,
     "g2_drillin_tx_count": 0,
     "af_tx_count": 0,
-    "status_flips": 0,
+    "status_flips": 3,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24329116,
+    "block_span_start": 23719383,
     "block_span_end": 24329116,
-    "distinct_blocks": 1,
+    "distinct_blocks": 7,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -95,10 +156,16 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "label": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "category": null,
+        "count": 5
+      },
+      {
         "contract": "0x3d955df9659e281f2331900ab47b0ccbbe5b0d03",
         "label": "0x3d955df9659e281f2331900ab47b0ccbbe5b0d03",
         "category": null,
-        "count": 1
+        "count": 2
       }
     ]
   }

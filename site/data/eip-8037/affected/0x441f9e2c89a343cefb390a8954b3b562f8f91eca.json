@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 3
+      "revert_count": 9
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -37,18 +37,74 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": null,
-      "count": 2,
-      "share_of_role": 0.6667,
-      "share_of_contract": 0.6667,
+      "count": 5,
+      "share_of_role": 0.5556,
+      "share_of_contract": 0.5556,
       "gas_delta": {
-        "avg": 1993927,
-        "p50": 1993927,
+        "avg": 1767478,
+        "p50": 1853530,
         "p90": 1993927
       },
       "drivers": {
         "cold_account": {
           "p50": 0,
           "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 20,
+          "p90": 22
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x4e6e0b4f2a272a350289f954629919e08e38b09c52d746aa3dccafd91ffefe35",
+          "block_number": 23952499,
+          "gas_delta": 1853530
+        },
+        {
+          "tx_hash": "0x0f2c81ea8587c95f57b5fdfb7bf722e550dcbbb391f0cfa34b5005c60512702c",
+          "block_number": 24211752,
+          "gas_delta": 1498003
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x441f9e2c",
+      "selector_signature": null,
+      "entry_selector": "0x441f9e2c",
+      "entry_signature": null,
+      "where_contract": "0x441f9e2c89a343cefb390a8954b3b562f8f91eca",
+      "where_label": "uniswap_v2",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "empty",
+      "count": 3,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.3333,
+      "gas_delta": {
+        "avg": -6193,
+        "p50": -6193,
+        "p90": -6193
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 1,
+          "p90": 1
         },
         "sload": {
           "p50": 0,
@@ -67,14 +123,14 @@
       },
       "examples": [
         {
-          "tx_hash": "0x5c57098f49bd6bc853ff27196520c8f9f8f8f6f9a8cca0207f129c653cd0e78c",
-          "block_number": 24492556,
-          "gas_delta": 1993927
+          "tx_hash": "0x6d2e2cdeb57cefaf80310cfbfa8c9aa259eaba85974b4892baa6c1a8b735f001",
+          "block_number": 23951574,
+          "gas_delta": -6193
         },
         {
-          "tx_hash": "0x6ca3f54f242b2adbfbb686d96a42b09f7ea40f5803be50051aae1c96dfcf0841",
-          "block_number": 24557992,
-          "gas_delta": 1993927
+          "tx_hash": "0xb1e32035c7188df7df1999eb3af1b22452180625d695052f426d27b7ae496d6d",
+          "block_number": 23937869,
+          "gas_delta": -6193
         }
       ]
     },
@@ -94,8 +150,8 @@
       "call_depth": 3,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 0.3333,
-      "share_of_contract": 0.3333,
+      "share_of_role": 0.1111,
+      "share_of_contract": 0.1111,
       "gas_delta": {
         "avg": 1502804,
         "p50": 1502804,
@@ -141,15 +197,21 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24492556,
+    "block_span_start": 23937869,
     "block_span_end": 24746178,
-    "distinct_blocks": 3,
+    "distinct_blocks": 9,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0x420cafe478ebb83542a70089e5a65da67cc829ac",
+        "label": "0x420cafe478ebb83542a70089e5a65da67cc829ac",
+        "category": null,
+        "count": 6
+      },
       {
         "contract": "0x420cafeaa7a2e44a404340397ac45b2f55fc8f73",
         "label": "0x420cafeaa7a2e44a404340397ac45b2f55fc8f73",

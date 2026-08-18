@@ -16,9 +16,12 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 2,
+      "g4_tx_count": 1,
       "g4_oog_count": 0,
-      "g4_nonoog_count": 2
+      "g4_nonoog_count": 1
+    },
+    "revert_site": {
+      "revert_count": 1
     }
   },
   "distinct_cluster_count": 2,
@@ -31,16 +34,16 @@
       "selector_signature": null,
       "entry_selector": "0x601881f3",
       "entry_signature": null,
-      "where_contract": "0x31439a79a3535d69b65c3be384840282b4ea0aa7",
-      "where_label": "0x31439a79a3535d69b65c3be384840282b4ea0aa7",
+      "where_contract": "0x857b8b6777301390299995ead85da294d0fcb4d8",
+      "where_label": "0x857b8b6777301390299995ead85da294d0fcb4d8",
       "where_category": null,
-      "opcode": "SWAP1",
+      "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 12,
+      "call_depth": 2,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
-      "share_of_role": 0.5,
+      "share_of_role": 1.0,
       "share_of_contract": 0.5,
       "gas_delta": {
         "avg": -961719,
@@ -76,27 +79,27 @@
       ]
     },
     {
-      "role": "entry",
+      "role": "revert_site",
       "kind": "non_oog",
       "selector": "0x601881f3",
       "selector_signature": null,
       "entry_selector": "0x601881f3",
       "entry_signature": null,
-      "where_contract": "0x26f8fae1387718e514447d601d617db246677710",
-      "where_label": "0x26f8fae1387718e514447d601d617db246677710",
+      "where_contract": "0x857b8b6777301390299995ead85da294d0fcb4d8",
+      "where_label": "0x857b8b6777301390299995ead85da294d0fcb4d8",
       "where_category": null,
-      "opcode": "DUP1",
+      "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 6,
+      "call_depth": 2,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
-      "share_of_role": 0.5,
+      "share_of_role": 1.0,
       "share_of_contract": 0.5,
       "gas_delta": {
-        "avg": -739969,
-        "p50": -739969,
-        "p90": -739969
+        "avg": -961719,
+        "p50": -961719,
+        "p90": -961719
       },
       "drivers": {
         "cold_account": {
@@ -120,57 +123,58 @@
       },
       "examples": [
         {
-          "tx_hash": "0x92425373b812fd375370527178fec6112728afb6a031f9b24b040a87dac06912",
-          "block_number": 24623621,
-          "gas_delta": -739969
+          "tx_hash": "0xb2a2a94a03cb9254f50b2c0416ab649557c283048844f5055d26efdc13d8a7c9",
+          "block_number": 24623522,
+          "gas_delta": -961719
         }
       ]
     }
   ],
   "context": {
     "g3_tx_count": 0,
-    "g2_drillin_tx_count": 0,
+    "g2_drillin_tx_count": 1,
     "af_tx_count": 0,
-    "status_flips": 2,
+    "status_flips": 1,
     "gas_delta": {
-      "avg": -850844,
-      "sum": -1701688,
-      "p50": -850844,
-      "p90": -762144
+      "avg": -961719,
+      "sum": -961719,
+      "p50": -961719,
+      "p90": -961719
     },
     "block_span_start": 24623522,
-    "block_span_end": 24623621,
-    "distinct_blocks": 2,
+    "block_span_end": 24623522,
+    "distinct_blocks": 1,
     "failure_rate": null,
     "entry_functions": [
       {
         "selector": "0x601881f3",
         "signature": null,
-        "count": 2
+        "count": 1
       }
     ],
     "failing_functions": [
       {
         "selector": "0x601881f3",
         "signature": null,
-        "count": 2
+        "count": 1
       }
     ],
     "halt_contracts": [],
     "revert_contracts": [
       {
-        "contract": "0x31439a79a3535d69b65c3be384840282b4ea0aa7",
-        "label": "0x31439a79a3535d69b65c3be384840282b4ea0aa7",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0x26f8fae1387718e514447d601d617db246677710",
-        "label": "0x26f8fae1387718e514447d601d617db246677710",
+        "contract": "0x857b8b6777301390299995ead85da294d0fcb4d8",
+        "label": "0x857b8b6777301390299995ead85da294d0fcb4d8",
         "category": null,
         "count": 1
       }
     ],
-    "entry_contracts": []
+    "entry_contracts": [
+      {
+        "contract": "0x857b8b6777301390299995ead85da294d0fcb4d8",
+        "label": "0x857b8b6777301390299995ead85da294d0fcb4d8",
+        "category": null,
+        "count": 1
+      }
+    ]
   }
 }

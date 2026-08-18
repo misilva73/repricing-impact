@@ -16,14 +16,14 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 6
+      "halt_count": 74
     },
     "revert_site": {
-      "revert_count": 179
+      "revert_count": 539
     }
   },
-  "distinct_cluster_count": 29,
-  "clusters_shown_share": 0.8757,
+  "distinct_cluster_count": 80,
+  "clusters_shown_share": 0.7357,
   "failure_clusters": [
     {
       "role": "revert_site",
@@ -41,8 +41,8 @@
       "call_depth": 4,
       "revert_decoded": "Error(string): no profit",
       "count": 114,
-      "share_of_role": 0.6369,
-      "share_of_contract": 0.6162,
+      "share_of_role": 0.2115,
+      "share_of_contract": 0.186,
       "gas_delta": {
         "avg": -16302,
         "p50": -16216,
@@ -70,23 +70,151 @@
       },
       "examples": [
         {
-          "tx_hash": "0x73c6b942df3404210d9bf673d39b63e2d6d5e32930dbc93b7320e8c84a6b6531",
-          "block_number": 25109667,
+          "tx_hash": "0xa3593804789c1056ff74ba0e98a2e9e0d4291acdfe0de650319fac216168bbd4",
+          "block_number": 25106350,
           "gas_delta": -16216
         },
         {
-          "tx_hash": "0x6c2b87cb6a4fd06be15661d9f4a52089ca6a7ce0ff25c0d9f34c882c1be47409",
-          "block_number": 25106327,
+          "tx_hash": "0x1b8b918cad318845faa050d46101478a13d35bcf327d1fc87112fb098f248444",
+          "block_number": 25113272,
           "gas_delta": -16216
+        }
+      ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x94b918de",
+      "selector_signature": null,
+      "entry_selector": "0x94b918de",
+      "entry_signature": null,
+      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "where_label": "Uniswap V2 Router",
+      "where_category": "swap_dex",
+      "opcode": "MLOAD",
+      "pattern_or_reason": "memory_expansion",
+      "oog_bottleneck_kind": null,
+      "call_depth": 2,
+      "revert_decoded": null,
+      "count": 65,
+      "share_of_role": 0.8784,
+      "share_of_contract": 0.106,
+      "gas_delta": {
+        "avg": -4159535,
+        "p50": -3537415,
+        "p90": -3537415
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 4,
+          "p90": 4
+        },
+        "sload": {
+          "p50": 37,
+          "p90": 37
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 2,
+          "p90": 2
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xe90480d6876ba377b29a018a79e88db938c360469f09775be23068b2edd52ae5",
+          "block_number": 23759475,
+          "gas_delta": -3537415
+        },
+        {
+          "tx_hash": "0xeafe9f018ed8f78d3620c73a63104b8989b302b44f43a9c49cfd53b3cb386baf",
+          "block_number": 23759472,
+          "gas_delta": -3537415
         }
       ]
     },
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0xe9ae5c53",
+      "selector": "0x94b918de",
       "selector_signature": null,
-      "entry_selector": "0xe9ae5c53",
+      "entry_selector": "0x94b918de",
+      "entry_signature": null,
+      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "where_label": "Uniswap V2 Router",
+      "where_category": "swap_dex",
+      "opcode": "MLOAD",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 2,
+      "revert_decoded": "empty",
+      "count": 65,
+      "share_of_role": 0.1206,
+      "share_of_contract": 0.106,
+      "gas_delta": {
+        "avg": -4159535,
+        "p50": -3537415,
+        "p90": -3537415
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 4,
+          "p90": 4
+        },
+        "sload": {
+          "p50": 37,
+          "p90": 37
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 2,
+          "p90": 2
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xe90480d6876ba377b29a018a79e88db938c360469f09775be23068b2edd52ae5",
+          "block_number": 23759475,
+          "gas_delta": -3537415
+        },
+        {
+          "tx_hash": "0xeafe9f018ed8f78d3620c73a63104b8989b302b44f43a9c49cfd53b3cb386baf",
+          "block_number": 23759472,
+          "gas_delta": -3537415
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00c92814",
+      "selector_signature": null,
+      "entry_selector": "0x00c92814",
       "entry_signature": null,
       "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
       "where_label": "Uniswap V2 Router",
@@ -95,33 +223,27 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 3,
-      "revert_decoded": "empty",
-      "count": 21,
-      "share_of_role": 0.1173,
-      "share_of_contract": 0.1135,
+      "revert_decoded": "Error(string): no profit",
+      "count": 55,
+      "share_of_role": 0.102,
+      "share_of_contract": 0.0897,
       "gas_delta": {
-        "avg": -179894,
-        "p50": -174759,
-        "p90": -120600
+        "avg": -2424,
+        "p50": -2424,
+        "p90": -2424
       },
       "drivers": {
-        "state_gas_category": [
-          {
-            "key": "authorization",
-            "count": 14
-          }
-        ],
         "cold_account": {
-          "p50": 2,
-          "p90": 2
+          "p50": 5,
+          "p90": 5
         },
         "sload": {
-          "p50": 0,
-          "p90": 0
+          "p50": 16,
+          "p90": 16
         },
         "sstore": {
-          "p50": 1,
-          "p90": 1
+          "p50": 0,
+          "p90": 0
         },
         "access_list_entries": {
           "p50": 0,
@@ -132,23 +254,23 @@
       },
       "examples": [
         {
-          "tx_hash": "0x440e4ae10c24cbd26582b29d1984105e2f4b6b65afb2444ad1622ec3c9221cbc",
-          "block_number": 24330685,
-          "gas_delta": -232604
+          "tx_hash": "0xb5bf381863b9264f5b3b7ab87aeeab8b7f1a52235f3062f4a7b2c07545ac46c9",
+          "block_number": 24250916,
+          "gas_delta": -2424
         },
         {
-          "tx_hash": "0x1a79e670548c2fb52d329f2d20bcc34b0ab77ea8017d672e84040fc0e84ba01b",
-          "block_number": 24908912,
-          "gas_delta": -165542
+          "tx_hash": "0xcb8836140caa1b370f8071933c2370794e012760eccc52b657e09d8e107c7559",
+          "block_number": 24250916,
+          "gas_delta": -2424
         }
       ]
     },
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0xe99aa0c3",
+      "selector": "0x00da4a90",
       "selector_signature": null,
-      "entry_selector": "0xe99aa0c3",
+      "entry_selector": "0x00da4a90",
       "entry_signature": null,
       "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
       "where_label": "Uniswap V2 Router",
@@ -156,28 +278,28 @@
       "opcode": "ISZERO",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 4,
-      "revert_decoded": "Error(string): NP",
-      "count": 8,
-      "share_of_role": 0.0447,
-      "share_of_contract": 0.0432,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): no profit",
+      "count": 45,
+      "share_of_role": 0.0835,
+      "share_of_contract": 0.0734,
       "gas_delta": {
-        "avg": -16621,
-        "p50": -16629,
-        "p90": -16600
+        "avg": -68025,
+        "p50": -68025,
+        "p90": -68024
       },
       "drivers": {
         "cold_account": {
-          "p50": 9,
-          "p90": 9
+          "p50": 19,
+          "p90": 19
         },
         "sload": {
-          "p50": 34,
-          "p90": 34
+          "p50": 74,
+          "p90": 74
         },
         "sstore": {
-          "p50": 1,
-          "p90": 1
+          "p50": 3,
+          "p90": 3
         },
         "access_list_entries": {
           "p50": 0,
@@ -188,14 +310,126 @@
       },
       "examples": [
         {
-          "tx_hash": "0xad0115f026669cd70e459759b2d9bb8cfdc8ff70e32477d900e642f8b55dbff7",
-          "block_number": 25233186,
-          "gas_delta": -16629
+          "tx_hash": "0x456d5af9c3c3f36ffef210e3813d4b282c8aabe8068ad1cf5f08492332c9a1c9",
+          "block_number": 23714267,
+          "gas_delta": -68024
         },
         {
-          "tx_hash": "0x18f17eb16ea2782fe7f46b5069ad57f9ceb42ebabe49e466c1661ac02eded012",
-          "block_number": 25233319,
-          "gas_delta": -16629
+          "tx_hash": "0x3d67d2344bebec149be00578965920215160e3f5e6b7fad6210dfb3663c07ce8",
+          "block_number": 23713986,
+          "gas_delta": -68024
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x03f00293",
+      "selector_signature": null,
+      "entry_selector": "0x03f00293",
+      "entry_signature": null,
+      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "where_label": "Uniswap V2 Router",
+      "where_category": "swap_dex",
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "Error(string): no profit",
+      "count": 42,
+      "share_of_role": 0.0779,
+      "share_of_contract": 0.0685,
+      "gas_delta": {
+        "avg": 11576,
+        "p50": 11576,
+        "p90": 11576
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 6,
+          "p90": 6
+        },
+        "sload": {
+          "p50": 34,
+          "p90": 34
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xa131c52aac352584897ccdba6c1dd315c5947401e7ec07f46e32427d0805debb",
+          "block_number": 23758009,
+          "gas_delta": 11576
+        },
+        {
+          "tx_hash": "0xa1de52938f057e45301a73a367845e1ae8530c77f40d7cdfc68a09dd88cf7579",
+          "block_number": 23760772,
+          "gas_delta": 11576
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x0093b4b9",
+      "selector_signature": null,
+      "entry_selector": "0x0093b4b9",
+      "entry_signature": null,
+      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+      "where_label": "Uniswap V2 Router",
+      "where_category": "swap_dex",
+      "opcode": "ISZERO",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): no profit",
+      "count": 35,
+      "share_of_role": 0.0649,
+      "share_of_contract": 0.0571,
+      "gas_delta": {
+        "avg": -34268,
+        "p50": -33822,
+        "p90": -33822
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 19,
+          "p90": 19
+        },
+        "sload": {
+          "p50": 141,
+          "p90": 141
+        },
+        "sstore": {
+          "p50": 4,
+          "p90": 4
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xd4f4ad87c0c276958213c22140a7cfdb19d5af30dff05913934499a4d1546a03",
+          "block_number": 24111796,
+          "gas_delta": -36622
+        },
+        {
+          "tx_hash": "0x6eeb52269cb8ee9f5556125691efe2a954f834f4b09405a9cfbcc19dba57b541",
+          "block_number": 24100086,
+          "gas_delta": -33825
         }
       ]
     },
@@ -214,13 +448,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 7,
       "revert_decoded": "Error(string): e09",
-      "count": 5,
-      "share_of_role": 0.0279,
-      "share_of_contract": 0.027,
+      "count": 30,
+      "share_of_role": 0.0557,
+      "share_of_contract": 0.0489,
       "gas_delta": {
-        "avg": 543793,
-        "p50": 579185,
-        "p90": 590507
+        "avg": 387300,
+        "p50": 434762,
+        "p90": 569266
       },
       "drivers": {
         "cold_account": {
@@ -236,280 +470,40 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 284,
-          "p90": 290
+          "p50": 210,
+          "p90": 280
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x2bc136bae854491cc3fd8a40163714f20bd0c7c2a4da79524d5b8b022b395331",
-          "block_number": 24431092,
-          "gas_delta": 591729
+          "tx_hash": "0xc9d01543491a81f395b3c6043d9774facf848574d015cc1ef988682231819ed4",
+          "block_number": 23263314,
+          "gas_delta": 213105
         },
         {
-          "tx_hash": "0x31f3b68725291fe5a2d7ad3968f62e2de0a2dc438e849d4d5ceaf264dd080376",
-          "block_number": 24496543,
-          "gas_delta": 579185
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x03f81700",
-      "selector_signature": null,
-      "entry_selector": "0x03f81700",
-      "entry_signature": null,
-      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-      "where_label": "Uniswap V2 Router",
-      "where_category": "swap_dex",
-      "opcode": "ISZERO",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 4,
-      "revert_decoded": "Error(string): no profit",
-      "count": 5,
-      "share_of_role": 0.0279,
-      "share_of_contract": 0.027,
-      "gas_delta": {
-        "avg": -16891,
-        "p50": -16895,
-        "p90": -16873
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 10,
-          "p90": 10
-        },
-        "sload": {
-          "p50": 34,
-          "p90": 34
-        },
-        "sstore": {
-          "p50": 1,
-          "p90": 1
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x4d0bdb86ebe054d29cc5b7bad52bf21d469d45dd50badde2ea747a7813c540d3",
-          "block_number": 25106151,
-          "gas_delta": -16873
-        },
-        {
-          "tx_hash": "0x2843a4b17a5a85dcd280d6b62fce05d38649e72928119c785dedc4c4a0f8ddb6",
-          "block_number": 25109765,
-          "gas_delta": -16873
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x0053be41",
-      "selector_signature": null,
-      "entry_selector": "0x0053be41",
-      "entry_signature": null,
-      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-      "where_label": "Uniswap V2 Router",
-      "where_category": "swap_dex",
-      "opcode": "ISZERO",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 3,
-      "revert_decoded": "Error(string): no profit",
-      "count": 4,
-      "share_of_role": 0.0223,
-      "share_of_contract": 0.0216,
-      "gas_delta": {
-        "avg": -70122,
-        "p50": -70822,
-        "p90": -68862
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 11,
-          "p90": 11
-        },
-        "sload": {
-          "p50": 43,
-          "p90": 44
-        },
-        "sstore": {
-          "p50": 5,
-          "p90": 5
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x91ff211a40112f8dc5f07101db5245b1c0fd5e3f1b614a019b2efef432412356",
-          "block_number": 24818535,
-          "gas_delta": -70822
-        },
-        {
-          "tx_hash": "0x6fde7fd70139b4b71c43fdf09936435d962a90941cfb9ec49eaf0dcb8946ba62",
-          "block_number": 24818521,
-          "gas_delta": -70822
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x1bc74526",
-      "selector_signature": null,
-      "entry_selector": "0x1bc74526",
-      "entry_signature": null,
-      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-      "where_label": "Uniswap V2 Router",
-      "where_category": "swap_dex",
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 8,
-      "revert_decoded": "custom:0x93cfa3ee",
-      "count": 3,
-      "share_of_role": 0.0168,
-      "share_of_contract": 0.0162,
-      "gas_delta": {
-        "avg": -67904,
-        "p50": -58723,
-        "p90": -47057
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 11,
-          "p90": 13
-        },
-        "sload": {
-          "p50": 21,
-          "p90": 23
-        },
-        "sstore": {
-          "p50": 2,
-          "p90": 2
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "surcharge_at_oog": {
-          "p50": 0,
-          "sum": 0
-        },
-        "gas_remaining_at_oog": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xa0ec9c6987ac35b3e3774794349abf55e6f6007878ca289038c4e22248fbd1f4",
-          "block_number": 25233419,
-          "gas_delta": -44141
-        },
-        {
-          "tx_hash": "0xc67d9fe97c01d9e05d84f6790e94e2f728b0bf9be54a6e3f7f12119e995d7209",
-          "block_number": 25299317,
-          "gas_delta": -100849
-        }
-      ]
-    },
-    {
-      "role": "oog_site",
-      "kind": "oog",
-      "selector": "0x1bc74526",
-      "selector_signature": null,
-      "entry_selector": "0x1bc74526",
-      "entry_signature": null,
-      "where_contract": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-      "where_label": "Uniswap V2 Router",
-      "where_category": "swap_dex",
-      "opcode": "EXTCODESIZE",
-      "pattern_or_reason": "unknown",
-      "oog_bottleneck_kind": "FractionalGas",
-      "call_depth": 7,
-      "revert_decoded": null,
-      "count": 2,
-      "share_of_role": 0.3333,
-      "share_of_contract": 0.0108,
-      "gas_delta": {
-        "avg": -120390,
-        "p50": -120390,
-        "p90": -118904
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 10,
-          "p90": 10
-        },
-        "sload": {
-          "p50": 16,
-          "p90": 16
-        },
-        "sstore": {
-          "p50": 1,
-          "p90": 1
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "surcharge_at_oog": {
-          "p50": 0,
-          "sum": 0
-        },
-        "gas_remaining_at_oog": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x77aca4801b511dc44a798b62e85a830b89cee6e6642d2ae588b3ae8e47eb9b22",
-          "block_number": 24421832,
-          "gas_delta": -118532
-        },
-        {
-          "tx_hash": "0x199f0810a31de342c2d20884a9a81cd0bcd078691b1cc1cfa43118b44fec016d",
-          "block_number": 25172252,
-          "gas_delta": -122249
+          "tx_hash": "0x87a53f36dd5245fdd489b6d099323ea79419a59554d28243184e72e6f52d43a5",
+          "block_number": 23272469,
+          "gas_delta": 213105
         }
       ]
     }
   ],
   "context": {
-    "g3_tx_count": 391268,
-    "g2_drillin_tx_count": 23,
-    "af_tx_count": 112729,
-    "status_flips": 391268,
+    "g3_tx_count": 885034,
+    "g2_drillin_tx_count": 34,
+    "af_tx_count": 246342,
+    "status_flips": 885034,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24330685,
+    "block_span_start": 23245247,
     "block_span_end": 25299317,
-    "distinct_blocks": 179,
+    "distinct_blocks": 484,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -520,7 +514,25 @@
         "contract": "0x00000f91109c4d0007e90000d9facad5298a0cac",
         "label": "Aave v3 Flashloan User",
         "category": "infra",
-        "count": 124
+        "count": 357
+      },
+      {
+        "contract": "0xd53144781f129f436e51541374b2cc9e1e3d67a0",
+        "label": "0xd53144781f129f436e51541374b2cc9e1e3d67a0",
+        "category": null,
+        "count": 65
+      },
+      {
+        "contract": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
+        "label": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
+        "category": null,
+        "count": 37
+      },
+      {
+        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
+        "label": "StrategyExecutor",
+        "category": "swap_dex",
+        "count": 12
       },
       {
         "contract": "0x5b5a0580bcfd3673820bb249514234afad33e209",
@@ -541,28 +553,10 @@
         "count": 6
       },
       {
-        "contract": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
-        "label": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
+        "contract": "0xa7efab8a18056a9bf4d11110af602730effdd8c9",
+        "label": "0xa7efab8a18056a9bf4d11110af602730effdd8c9",
         "category": null,
-        "count": 5
-      },
-      {
-        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
-        "label": "StrategyExecutor",
-        "category": "swap_dex",
-        "count": 3
-      },
-      {
-        "contract": "0xd4f69d02ef082f612558588d103994a7e3cf29c9",
-        "label": "0xd4f69d02ef082f612558588d103994a7e3cf29c9",
-        "category": null,
-        "count": 3
-      },
-      {
-        "contract": "0x8561ff5de680b99c6c1ce8f7aaf37fa150ffad94",
-        "label": "0x8561ff5de680b99c6c1ce8f7aaf37fa150ffad94",
-        "category": null,
-        "count": 2
+        "count": 4
       }
     ]
   }

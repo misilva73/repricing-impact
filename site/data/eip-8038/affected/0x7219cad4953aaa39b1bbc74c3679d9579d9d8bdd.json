@@ -16,12 +16,74 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 5
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x88000000",
+      "selector_signature": null,
+      "entry_selector": "0x88000000",
+      "entry_signature": null,
+      "where_contract": "0x7219cad4953aaa39b1bbc74c3679d9579d9d8bdd",
+      "where_label": "0x7219cad4953aaa39b1bbc74c3679d9579d9d8bdd",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "empty",
+      "count": 3,
+      "share_of_role": 0.6,
+      "share_of_contract": 0.6,
+      "gas_delta": {
+        "avg": 191701,
+        "p50": 181034,
+        "p90": 207114
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 3
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 1,
+          "p90": 4
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 61,
+          "p90": 68
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xc58caddd26212580a827af6cedd9504ac412e654f08acff1f68f5e775051e060",
+          "block_number": 23863703,
+          "gas_delta": 180434
+        },
+        {
+          "tx_hash": "0x15afdd81b567b0480eed386ce832b3e13807107e6e012856b7c0295e68aa3071",
+          "block_number": 23865273,
+          "gas_delta": 181034
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -37,22 +99,22 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "custom:0xe167d4ba",
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 2,
+      "share_of_role": 0.4,
+      "share_of_contract": 0.4,
       "gas_delta": {
-        "avg": 266609,
-        "p50": 266609,
-        "p90": 266609
+        "avg": 128659,
+        "p50": 128659,
+        "p90": 161339
       },
       "drivers": {
         "cold_account": {
-          "p50": 10,
+          "p50": 8,
           "p90": 10
         },
         "sload": {
-          "p50": 109,
-          "p90": 109
+          "p50": 69,
+          "p90": 101
         },
         "sstore": {
           "p50": 0,
@@ -67,9 +129,14 @@
       },
       "examples": [
         {
+          "tx_hash": "0x5b2699bc853ac60da0b18ebad4e996734c7581bad659200a90ede5a47e0dc1c8",
+          "block_number": 23867053,
+          "gas_delta": 87809
+        },
+        {
           "tx_hash": "0x5457b4d83427026bcda6e07877997042734fbc6884b1ccf30cb5e916837ce977",
           "block_number": 25220384,
-          "gas_delta": 266609
+          "gas_delta": 169509
         }
       ]
     }
@@ -85,15 +152,27 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 25220384,
+    "block_span_start": 23863703,
     "block_span_end": 25220384,
-    "distinct_blocks": 1,
+    "distinct_blocks": 5,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0x282886d79c7495df43ad3d734b636644a0a3f320",
+        "label": "0x282886d79c7495df43ad3d734b636644a0a3f320",
+        "category": null,
+        "count": 3
+      },
+      {
+        "contract": "0x731ad2d40b546f8bb283be0f498fc6f6ed203e84",
+        "label": "0x731ad2d40b546f8bb283be0f498fc6f6ed203e84",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0xbb1dffb61984d1f94c03fcdf839a1b62bc6e7805",
         "label": "0xbb1dffb61984d1f94c03fcdf839a1b62bc6e7805",

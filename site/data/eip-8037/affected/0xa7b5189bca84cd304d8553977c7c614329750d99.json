@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 10
+      "revert_count": 12
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 8,
       "revert_decoded": "empty",
       "count": 10,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.8333,
+      "share_of_contract": 0.8333,
       "gas_delta": {
         "avg": -511508,
         "p50": -511089,
@@ -72,9 +72,71 @@
           "gas_delta": -513340
         },
         {
-          "tx_hash": "0x3310158e722db4ba4cdb0db35acd6713f2219e57d3ec98e5974e6a09479c5750",
-          "block_number": 25065208,
-          "gas_delta": -511089
+          "tx_hash": "0x724c5417dec82ca077396a570f1392e8848709b1ba0c5682d87adeb9844c014f",
+          "block_number": 25065190,
+          "gas_delta": -508576
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x893aa9f6",
+      "selector_signature": null,
+      "entry_selector": "0x893aa9f6",
+      "entry_signature": null,
+      "where_contract": "0xa7b5189bca84cd304d8553977c7c614329750d99",
+      "where_label": "0xa7b5189bca84cd304d8553977c7c614329750d99",
+      "where_category": null,
+      "opcode": "ISZERO",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 10,
+      "revert_decoded": "custom:0x5c0dee5d",
+      "count": 2,
+      "share_of_role": 0.1667,
+      "share_of_contract": 0.1667,
+      "gas_delta": {
+        "avg": -312580,
+        "p50": -312580,
+        "p90": -312580
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "authorization",
+            "count": 2
+          }
+        ],
+        "cold_account": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x4157ac646bd5fec939f5563a1b15b2e29ff15a6d7b52122cb27dd7c36a858c4b",
+          "block_number": 23339195,
+          "gas_delta": -312580
+        },
+        {
+          "tx_hash": "0x28db9398ca920dd16397adb0553e8ca9266eb2ccdd8fc8269f9976b62f1024c4",
+          "block_number": 23339210,
+          "gas_delta": -312580
         }
       ]
     }
@@ -90,9 +152,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24946444,
+    "block_span_start": 23339195,
     "block_span_end": 25065619,
-    "distinct_blocks": 10,
+    "distinct_blocks": 12,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -100,38 +162,20 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0x16c7c1bc7d1a165ad63b7387579be3bd475de06d",
+        "label": "0x16c7c1bc7d1a165ad63b7387579be3bd475de06d",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0xe27d43f558f8b3f7876d1265683e3da3aab03174",
+        "label": "0xe27d43f558f8b3f7876d1265683e3da3aab03174",
+        "category": null,
+        "count": 1
+      },
+      {
         "contract": "0x67e4ff22e70da2c1ad40411f9762c75397f83a2b",
         "label": "0x67e4ff22e70da2c1ad40411f9762c75397f83a2b",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0xa63e940c30b14905df182055f44e096778293666",
-        "label": "0xa63e940c30b14905df182055f44e096778293666",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0x0f32ec2bc7c909e376cccb9f423d1b1de2b53436",
-        "label": "0x0f32ec2bc7c909e376cccb9f423d1b1de2b53436",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0xf4b71f9f8bfab25831f53a400299f5e5139c8629",
-        "label": "0xf4b71f9f8bfab25831f53a400299f5e5139c8629",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0xe4d1965573f1f7b6f2340276699ad9b31337ed16",
-        "label": "0xe4d1965573f1f7b6f2340276699ad9b31337ed16",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0xe78390891663a7537c222ba8c135ba703e3d36bf",
-        "label": "0xe78390891663a7537c222ba8c135ba703e3d36bf",
         "category": null,
         "count": 1
       },
@@ -142,8 +186,26 @@
         "count": 1
       },
       {
-        "contract": "0x2b4251f00af97aa8cc078f23f5a5d31095c391a2",
-        "label": "0x2b4251f00af97aa8cc078f23f5a5d31095c391a2",
+        "contract": "0x0f32ec2bc7c909e376cccb9f423d1b1de2b53436",
+        "label": "0x0f32ec2bc7c909e376cccb9f423d1b1de2b53436",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0x55440dc336b37f4ef456e4f12dedc733e5fb2e77",
+        "label": "0x55440dc336b37f4ef456e4f12dedc733e5fb2e77",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0xe4d1965573f1f7b6f2340276699ad9b31337ed16",
+        "label": "0xe4d1965573f1f7b6f2340276699ad9b31337ed16",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0xa63e940c30b14905df182055f44e096778293666",
+        "label": "0xa63e940c30b14905df182055f44e096778293666",
         "category": null,
         "count": 1
       }

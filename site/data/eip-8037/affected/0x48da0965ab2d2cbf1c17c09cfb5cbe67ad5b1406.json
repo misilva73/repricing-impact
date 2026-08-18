@@ -15,13 +15,72 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
+    "oog_site": {
+      "halt_count": 1
+    },
     "revert_site": {
-      "revert_count": 15
+      "revert_count": 46
     }
   },
-  "distinct_cluster_count": 9,
-  "clusters_shown_share": 0.9333,
+  "distinct_cluster_count": 18,
+  "clusters_shown_share": 0.7872,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xe1ced726",
+      "selector_signature": null,
+      "entry_selector": "0xe1ced726",
+      "entry_signature": null,
+      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "Error(string): e09",
+      "count": 18,
+      "share_of_role": 0.3913,
+      "share_of_contract": 0.383,
+      "gas_delta": {
+        "avg": 85867,
+        "p50": 79680,
+        "p90": 98253
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 1
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 48,
+          "p90": 55
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xc6f21adcdd80eb1895d4fba31edce4bad8e17439f8faea69359928f2f66cab07",
+          "block_number": 23481785,
+          "gas_delta": 90097
+        },
+        {
+          "tx_hash": "0xac356165c1c28d2287b969460b60a444fc7947b0686cfc60ab5564eaa3617761",
+          "block_number": 23566880,
+          "gas_delta": 79610
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -37,13 +96,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 5,
       "revert_decoded": "empty",
-      "count": 5,
-      "share_of_role": 0.3333,
-      "share_of_contract": 0.3333,
+      "count": 6,
+      "share_of_role": 0.1304,
+      "share_of_contract": 0.1277,
       "gas_delta": {
-        "avg": -4527,
+        "avg": -4254,
         "p50": -2787,
-        "p90": -1107
+        "p90": -1387
       },
       "drivers": {
         "cold_account": {
@@ -52,7 +111,7 @@
         },
         "sload": {
           "p50": 29,
-          "p90": 42
+          "p90": 40
         },
         "sstore": {
           "p50": 0,
@@ -67,14 +126,70 @@
       },
       "examples": [
         {
+          "tx_hash": "0x572b32ee40191a1d6d3fba178947f6ffe3b98435b121b74ad4f8dc8d86e25313",
+          "block_number": 23915176,
+          "gas_delta": -2888
+        },
+        {
           "tx_hash": "0xe7d2dd99ca281bb429c266190a46e166855820fd7dd73361d7bbbd5af8f8b5ed",
           "block_number": 24386431,
           "gas_delta": -2787
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00000000",
+      "selector_signature": null,
+      "entry_selector": "0x00000000",
+      "entry_signature": null,
+      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "Error(string): TR",
+      "count": 4,
+      "share_of_role": 0.087,
+      "share_of_contract": 0.0851,
+      "gas_delta": {
+        "avg": 606587,
+        "p50": 594948,
+        "p90": 875883
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 277,
+          "p90": 408
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x2dcbbe0fd8348b8301fa2e1e4bdeb578dd4b87d963ce98ea33b258179e501815",
+          "block_number": 23254792,
+          "gas_delta": 404506
         },
         {
-          "tx_hash": "0x8dc18cc9ab29d180fda660f40de3ac62a8ee7b580e8b09e53219fc5467b89565",
-          "block_number": 24415448,
-          "gas_delta": -2787
+          "tx_hash": "0xfb602a9ae109edc821d56d0e3e33a2a8a2ecbfabe1476dd7dda5a1018fa58596",
+          "block_number": 23545264,
+          "gas_delta": 785390
         }
       ]
     },
@@ -94,8 +209,8 @@
       "call_depth": 5,
       "revert_decoded": "empty",
       "count": 3,
-      "share_of_role": 0.2,
-      "share_of_contract": 0.2,
+      "share_of_role": 0.0652,
+      "share_of_contract": 0.0638,
       "gas_delta": {
         "avg": -872,
         "p50": 13,
@@ -137,6 +252,62 @@
     {
       "role": "revert_site",
       "kind": "non_oog",
+      "selector": "0xf9383d20",
+      "selector_signature": null,
+      "entry_selector": "0xf9383d20",
+      "entry_signature": null,
+      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "custom:0x4e47f8ea",
+      "count": 2,
+      "share_of_role": 0.0435,
+      "share_of_contract": 0.0426,
+      "gas_delta": {
+        "avg": -46946,
+        "p50": -46946,
+        "p90": -44586
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 22,
+          "p90": 23
+        },
+        "sload": {
+          "p50": 84,
+          "p90": 88
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 1
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x366a470bc143592e0f02ec23f39221669150d9e3208a4b3f5e1ff4bc1e00dd8b",
+          "block_number": 23747928,
+          "gas_delta": -43996
+        },
+        {
+          "tx_hash": "0x6da60313c1a37d94c09b92851d23c4f0ab76d463dbad49dbe8802b56969272d5",
+          "block_number": 23962135,
+          "gas_delta": -49896
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
       "selector": "0x00000000",
       "selector_signature": null,
       "entry_selector": "0x00000000",
@@ -149,13 +320,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 7,
       "revert_decoded": "Error(string): TR",
-      "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
+      "count": 2,
+      "share_of_role": 0.0435,
+      "share_of_contract": 0.0426,
       "gas_delta": {
-        "avg": 102394,
-        "p50": 102394,
-        "p90": 102394
+        "avg": 190052,
+        "p50": 190052,
+        "p90": 260178
       },
       "drivers": {
         "cold_account": {
@@ -171,13 +342,18 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 53,
-          "p90": 53
+          "p50": 98,
+          "p90": 135
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
+        {
+          "tx_hash": "0x7b028d6173c8c88d453d8918c8f1a4d9e7dba66e75668c448db54ec19def8ca0",
+          "block_number": 24176927,
+          "gas_delta": 277710
+        },
         {
           "tx_hash": "0x2c63c79f9ba85083d9026f9639400c18fcdfad403f9f9caddff41cac2910ba00",
           "block_number": 24327745,
@@ -186,144 +362,50 @@
       ]
     },
     {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x00000000",
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x99999999",
       "selector_signature": null,
-      "entry_selector": "0x00000000",
+      "entry_selector": "0x99999999",
       "entry_signature": null,
       "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
       "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
       "where_category": null,
-      "opcode": "ISZERO",
-      "pattern_or_reason": "Revert",
+      "opcode": "JUMPI",
+      "pattern_or_reason": "loop",
       "oog_bottleneck_kind": null,
-      "call_depth": 7,
-      "revert_decoded": "Error(string): TR",
+      "call_depth": 19,
+      "revert_decoded": null,
       "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.0213,
       "gas_delta": {
-        "avg": 774094,
-        "p50": 774094,
-        "p90": 774094
+        "avg": -5556171,
+        "p50": -5556171,
+        "p90": -5556171
       },
       "drivers": {
         "cold_account": {
-          "p50": 0,
-          "p90": 0
+          "p50": 122,
+          "p90": 122
         },
         "sload": {
-          "p50": 0,
-          "p90": 0
+          "p50": 1713,
+          "p90": 1713
         },
         "sstore": {
-          "p50": 0,
-          "p90": 0
+          "p50": 27,
+          "p90": 27
         },
         "access_list_entries": {
-          "p50": 380,
-          "p90": 380
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x8af6db00378911e23248ad3398921d37e494a19375bb3bd7e29910c63110261b",
-          "block_number": 24357227,
-          "gas_delta": 774094
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x00000000",
-      "selector_signature": null,
-      "entry_selector": "0x00000000",
-      "entry_signature": null,
-      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_category": null,
-      "opcode": "SWAP2",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 9,
-      "revert_decoded": "Error(string): TR",
-      "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
-      "gas_delta": {
-        "avg": 170794,
-        "p50": 170794,
-        "p90": 170794
-      },
-      "drivers": {
-        "cold_account": {
           "p50": 0,
           "p90": 0
         },
-        "sload": {
+        "surcharge_at_oog": {
           "p50": 0,
-          "p90": 0
+          "sum": 0
         },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 113,
-          "p90": 113
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x7eb1e252296986dcc32423d624a9e3d7e7d91ced89fa958c91c43032713cb8c4",
-          "block_number": 24445157,
-          "gas_delta": 170794
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x601881f3",
-      "selector_signature": null,
-      "entry_selector": "0x601881f3",
-      "entry_signature": null,
-      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_category": null,
-      "opcode": "SWAP2",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 7,
-      "revert_decoded": "Panic(0x11)",
-      "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
-      "gas_delta": {
-        "avg": -478275,
-        "p50": -478275,
-        "p90": -478275
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 0,
-          "p90": 0
-        },
-        "sload": {
-          "p50": 2,
-          "p90": 2
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
+        "gas_remaining_at_oog": {
           "p50": 0,
           "p90": 0
         },
@@ -332,69 +414,18 @@
       },
       "examples": [
         {
-          "tx_hash": "0x3799e7b1590f9bb6883c7cd1ec6923bcf2a80d300cd0137279df3050c2000cbb",
-          "block_number": 24492008,
-          "gas_delta": -478275
+          "tx_hash": "0x0f3f76fdf2185ca49271edf7e2ceacc5ccac86f01dd8b40e34dc93cf8320d404",
+          "block_number": 23884404,
+          "gas_delta": -5556171
         }
       ]
     },
     {
       "role": "revert_site",
       "kind": "non_oog",
-      "selector": "0x601881f3",
+      "selector": "0xf9383d20",
       "selector_signature": null,
-      "entry_selector": "0x601881f3",
-      "entry_signature": null,
-      "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
-      "where_category": null,
-      "opcode": "SWAP2",
-      "pattern_or_reason": "Revert",
-      "oog_bottleneck_kind": null,
-      "call_depth": 8,
-      "revert_decoded": "Panic(0x11)",
-      "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
-      "gas_delta": {
-        "avg": -405605,
-        "p50": -405605,
-        "p90": -405605
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 0,
-          "p90": 0
-        },
-        "sload": {
-          "p50": 2,
-          "p90": 2
-        },
-        "sstore": {
-          "p50": 0,
-          "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0x8794ccb534c64b6678fa45071ecde0b1b55b8184df834981b82a8559eb75b713",
-          "block_number": 24492845,
-          "gas_delta": -405605
-        }
-      ]
-    },
-    {
-      "role": "revert_site",
-      "kind": "non_oog",
-      "selector": "0x99000000",
-      "selector_signature": null,
-      "entry_selector": "0x99000000",
+      "entry_selector": "0xf9383d20",
       "entry_signature": null,
       "where_contract": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
       "where_label": "0x48da0965ab2d2cbf1c17c09cfb5cbe67ad5b1406",
@@ -403,40 +434,40 @@
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
       "call_depth": 6,
-      "revert_decoded": "empty",
+      "revert_decoded": "custom:0x4e47f8ea",
       "count": 1,
-      "share_of_role": 0.0667,
-      "share_of_contract": 0.0667,
+      "share_of_role": 0.0217,
+      "share_of_contract": 0.0213,
       "gas_delta": {
-        "avg": 75313,
-        "p50": 75313,
-        "p90": 75313
+        "avg": -12596,
+        "p50": -12596,
+        "p90": -12596
       },
       "drivers": {
         "cold_account": {
-          "p50": 0,
-          "p90": 0
+          "p50": 13,
+          "p90": 13
         },
         "sload": {
+          "p50": 33,
+          "p90": 33
+        },
+        "sstore": {
           "p50": 1,
           "p90": 1
         },
-        "sstore": {
+        "access_list_entries": {
           "p50": 0,
           "p90": 0
-        },
-        "access_list_entries": {
-          "p50": 60,
-          "p90": 60
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x6eb7ed27d5662ca9ca6925a82fe19208abb5020ec201e3ad0b2cd8c4b19e05f3",
-          "block_number": 25140903,
-          "gas_delta": 75313
+          "tx_hash": "0xa38d85e3a08f3c82149708ebb93305076bcabd92e376f26f247cd22ba4747fc5",
+          "block_number": 23501384,
+          "gas_delta": -12596
         }
       ]
     }
@@ -452,9 +483,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24327745,
+    "block_span_start": 23254792,
     "block_span_end": 25256922,
-    "distinct_blocks": 15,
+    "distinct_blocks": 46,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -462,15 +493,27 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
+        "label": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
+        "category": null,
+        "count": 19
+      },
+      {
+        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
+        "label": "StrategyExecutor",
+        "category": "swap_dex",
+        "count": 8
+      },
+      {
         "contract": "0x6e2743c18690d05dd2ea1ecb7fe86322fcd6e491",
         "label": "0x6e2743c18690d05dd2ea1ecb7fe86322fcd6e491",
         "category": null,
         "count": 8
       },
       {
-        "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
-        "label": "StrategyExecutor",
-        "category": "swap_dex",
+        "contract": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "label": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "category": null,
         "count": 3
       },
       {
@@ -480,15 +523,21 @@
         "count": 2
       },
       {
-        "contract": "0x26b776e6200a2b994d7ad8f3a02fea64231572e4",
-        "label": "0x26b776e6200a2b994d7ad8f3a02fea64231572e4",
+        "contract": "0xd226997439ecfbeff8e110c8c78c8a7eefd19f89",
+        "label": "0xd226997439ecfbeff8e110c8c78c8a7eefd19f89",
         "category": null,
         "count": 1
       },
       {
-        "contract": "0x017272088ba6d435ec780c1066a397afb001f4ea",
-        "label": "0x017272088ba6d435ec780c1066a397afb001f4ea",
+        "contract": "0x910994a82cfad235633f36b5e2dd67e620aa0564",
+        "label": "0x910994a82cfad235633f36b5e2dd67e620aa0564",
         "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0x49e55995ef73717895a638074de5af89fa1e301c",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
         "count": 1
       }
     ]

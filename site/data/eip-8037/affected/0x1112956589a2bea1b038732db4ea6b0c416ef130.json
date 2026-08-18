@@ -16,12 +16,68 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 6
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xf9383d20",
+      "selector_signature": null,
+      "entry_selector": "0xf9383d20",
+      "entry_signature": null,
+      "where_contract": "0x1112956589a2bea1b038732db4ea6b0c416ef130",
+      "where_label": "0x1112956589a2bea1b038732db4ea6b0c416ef130",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "custom:0x4e47f8ea",
+      "count": 4,
+      "share_of_role": 0.6667,
+      "share_of_contract": 0.6667,
+      "gas_delta": {
+        "avg": -10646,
+        "p50": -10646,
+        "p90": 9474
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 10,
+          "p90": 12
+        },
+        "sload": {
+          "p50": 46,
+          "p90": 49
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 2
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xa73e463a8d2023a7c505835c31d9b9f925fa9474b5d1ed9dd552aa221f5eb54c",
+          "block_number": 23642967,
+          "gas_delta": -35296
+        },
+        {
+          "tx_hash": "0x576ae4322d0e6750ea70a873bbbdfccb6cdc654fc056e53a6776570ea8e0a0c6",
+          "block_number": 23726991,
+          "gas_delta": -20196
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -37,13 +93,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 5,
       "revert_decoded": "Error(string): e09",
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 2,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.3333,
       "gas_delta": {
-        "avg": 102881,
-        "p50": 102881,
-        "p90": 102881
+        "avg": 108401,
+        "p50": 108401,
+        "p90": 112817
       },
       "drivers": {
         "cold_account": {
@@ -51,7 +107,7 @@
           "p90": 0
         },
         "sload": {
-          "p50": 2,
+          "p50": 1,
           "p90": 2
         },
         "sstore": {
@@ -59,13 +115,18 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 58,
-          "p90": 58
+          "p50": 62,
+          "p90": 64
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
+        {
+          "tx_hash": "0xcc128c816053ae9e22119b2842c83c152c12ed4d2713a80ef7c88110bf2fbf49",
+          "block_number": 24105298,
+          "gas_delta": 113921
+        },
         {
           "tx_hash": "0xd4d0064ed1d9d33922b31d3cddca17eac6a0907e4d7dba2f7a7525e079539c3c",
           "block_number": 24902126,
@@ -75,19 +136,19 @@
     }
   ],
   "context": {
-    "g3_tx_count": 5,
+    "g3_tx_count": 7,
     "g2_drillin_tx_count": 0,
     "af_tx_count": 0,
-    "status_flips": 5,
+    "status_flips": 7,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24902126,
+    "block_span_start": 23642967,
     "block_span_end": 24902126,
-    "distinct_blocks": 1,
+    "distinct_blocks": 6,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -95,10 +156,16 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "label": "0xe27420b0a322b7643a1184a9f237e64cdd20a1a7",
+        "category": null,
+        "count": 4
+      },
+      {
         "contract": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
         "label": "0xc786846e1b65b77de9a87d48f440ba0f9007fac8",
         "category": null,
-        "count": 1
+        "count": 2
       }
     ]
   }

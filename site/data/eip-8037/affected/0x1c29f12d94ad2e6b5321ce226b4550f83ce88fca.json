@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 4
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 6,
       "revert_decoded": "Error(string): TR",
       "count": 2,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
         "avg": 752885,
         "p50": 752885,
@@ -77,6 +77,108 @@
           "gas_delta": 145092
         }
       ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x0ab35bb0",
+      "selector_signature": null,
+      "entry_selector": "0x0ab35bb0",
+      "entry_signature": null,
+      "where_contract": "0x1c29f12d94ad2e6b5321ce226b4550f83ce88fca",
+      "where_label": "bancornetwork",
+      "where_category": null,
+      "opcode": "ISZERO",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "empty",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": -34329,
+        "p50": -34329,
+        "p90": -34329
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 15,
+          "p90": 15
+        },
+        "sload": {
+          "p50": 47,
+          "p90": 47
+        },
+        "sstore": {
+          "p50": 1,
+          "p90": 1
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x0c6454cfd9278036b361c1fc6715e2d53d4084719cce571fe0176ca7420a9db4",
+          "block_number": 23812019,
+          "gas_delta": -34329
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x03f003b0",
+      "selector_signature": null,
+      "entry_selector": "0x03f003b0",
+      "entry_signature": null,
+      "where_contract": "0x1c29f12d94ad2e6b5321ce226b4550f83ce88fca",
+      "where_label": "bancornetwork",
+      "where_category": null,
+      "opcode": "ISZERO",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "Error(string): no profit",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": -17031,
+        "p50": -17031,
+        "p90": -17031
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 14,
+          "p90": 14
+        },
+        "sload": {
+          "p50": 46,
+          "p90": 46
+        },
+        "sstore": {
+          "p50": 1,
+          "p90": 1
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xded9682177ecef04f3a879ba7f51e04fbea827f0855ed4c995f370b645a585b4",
+          "block_number": 24123184,
+          "gas_delta": -17031
+        }
+      ]
     }
   ],
   "context": {
@@ -90,9 +192,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24357681,
+    "block_span_start": 23812019,
     "block_span_end": 24434210,
-    "distinct_blocks": 2,
+    "distinct_blocks": 4,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -104,6 +206,18 @@
         "label": "StrategyExecutor",
         "category": "swap_dex",
         "count": 2
+      },
+      {
+        "contract": "0xa51eb971881af370c59acc19a130a226f1191c9e",
+        "label": "0xa51eb971881af370c59acc19a130a226f1191c9e",
+        "category": null,
+        "count": 1
+      },
+      {
+        "contract": "0x00000f91109c4d0007e90000d9facad5298a0cac",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
+        "count": 1
       }
     ]
   }

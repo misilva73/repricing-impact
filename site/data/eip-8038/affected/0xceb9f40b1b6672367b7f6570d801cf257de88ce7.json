@@ -16,12 +16,68 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 6
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x03f00171",
+      "selector_signature": null,
+      "entry_selector": "0x03f00171",
+      "entry_signature": null,
+      "where_contract": "0xceb9f40b1b6672367b7f6570d801cf257de88ce7",
+      "where_label": "0xceb9f40b1b6672367b7f6570d801cf257de88ce7",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): no profit",
+      "count": 3,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": 110379,
+        "p50": 110379,
+        "p90": 110379
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 5,
+          "p90": 5
+        },
+        "sload": {
+          "p50": 23,
+          "p90": 23
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x6b333ce72445a8a1029c6241941d164144ddb79a71ba3671240801ec6caf1341",
+          "block_number": 23800797,
+          "gas_delta": 110379
+        },
+        {
+          "tx_hash": "0x6fdefeea3f3c7e7f030e433a1b7888e13f3f0d8f65c4ba5e4e50ba9535bdd38b",
+          "block_number": 23779684,
+          "gas_delta": 110379
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -37,19 +93,19 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "Error(string): rltc",
-      "count": 2,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 3,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
-        "avg": 314788,
-        "p50": 314788,
-        "p90": 375388
+        "avg": 201538,
+        "p50": 194938,
+        "p90": 287658
       },
       "drivers": {
         "state_gas_category": [
           {
             "key": "access_list",
-            "count": 2
+            "count": 3
           }
         ],
         "cold_account": {
@@ -65,22 +121,22 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 74,
-          "p90": 91
+          "p50": 54,
+          "p90": 87
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x066918818250eda20aa3468556faa70d8f0997a07ef219c4342cae2fd1760537",
-          "block_number": 24405623,
-          "gas_delta": 239038
+          "tx_hash": "0x5a1511ae00df291fc0aad4539377b958da3baf63cd2a9aac14e2b98140ccf38a",
+          "block_number": 23945715,
+          "gas_delta": 98838
         },
         {
           "tx_hash": "0xec889f84d6449de01b3d6745d95f139d9307aff3fb8fbd9991e9ec3ec1251223",
           "block_number": 24405567,
-          "gas_delta": 390538
+          "gas_delta": 310838
         }
       ]
     }
@@ -96,9 +152,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24405567,
+    "block_span_start": 23779684,
     "block_span_end": 24405623,
-    "distinct_blocks": 2,
+    "distinct_blocks": 6,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -106,10 +162,16 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
+        "contract": "0x00000f91109c4d0007e90000d9facad5298a0cac",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
+        "count": 3
+      },
+      {
         "contract": "0xfc9642049d1151868e45946330215e3df3ae69c2",
         "label": "Balancer v2 Flashloan User",
         "category": "infra",
-        "count": 2
+        "count": 3
       }
     ]
   }

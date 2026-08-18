@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 8
+      "revert_count": 9
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,12 +38,12 @@
       "call_depth": 3,
       "revert_decoded": "custom:0x00000000",
       "count": 7,
-      "share_of_role": 0.875,
-      "share_of_contract": 0.875,
+      "share_of_role": 0.7778,
+      "share_of_contract": 0.7778,
       "gas_delta": {
-        "avg": 98920,
-        "p50": 99549,
-        "p90": 99549
+        "avg": 82092,
+        "p50": 82149,
+        "p90": 82149
       },
       "drivers": {
         "state_gas_category": [
@@ -75,12 +75,69 @@
         {
           "tx_hash": "0x501a3d86e969152d24699e2741448ddd9a8d470480e3f6a1bd03eddb82265dd0",
           "block_number": 24387516,
-          "gas_delta": 97349
+          "gas_delta": 81949
         },
         {
           "tx_hash": "0xb3b1140d9e6a4309db55a5587f7802d6ac44fa6e60c5974cfce95c964e3f5831",
           "block_number": 24839767,
-          "gas_delta": 97349
+          "gas_delta": 81949
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x85c496b0",
+      "selector_signature": null,
+      "entry_selector": "0x85c496b0",
+      "entry_signature": null,
+      "where_contract": "0x441f9e2c89a343cefb390a8954b3b562f8f91eca",
+      "where_label": "uniswap_v2",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): rltc",
+      "count": 1,
+      "share_of_role": 0.1111,
+      "share_of_contract": 0.1111,
+      "gas_delta": {
+        "avg": 342738,
+        "p50": 342738,
+        "p90": 342738
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 90,
+          "p90": 90
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x7ed48494b75dbc5bb382d0178b6f314bf0489f272da13859db191b11333a0faa",
+          "block_number": 23946734,
+          "gas_delta": 342738
         }
       ]
     },
@@ -100,12 +157,12 @@
       "call_depth": 5,
       "revert_decoded": "custom:0x00000000",
       "count": 1,
-      "share_of_role": 0.125,
-      "share_of_contract": 0.125,
+      "share_of_role": 0.1111,
+      "share_of_contract": 0.1111,
       "gas_delta": {
-        "avg": 1240244,
-        "p50": 1240244,
-        "p90": 1240244
+        "avg": 1006644,
+        "p50": 1006644,
+        "p90": 1006644
       },
       "drivers": {
         "cold_account": {
@@ -131,7 +188,7 @@
         {
           "tx_hash": "0xa4e0f6cefb41ef06bff15170a4b6368ee04e4644d0315100fa4cc5924a186036",
           "block_number": 24480235,
-          "gas_delta": 1240244
+          "gas_delta": 1006644
         }
       ]
     }
@@ -147,9 +204,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24387516,
+    "block_span_start": 23946734,
     "block_span_end": 25177407,
-    "distinct_blocks": 8,
+    "distinct_blocks": 9,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -161,6 +218,12 @@
         "label": "0xf5e1ff97b8ed24032a861eaef122643452268a39",
         "category": null,
         "count": 7
+      },
+      {
+        "contract": "0xfc9642049d1151868e45946330215e3df3ae69c2",
+        "label": "Balancer v2 Flashloan User",
+        "category": "infra",
+        "count": 1
       },
       {
         "contract": "0xd5adabc8f98a485c8efa50599afbe926b3e6dd49",

@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 10
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -37,22 +37,22 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "empty",
-      "count": 2,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 6,
+      "share_of_role": 0.6,
+      "share_of_contract": 0.6,
       "gas_delta": {
-        "avg": 153561,
-        "p50": 153561,
-        "p90": 166601
+        "avg": 106594,
+        "p50": 106111,
+        "p90": 136061
       },
       "drivers": {
         "cold_account": {
-          "p50": 8,
+          "p50": 7,
           "p90": 8
         },
         "sload": {
-          "p50": 36,
-          "p90": 38
+          "p50": 30,
+          "p90": 36
         },
         "sstore": {
           "p50": 0,
@@ -67,14 +67,76 @@
       },
       "examples": [
         {
-          "tx_hash": "0x064ca2a769790ad1fb518e21e07938fa45c42cf2b8ccbf5b5112b004fcedfe56",
-          "block_number": 24343611,
-          "gas_delta": 137261
+          "tx_hash": "0xd266a294dcbf23ab87ac79651384f8c4cf81d9e3e8377be89140c069e8d53710",
+          "block_number": 23909636,
+          "gas_delta": 79061
         },
         {
-          "tx_hash": "0xce85fba3c8dde854dc8efaf7d6a3abd23fa349e318149a9361bb5271e02b4c51",
-          "block_number": 24410731,
-          "gas_delta": 169861
+          "tx_hash": "0x7b4022ee9e803f549185724dde258d9b2c6ab829a11b3656b36e8c90797e18c8",
+          "block_number": 23974250,
+          "gas_delta": 131061
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xef9ac634",
+      "selector_signature": null,
+      "entry_selector": "0xef9ac634",
+      "entry_signature": null,
+      "where_contract": "0xef9ac6348a04ac07c8cfb19fe19827f1c92d7512",
+      "where_label": "uniswap_v2",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "custom:0x00000000",
+      "count": 4,
+      "share_of_role": 0.4,
+      "share_of_contract": 0.4,
+      "gas_delta": {
+        "avg": 78199,
+        "p50": 81349,
+        "p90": 82249
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 4
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 1
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 11
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 22,
+          "p90": 22
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xe99ff50a80ba8a1ad0c4e2b1ca04e32594b6820e55e457c1773f7034203e5a4d",
+          "block_number": 23956611,
+          "gas_delta": 80449
+        },
+        {
+          "tx_hash": "0x2e3c4bc92fd97525b812a71e38d101a91592809a462655ead59631744a5537ba",
+          "block_number": 24045915,
+          "gas_delta": 67849
         }
       ]
     }
@@ -90,9 +152,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24343611,
+    "block_span_start": 23909636,
     "block_span_end": 24410731,
-    "distinct_blocks": 2,
+    "distinct_blocks": 10,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -103,7 +165,13 @@
         "contract": "0x0708b29cfaba8e551c710991026c38e9179dce1e",
         "label": "Balancer v2 Flashloan User",
         "category": "infra",
-        "count": 2
+        "count": 6
+      },
+      {
+        "contract": "0xf5e1ff97b8ed24032a861eaef122643452268a39",
+        "label": "0xf5e1ff97b8ed24032a861eaef122643452268a39",
+        "category": null,
+        "count": 4
       }
     ]
   }

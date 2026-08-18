@@ -16,13 +16,13 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 57
+      "halt_count": 99
     },
     "revert_site": {
-      "revert_count": 57
+      "revert_count": 100
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -40,11 +40,11 @@
       "oog_bottleneck_kind": "FractionalGas",
       "call_depth": 2,
       "revert_decoded": null,
-      "count": 57,
+      "count": 99,
       "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "share_of_contract": 0.4975,
       "gas_delta": {
-        "avg": -153329,
+        "avg": -195829,
         "p50": -155992,
         "p90": -155988
       },
@@ -84,14 +84,14 @@
       },
       "examples": [
         {
-          "tx_hash": "0xd97dde4eb4c391d61dfe313b55182d5a63ccb8bf7a3396487d547260ec09201d",
-          "block_number": 24330448,
-          "gas_delta": -155988
+          "tx_hash": "0x0b508d36cba8d63cc5d7f0528528304d3c483cd9716afdb42e6df9fc6de28bd2",
+          "block_number": 24165296,
+          "gas_delta": -303992
         },
         {
-          "tx_hash": "0x2b5b077788afcc80e674e6fe2a45ec13d88b5f9252242134f82033583dfa2901",
-          "block_number": 24344698,
-          "gas_delta": -155992
+          "tx_hash": "0x13134b710f7612f7660738d3a1d016eec7ab22591097be9504e79f923b7e82ee",
+          "block_number": 24165368,
+          "gas_delta": -394094
         }
       ]
     },
@@ -110,11 +110,11 @@
       "oog_bottleneck_kind": null,
       "call_depth": 2,
       "revert_decoded": "custom:0x65c8fd4d",
-      "count": 57,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "count": 99,
+      "share_of_role": 0.99,
+      "share_of_contract": 0.4975,
       "gas_delta": {
-        "avg": -153329,
+        "avg": -195829,
         "p50": -155992,
         "p90": -155988
       },
@@ -154,14 +154,71 @@
       },
       "examples": [
         {
-          "tx_hash": "0xd97dde4eb4c391d61dfe313b55182d5a63ccb8bf7a3396487d547260ec09201d",
-          "block_number": 24330448,
-          "gas_delta": -155988
+          "tx_hash": "0x0b508d36cba8d63cc5d7f0528528304d3c483cd9716afdb42e6df9fc6de28bd2",
+          "block_number": 24165296,
+          "gas_delta": -303992
         },
         {
-          "tx_hash": "0x2b5b077788afcc80e674e6fe2a45ec13d88b5f9252242134f82033583dfa2901",
-          "block_number": 24344698,
-          "gas_delta": -155992
+          "tx_hash": "0x13134b710f7612f7660738d3a1d016eec7ab22591097be9504e79f923b7e82ee",
+          "block_number": 24165368,
+          "gas_delta": -394094
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x000017db",
+      "selector_signature": null,
+      "entry_selector": "0x000017db",
+      "entry_signature": null,
+      "where_contract": "0xb4e89d2ac0936709cb504fbc455a45bf5b36e77b",
+      "where_label": "0xb4e89d2ac0936709cb504fbc455a45bf5b36e77b",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": "empty",
+      "count": 1,
+      "share_of_role": 0.01,
+      "share_of_contract": 0.005,
+      "gas_delta": {
+        "avg": -956712,
+        "p50": -956712,
+        "p90": -956712
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "authorization",
+            "count": 1
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 28,
+          "p90": 28
+        },
+        "sstore": {
+          "p50": 4,
+          "p90": 4
+        },
+        "access_list_entries": {
+          "p50": 100,
+          "p90": 100
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x4696566fd09e19eff72ad5d92c7dc70161a37d9305b2b02ace483c0d7d6911a5",
+          "block_number": 24089285,
+          "gas_delta": -956712
         }
       ]
     }
@@ -177,9 +234,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24323996,
+    "block_span_start": 24089285,
     "block_span_end": 24774296,
-    "distinct_blocks": 57,
+    "distinct_blocks": 100,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -190,7 +247,13 @@
         "contract": "0x0000000071727de22e5e9d8baf0edac6f37da032",
         "label": "ERC-4337 EntryPoint v0.7",
         "category": "account_abstraction",
-        "count": 57
+        "count": 99
+      },
+      {
+        "contract": "0xfa0253943c3ff0e43898cba5a7a0da9d17c27995",
+        "label": "0xfa0253943c3ff0e43898cba5a7a0da9d17c27995",
+        "category": null,
+        "count": 1
       }
     ]
   }

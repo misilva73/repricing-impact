@@ -16,14 +16,70 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 7,
+      "g4_tx_count": 12,
       "g4_oog_count": 0,
-      "g4_nonoog_count": 7
+      "g4_nonoog_count": 12
     }
   },
-  "distinct_cluster_count": 3,
+  "distinct_cluster_count": 6,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "entry",
+      "kind": "non_oog",
+      "selector": "0xee455b4c",
+      "selector_signature": null,
+      "entry_selector": "0xee455b4c",
+      "entry_signature": null,
+      "where_contract": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
+      "where_label": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
+      "where_category": null,
+      "opcode": "PUSH2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): SafeERC20: low-level call failed",
+      "count": 3,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": 962449,
+        "p50": 912128,
+        "p90": 1032899
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sload": {
+          "p50": 13,
+          "p90": 13
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xd9cd16ed7ef6f0aa931f2e119ab4126a7670def46af3204a2854d4f87643bfb2",
+          "block_number": 23884689,
+          "gas_delta": 1063092
+        },
+        {
+          "tx_hash": "0xe0837aaa000bdedc9e9610666a801d17f6ac7dbf8cafa510acb86f5a413abfc6",
+          "block_number": 24744762,
+          "gas_delta": 912128
+        }
+      ]
+    },
     {
       "role": "entry",
       "kind": "non_oog",
@@ -40,8 +96,8 @@
       "call_depth": 7,
       "revert_decoded": "Error(string): Messi: not enough eth to charge for gas",
       "count": 3,
-      "share_of_role": 0.4286,
-      "share_of_contract": 0.4286,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
       "gas_delta": {
         "avg": -32607,
         "p50": -32542,
@@ -83,6 +139,62 @@
     {
       "role": "entry",
       "kind": "non_oog",
+      "selector": "0x3beff0a5",
+      "selector_signature": null,
+      "entry_selector": "0x3beff0a5",
+      "entry_signature": null,
+      "where_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "where_label": "Circle USDC",
+      "where_category": "stablecoin",
+      "opcode": "RETURNDATASIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 6,
+      "revert_decoded": "Error(string): Messi: cannot charge for gas with tokens in contract",
+      "count": 2,
+      "share_of_role": 0.1667,
+      "share_of_contract": 0.1667,
+      "gas_delta": {
+        "avg": -46597,
+        "p50": -46597,
+        "p90": -46596
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
+        },
+        "sload": {
+          "p50": 37,
+          "p90": 37
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x67d88b4aabb40897acc1e0e78e645405e140af7983ca45cdfc2664643d30c1d0",
+          "block_number": 23391031,
+          "gas_delta": -46598
+        },
+        {
+          "tx_hash": "0x99498b0075272728893a2990c29b575d70816ccab218ee043f92a864c21d145e",
+          "block_number": 23391038,
+          "gas_delta": -46596
+        }
+      ]
+    },
+    {
+      "role": "entry",
+      "kind": "non_oog",
       "selector": "0xee455b4c",
       "selector_signature": null,
       "entry_selector": "0xee455b4c",
@@ -96,8 +208,8 @@
       "call_depth": 4,
       "revert_decoded": "Error(string): ERC20: transfer amount exceeds balance",
       "count": 2,
-      "share_of_role": 0.2857,
-      "share_of_contract": 0.2857,
+      "share_of_role": 0.1667,
+      "share_of_contract": 0.1667,
       "gas_delta": {
         "avg": -25650,
         "p50": -25650,
@@ -139,34 +251,34 @@
     {
       "role": "entry",
       "kind": "non_oog",
-      "selector": "0xee455b4c",
+      "selector": "0x3beff0a5",
       "selector_signature": null,
-      "entry_selector": "0xee455b4c",
+      "entry_selector": "0x3beff0a5",
       "entry_signature": null,
-      "where_contract": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
-      "where_label": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
-      "where_category": null,
-      "opcode": "PUSH2",
+      "where_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "where_label": "Circle USDC",
+      "where_category": "stablecoin",
+      "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 3,
-      "revert_decoded": "Error(string): SafeERC20: low-level call failed",
-      "count": 2,
-      "share_of_role": 0.2857,
-      "share_of_contract": 0.2857,
+      "call_depth": 4,
+      "revert_decoded": "Error(string): Messi: cannot charge for gas with tokens in contract",
+      "count": 1,
+      "share_of_role": 0.0833,
+      "share_of_contract": 0.0833,
       "gas_delta": {
-        "avg": 912128,
-        "p50": 912128,
-        "p90": 912128
+        "avg": -48681,
+        "p50": -48681,
+        "p90": -48681
       },
       "drivers": {
         "cold_account": {
-          "p50": 2,
-          "p90": 2
+          "p50": 8,
+          "p90": 8
         },
         "sload": {
-          "p50": 13,
-          "p90": 13
+          "p50": 35,
+          "p90": 35
         },
         "sstore": {
           "p50": 0,
@@ -181,59 +293,117 @@
       },
       "examples": [
         {
-          "tx_hash": "0x1e12a8c710d2b660572ee83068adef250b0ed85ecbf9425844346be4a2059538",
-          "block_number": 24744662,
-          "gas_delta": 912128
+          "tx_hash": "0xa031436fca7979ea5d3b6ba7446adade740922ac4a8ada910898835944ab2f26",
+          "block_number": 23570838,
+          "gas_delta": -48681
+        }
+      ]
+    },
+    {
+      "role": "entry",
+      "kind": "non_oog",
+      "selector": "0x3beff0a5",
+      "selector_signature": null,
+      "entry_selector": "0x3beff0a5",
+      "entry_signature": null,
+      "where_contract": "0x4622df6fb2d9bee0dcdacf545acdb6a2b2f4f863",
+      "where_label": "0x4622df6fb2d9bee0dcdacf545acdb6a2b2f4f863",
+      "where_category": null,
+      "opcode": "SWAP2",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": "Error(string): Messi: cannot charge for gas with tokens in contract",
+      "count": 1,
+      "share_of_role": 0.0833,
+      "share_of_contract": 0.0833,
+      "gas_delta": {
+        "avg": -58917,
+        "p50": -58917,
+        "p90": -58917
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
         },
+        "sload": {
+          "p50": 29,
+          "p90": 29
+        },
+        "sstore": {
+          "p50": 2,
+          "p90": 2
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
         {
-          "tx_hash": "0xe0837aaa000bdedc9e9610666a801d17f6ac7dbf8cafa510acb86f5a413abfc6",
-          "block_number": 24744762,
-          "gas_delta": 912128
+          "tx_hash": "0xa5cd87ae2b2b82de9ccc4819548d0f8191a7b6e7599ea151b44af15458040de2",
+          "block_number": 23591683,
+          "gas_delta": -58917
         }
       ]
     }
   ],
   "context": {
-    "g3_tx_count": 71,
-    "g2_drillin_tx_count": 741,
-    "af_tx_count": 673,
-    "status_flips": 78,
+    "g3_tx_count": 135,
+    "g2_drillin_tx_count": 1354,
+    "af_tx_count": 776,
+    "status_flips": 147,
     "gas_delta": {
-      "avg": 239305,
-      "sum": 1675136,
-      "p50": -32542,
+      "avg": 211453,
+      "sum": 2537436,
+      "p50": -32639,
       "p90": 912128
     },
-    "block_span_start": 24734527,
+    "block_span_start": 23391031,
     "block_span_end": 25063864,
-    "distinct_blocks": 7,
+    "distinct_blocks": 12,
     "failure_rate": null,
     "entry_functions": [
       {
-        "selector": "0xee455b4c",
-        "signature": null,
-        "count": 4
-      },
-      {
         "selector": "0x3beff0a5",
         "signature": null,
-        "count": 3
+        "count": 7
+      },
+      {
+        "selector": "0xee455b4c",
+        "signature": null,
+        "count": 5
       }
     ],
     "failing_functions": [
       {
-        "selector": "0xee455b4c",
-        "signature": null,
-        "count": 4
-      },
-      {
         "selector": "0x3beff0a5",
         "signature": null,
-        "count": 3
+        "count": 7
+      },
+      {
+        "selector": "0xee455b4c",
+        "signature": null,
+        "count": 5
       }
     ],
     "halt_contracts": [],
     "revert_contracts": [
+      {
+        "contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "label": "Circle USDC",
+        "category": "stablecoin",
+        "count": 5
+      },
+      {
+        "contract": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
+        "label": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
+        "category": null,
+        "count": 3
+      },
       {
         "contract": "0xc7bbec68d12a0d1830360f8ec58fa599ba1b0e9b",
         "label": "UniswapV3Pool",
@@ -241,16 +411,10 @@
         "count": 3
       },
       {
-        "contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-        "label": "Circle USDC",
-        "category": "stablecoin",
-        "count": 2
-      },
-      {
-        "contract": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
-        "label": "0x6537197cf15e2226d0c96d540db7383a7017ccd0",
+        "contract": "0x4622df6fb2d9bee0dcdacf545acdb6a2b2f4f863",
+        "label": "0x4622df6fb2d9bee0dcdacf545acdb6a2b2f4f863",
         "category": null,
-        "count": 2
+        "count": 1
       }
     ],
     "entry_contracts": []

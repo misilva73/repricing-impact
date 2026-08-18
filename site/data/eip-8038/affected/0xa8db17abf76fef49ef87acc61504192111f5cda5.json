@@ -19,9 +19,12 @@
       "g4_tx_count": 1,
       "g4_oog_count": 0,
       "g4_nonoog_count": 1
+    },
+    "revert_site": {
+      "revert_count": 1
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -31,17 +34,68 @@
       "selector_signature": null,
       "entry_selector": "0x601881f3",
       "entry_signature": null,
-      "where_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      "where_label": "Circle USDC",
-      "where_category": "stablecoin",
+      "where_contract": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+      "where_label": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+      "where_category": null,
       "opcode": "RETURNDATASIZE",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 13,
+      "call_depth": 2,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
       "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": -618709,
+        "p50": -618709,
+        "p90": -618709
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 1,
+          "p90": 1
+        },
+        "sload": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xfccd05308b66dc42f1580eb55e9fd4689c27aa8b3ad34bc69ed2a10fba4dd87a",
+          "block_number": 24830790,
+          "gas_delta": -618709
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x601881f3",
+      "selector_signature": null,
+      "entry_selector": "0x601881f3",
+      "entry_signature": null,
+      "where_contract": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+      "where_label": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+      "where_category": null,
+      "opcode": "RETURNDATASIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 2,
+      "revert_decoded": "Panic(0x11)",
+      "count": 1,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.5,
       "gas_delta": {
         "avg": -618709,
         "p50": -618709,
@@ -108,12 +162,19 @@
     "halt_contracts": [],
     "revert_contracts": [
       {
-        "contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-        "label": "Circle USDC",
-        "category": "stablecoin",
+        "contract": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+        "label": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+        "category": null,
         "count": 1
       }
     ],
-    "entry_contracts": []
+    "entry_contracts": [
+      {
+        "contract": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+        "label": "0xa8db17abf76fef49ef87acc61504192111f5cda5",
+        "category": null,
+        "count": 1
+      }
+    ]
   }
 }

@@ -15,75 +15,13 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
-    "oog_site": {
-      "halt_count": 1
-    },
     "revert_site": {
       "revert_count": 1
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 1,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
-    {
-      "role": "oog_site",
-      "kind": "oog",
-      "selector": "0x1bc74526",
-      "selector_signature": null,
-      "entry_selector": "0x1bc74526",
-      "entry_signature": null,
-      "where_contract": "0xca310b1b942a30ff4b40a5e1b69ab4607ec79bc1",
-      "where_label": "0xca310b1b942a30ff4b40a5e1b69ab4607ec79bc1",
-      "where_category": null,
-      "opcode": "DELEGATECALL",
-      "pattern_or_reason": "call_chain",
-      "oog_bottleneck_kind": "FractionalGas",
-      "call_depth": 13,
-      "revert_decoded": null,
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
-      "gas_delta": {
-        "avg": 451321,
-        "p50": 451321,
-        "p90": 451321
-      },
-      "drivers": {
-        "cold_account": {
-          "p50": 27,
-          "p90": 27
-        },
-        "sload": {
-          "p50": 100,
-          "p90": 100
-        },
-        "sstore": {
-          "p50": 1,
-          "p90": 1
-        },
-        "access_list_entries": {
-          "p50": 0,
-          "p90": 0
-        },
-        "surcharge_at_oog": {
-          "p50": 1400,
-          "sum": 1400
-        },
-        "gas_remaining_at_oog": {
-          "p50": 0,
-          "p90": 0
-        },
-        "reservoir_exhausted_share": 0.0,
-        "spillover_share": 0.0
-      },
-      "examples": [
-        {
-          "tx_hash": "0xe6eb6b49e10622bcd8269ab24268718165b0d4e22d9726088317ee0fc051e31e",
-          "block_number": 25106599,
-          "gas_delta": 451321
-        }
-      ]
-    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -94,23 +32,23 @@
       "where_contract": "0xca310b1b942a30ff4b40a5e1b69ab4607ec79bc1",
       "where_label": "0xca310b1b942a30ff4b40a5e1b69ab4607ec79bc1",
       "where_category": null,
-      "opcode": "RETURNDATASIZE",
+      "opcode": "SWAP3",
       "pattern_or_reason": "Revert",
       "oog_bottleneck_kind": null,
-      "call_depth": 12,
+      "call_depth": 13,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
       "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "share_of_contract": 1.0,
       "gas_delta": {
-        "avg": -1628975,
-        "p50": -1628975,
-        "p90": -1628975
+        "avg": -2216593,
+        "p50": -2216593,
+        "p90": -2216593
       },
       "drivers": {
         "cold_account": {
-          "p50": 0,
-          "p90": 0
+          "p50": 1,
+          "p90": 1
         },
         "sload": {
           "p50": 2,
@@ -129,9 +67,9 @@
       },
       "examples": [
         {
-          "tx_hash": "0x83d92b7bce98910947be0c0e5e96f8fc9ff393f6aaaebeeb39ee364b391e6ba8",
-          "block_number": 24434020,
-          "gas_delta": -1628975
+          "tx_hash": "0x56be9958c65e40dd0c76a10d8b998f05d9104617979bfd8f024192c39034468b",
+          "block_number": 25239072,
+          "gas_delta": -2216593
         }
       ]
     }
@@ -147,9 +85,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24434020,
-    "block_span_end": 25106599,
-    "distinct_blocks": 2,
+    "block_span_start": 25239072,
+    "block_span_end": 25239072,
+    "distinct_blocks": 1,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -157,14 +95,8 @@
     "revert_contracts": [],
     "entry_contracts": [
       {
-        "contract": "0x9ccc2f3ecde026230e11a5c8799ac7524f2bb294",
-        "label": "Proxy contract",
-        "category": null,
-        "count": 1
-      },
-      {
-        "contract": "0x75804bc26c185b2df19bd100d91290176b31dd48",
-        "label": "0x75804bc26c185b2df19bd100d91290176b31dd48",
+        "contract": "0x02e24ed91f8aa7633b3ba23667854ca0398dd610",
+        "label": "0x02e24ed91f8aa7633b3ba23667854ca0398dd610",
         "category": null,
         "count": 1
       }

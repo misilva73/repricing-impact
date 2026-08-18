@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 11
+      "revert_count": 23
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -37,19 +37,19 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "Error(string): TR",
-      "count": 11,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 18,
+      "share_of_role": 0.7826,
+      "share_of_contract": 0.7826,
       "gas_delta": {
-        "avg": 336200,
-        "p50": 323830,
-        "p90": 447330
+        "avg": 249092,
+        "p50": 271330,
+        "p90": 376221
       },
       "drivers": {
         "state_gas_category": [
           {
             "key": "access_list",
-            "count": 11
+            "count": 18
           }
         ],
         "cold_account": {
@@ -66,7 +66,7 @@
         },
         "access_list_entries": {
           "p50": 71,
-          "p90": 94
+          "p90": 98
         },
         "surcharge_at_oog": {
           "p50": 1600,
@@ -81,14 +81,70 @@
       },
       "examples": [
         {
-          "tx_hash": "0x9a5a7f7cfd5fee3548de3ad84eb77cbf7e122f963df24949a8f60458b56cb926",
-          "block_number": 24778001,
-          "gas_delta": 323830
+          "tx_hash": "0xdf189fa19026907b00f768ecb2250dd20492ef7345c1b15096f10cbf492211fa",
+          "block_number": 23350370,
+          "gas_delta": 395730
         },
         {
-          "tx_hash": "0x3ddaafe5b35f43a7421579b004ba4a4cb7b1834024a07f5c297da5b4df4c801a",
-          "block_number": 24776889,
-          "gas_delta": 323830
+          "tx_hash": "0x666d0117622467531d2f4f8db6e4c8f7ab4f87dd14c6ce7ea30c59441923c799",
+          "block_number": 23389777,
+          "gas_delta": 155530
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x03f001e1",
+      "selector_signature": null,
+      "entry_selector": "0x03f001e1",
+      "entry_signature": null,
+      "where_contract": "0x411a9b902f364817a0f9c4261ce28b5566a42875",
+      "where_label": "uniswap_v2",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): no profit",
+      "count": 5,
+      "share_of_role": 0.2174,
+      "share_of_contract": 0.2174,
+      "gas_delta": {
+        "avg": 145279,
+        "p50": 145279,
+        "p90": 145279
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
+        },
+        "sload": {
+          "p50": 26,
+          "p90": 26
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xac4a4fee5e4ae5b3bd65f81c66de46c91ca57e1f6cac0b5df95a3fa8a143051e",
+          "block_number": 23693019,
+          "gas_delta": 145279
+        },
+        {
+          "tx_hash": "0x7d3df19fe38a09dbbf1f78d45ef633bbacc06aa7ca664c7b403e5b236a8e3818",
+          "block_number": 23742553,
+          "gas_delta": 145279
         }
       ]
     }
@@ -104,9 +160,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24776889,
-    "block_span_end": 25274519,
-    "distinct_blocks": 11,
+    "block_span_start": 23350370,
+    "block_span_end": 25279377,
+    "distinct_blocks": 23,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -117,7 +173,13 @@
         "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
         "label": "StrategyExecutor",
         "category": "swap_dex",
-        "count": 11
+        "count": 18
+      },
+      {
+        "contract": "0x00000f91109c4d0007e90000d9facad5298a0cac",
+        "label": "Aave v3 Flashloan User",
+        "category": "infra",
+        "count": 5
       }
     ]
   }

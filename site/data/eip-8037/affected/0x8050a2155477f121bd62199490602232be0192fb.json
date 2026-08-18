@@ -16,14 +16,78 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 1,
-      "g4_oog_count": 1,
+      "g4_tx_count": 4,
+      "g4_oog_count": 4,
       "g4_nonoog_count": 0
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "entry",
+      "kind": "oog",
+      "selector": "0x81348ab9",
+      "selector_signature": null,
+      "entry_selector": "0x81348ab9",
+      "entry_signature": null,
+      "where_contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "where_label": "WETH",
+      "where_category": "infra",
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": null,
+      "count": 3,
+      "share_of_role": 0.75,
+      "share_of_contract": 0.75,
+      "gas_delta": {
+        "avg": 35276,
+        "p50": 34028,
+        "p90": 37165
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sload": {
+          "p50": 18,
+          "p90": 21
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x70f6965b6e7773d374f82895a9a1302b2ed56475a1f70dab82261c36e0e81de2",
+          "block_number": 23368668,
+          "gas_delta": 33851
+        },
+        {
+          "tx_hash": "0x6f9059dbabbd84131c66b02a410187aa695677be3874bf647bb1a2bdb5426107",
+          "block_number": 23368960,
+          "gas_delta": 37949
+        }
+      ]
+    },
     {
       "role": "entry",
       "kind": "oog",
@@ -40,8 +104,8 @@
       "call_depth": 4,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.25,
       "gas_delta": {
         "avg": 8793,
         "p50": 8793,
@@ -85,35 +149,41 @@
     }
   ],
   "context": {
-    "g3_tx_count": 11,
+    "g3_tx_count": 13,
     "g2_drillin_tx_count": 1,
-    "af_tx_count": 8,
-    "status_flips": 12,
+    "af_tx_count": 11,
+    "status_flips": 17,
     "gas_delta": {
-      "avg": 8793,
-      "sum": 8793,
-      "p50": 8793,
-      "p90": 8793
+      "avg": 28655,
+      "sum": 114621,
+      "p50": 33940,
+      "p90": 36773
     },
-    "block_span_start": 24517859,
+    "block_span_start": 23368668,
     "block_span_end": 24517859,
-    "distinct_blocks": 1,
+    "distinct_blocks": 4,
     "failure_rate": null,
     "entry_functions": [
       {
         "selector": "0x81348ab9",
         "signature": null,
-        "count": 1
+        "count": 4
       }
     ],
     "failing_functions": [
       {
         "selector": "0x81348ab9",
         "signature": null,
-        "count": 1
+        "count": 4
       }
     ],
     "halt_contracts": [
+      {
+        "contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "label": "WETH",
+        "category": "infra",
+        "count": 3
+      },
       {
         "contract": "0xdc827558062aa1cc0e2ab28146da9eeac38a06d1",
         "label": "0xdc827558062aa1cc0e2ab28146da9eeac38a06d1",
@@ -122,6 +192,12 @@
       }
     ],
     "revert_contracts": [
+      {
+        "contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "label": "WETH",
+        "category": "infra",
+        "count": 3
+      },
       {
         "contract": "0xdc827558062aa1cc0e2ab28146da9eeac38a06d1",
         "label": "0xdc827558062aa1cc0e2ab28146da9eeac38a06d1",

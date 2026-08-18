@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 4
+      "revert_count": 5
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 7,
       "revert_decoded": "Error(string): TR",
       "count": 4,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.8,
+      "share_of_contract": 0.8,
       "gas_delta": {
         "avg": 90152,
         "p50": 86852,
@@ -77,22 +77,73 @@
           "gas_delta": 103610
         }
       ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00000000",
+      "selector_signature": null,
+      "entry_selector": "0x00000000",
+      "entry_signature": null,
+      "where_contract": "0x764a726d9ced0433a8d7643335919deb03a9a935",
+      "where_label": "0x764a726d9ced0433a8d7643335919deb03a9a935",
+      "where_category": null,
+      "opcode": "RETURNDATASIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 10,
+      "revert_decoded": "Error(string): TR",
+      "count": 1,
+      "share_of_role": 0.2,
+      "share_of_contract": 0.2,
+      "gas_delta": {
+        "avg": 74986,
+        "p50": 74986,
+        "p90": 74986
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 39,
+          "p90": 39
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xdab42a9355cde83b1fe121ed3495a2c1edc33fc9e173f1ea5134a4d6884b50a1",
+          "block_number": 23598099,
+          "gas_delta": 74986
+        }
+      ]
     }
   ],
   "context": {
-    "g3_tx_count": 310,
+    "g3_tx_count": 398,
     "g2_drillin_tx_count": 0,
     "af_tx_count": 0,
-    "status_flips": 310,
+    "status_flips": 398,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24359786,
+    "block_span_start": 23598099,
     "block_span_end": 25297785,
-    "distinct_blocks": 4,
+    "distinct_blocks": 5,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -103,7 +154,7 @@
         "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
         "label": "StrategyExecutor",
         "category": "swap_dex",
-        "count": 4
+        "count": 5
       }
     ]
   }
