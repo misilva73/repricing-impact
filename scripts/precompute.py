@@ -552,13 +552,68 @@ def stage_divergence_tx(ctx: RunContext) -> int:
 
     Each chunk's row count is verified against ``block_groups`` before it is
     inserted, and a short read is retried — see :data:`_DIVTX_READ_ATTEMPTS`.
+
+    Landed chunks survive a crash (a hard connection drop mid-chunk raises
+    before any insert, so the table only ever holds whole completed chunks —
+    see :data:`_DIVTX_READ_ATTEMPTS` for the short-read case, which is the same
+    all-or-nothing shape). A re-invocation against the **same** DuckDB file
+    resumes from the first not-yet-landed chunk instead of re-reading
+    everything, as long as the run key (schedule, config hash, block range,
+    chunk size) matches exactly what's already on disk — otherwise stale data
+    from a different run is dropped and the table rebuilt from scratch.
     """
-    ctx.con.execute("DROP TABLE IF EXISTS divergence_tx")
-    ctx.con.execute(_DIVTX_DDL)
+    run_key = (
+        ctx.schedule,
+        ctx.config_hash,
+        ctx.block_start,
+        ctx.block_end,
+        ctx.chunk_blocks,
+    )
+    tables = {r[0] for r in ctx.con.execute("SHOW TABLES").fetchall()}
+    existing_key = None
+    if {"divergence_tx", "_divtx_run_key", "_divtx_done_chunks"} <= tables:
+        row = ctx.con.execute(
+            "SELECT schedule, config_hash, block_start, block_end, chunk_blocks "
+            "FROM _divtx_run_key"
+        ).fetchone()
+        if row is not None:
+            existing_key = tuple(row)
+
+    resuming = existing_key == run_key
+    if not resuming:
+        ctx.con.execute("DROP TABLE IF EXISTS divergence_tx")
+        ctx.con.execute("DROP TABLE IF EXISTS _divtx_done_chunks")
+        ctx.con.execute("DROP TABLE IF EXISTS _divtx_run_key")
+        ctx.con.execute(_DIVTX_DDL)
+        ctx.con.execute(
+            "CREATE TABLE _divtx_done_chunks (chunk_index INTEGER, row_count BIGINT)"
+        )
+        ctx.con.execute(
+            "CREATE TABLE _divtx_run_key AS SELECT "
+            "?::VARCHAR AS schedule, ?::VARCHAR AS config_hash, "
+            "?::BIGINT AS block_start, ?::BIGINT AS block_end, "
+            "?::BIGINT AS chunk_blocks",
+            list(run_key),
+        )
+
+    done = dict(
+        ctx.con.execute(
+            "SELECT chunk_index, row_count FROM _divtx_done_chunks"
+        ).fetchall()
+    )
 
     chunks = _chunk_list(ctx.block_start, ctx.block_end, ctx.chunk_blocks)
+    if resuming and done:
+        _log(
+            f"[{ctx.schedule}] divergence_tx resuming: {len(done)}/{len(chunks)} "
+            "chunks already landed from a prior run"
+        )
+
     total = 0
     for i, (lo, hi) in enumerate(chunks, 1):
+        if i in done:
+            total += done[i]
+            continue
         t0 = time.monotonic()
         # Expected row count for this chunk, read LOCALLY from block_groups (staged
         # before this function, one row per block) — so verification costs the
@@ -602,6 +657,7 @@ def stage_divergence_tx(ctx: RunContext) -> int:
             )
             ctx.con.unregister("divtx_chunk")
         total += len(df)
+        ctx.con.execute("INSERT INTO _divtx_done_chunks VALUES (?, ?)", [i, len(df)])
         _log(
             f"[{ctx.schedule}] divergence_tx chunk {i}/{len(chunks)} "
             f"blocks {lo:,}..{hi:,} -> {len(df):,} rows "
@@ -3301,6 +3357,14 @@ def run_schedule(
         f"index {affected['index_bytes']:,} bytes, "
         f"total {affected['total_bytes']:,} bytes)"
     )
+    # This schedule's divergence_tx data has now been fully consumed into the
+    # published JSON. Drop the resume marker so a *future* invocation (e.g. a
+    # later re-run against newer warehouse data) always re-fetches this
+    # schedule from scratch instead of mistaking finished old state for
+    # in-progress state to resume from — resume is only for recovering a run
+    # that crashed mid-schedule, never for skipping a schedule that already
+    # finished in a prior invocation.
+    con.execute("DROP TABLE IF EXISTS _divtx_run_key")
     con.close()
     return sizes
 
