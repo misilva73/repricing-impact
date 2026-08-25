@@ -110,7 +110,7 @@ documented exception**, added for the OOG-halt failure-rate denominators in
   every mainnet tx. `chain_id = 1` (gas_analysis) and
   `meta_network_name = 'mainnet'` (Xatu) are the **same cohort**.
 - **Bounds:** the read is bounded to the pinned block range
-  (`RunContext.block_start..block_end`, 24,319,986 → 25,319,985) **and** to only
+  (`RunContext.block_start..block_end`, 21,319,986 → 25,319,985) **and** to only
   the top-N leaderboard `to_address`es — it is **never a full scan**.
 - **Discipline:** **read-only**, aggregate-only (a `GROUP BY to_address`
   count), and — like the divergence scans — run **off any request path**, as part

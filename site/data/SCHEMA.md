@@ -394,7 +394,7 @@ mnemonics (e.g. `SLOAD`, `CALL`, `DELEGATECALL`), so the frontend renders them
   // WHAT ran out — opcode executing at the halt (decoded mnemonic)
   "oog_opcode": [ { "key": "SLOAD", "count": … }, { "key": "CALL", "count": … }, … ],
   // WHERE it ran out
-  "call_depth_hist": [ { "depth": "1", "count": … }, …, { "depth": "9+", "count": … } ], // bins 1..8 + "9+" overflow; totals the cohort
+  "call_depth_hist": [ { "depth": "1", "count": … }, …, { "depth": "9+", "count": … }, { "depth": "unknown", "count": … } ], // bins 1..8 + "9+" overflow + "unknown" (no traced frame location); totals the cohort
   "call_depth_percentiles": { "p50": 4, "p90": 7, "p99": 10, "max": 18 }, // depth of the halt frame
   "oog_contract_leaderboard": [                  // top-12 halt contracts (oog_contract) — WHERE the halt landed
     { "addr": "0x…", "label": "…", "category": "swap_dex", "count": … }, …  // category: taxonomy tag or null (§7)
@@ -456,7 +456,7 @@ enrichment fields; `source`/`confidence`/`is_mev_bot`/`mev_role`/`is_proxy`/
 - **`total_tx`** (denominator) — *all* mainnet txs sent to this recipient over
   the pinned block range, from a **cross-source read of the Xatu EL table**
   `default.canonical_execution_transaction` (matched on `to_address`,
-  `block_number` within `RunContext.block_start..block_end` = 24,319,986 →
+  `block_number` within `RunContext.block_start..block_end` = 21,319,986 →
   25,319,985, and `meta_network_name = 'mainnet'`). The query is bounded to the
   pinned block range **and to only the top-N leaderboard addresses** — never a
   full scan. `chain_id = 1` (gas_analysis) and `meta_network_name = 'mainnet'`
@@ -523,7 +523,7 @@ is stripped; free-text messages are rendered verbatim).
   // WHAT diverged — opcode at the first-divergence frame (decoded mnemonic)
   "divergence_opcode": [ { "key": "JUMPDEST", "count": … }, { "key": "EXTCODESIZE", "count": … }, … ],
   // WHERE it reverted
-  "call_depth_hist": [ { "depth": "1", "count": … }, …, { "depth": "9+", "count": … } ], // bins 1..8 + "9+" overflow; totals the cohort
+  "call_depth_hist": [ { "depth": "1", "count": … }, …, { "depth": "9+", "count": … }, { "depth": "unknown", "count": … } ], // bins 1..8 + "9+" overflow + "unknown" (no traced frame location); totals the cohort
   "call_depth_percentiles": { "p50": 6, "p90": 10, "p99": 11, "max": 12 }, // divergence_call_depth; p50 = the "Median call depth" card
   // WHERE (entry): top-N entry contracts (recipient) — WHO was called
   "nonoog_recipient_leaderboard": [             // ranked by revert_count desc; row shape below

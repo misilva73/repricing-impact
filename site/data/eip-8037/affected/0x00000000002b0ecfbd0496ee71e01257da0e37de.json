@@ -16,15 +16,74 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 1
+      "halt_count": 2
     },
     "revert_site": {
-      "revert_count": 1
+      "revert_count": 2
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 4,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x239b907c",
+      "selector_signature": null,
+      "entry_selector": "0x239b907c",
+      "entry_signature": null,
+      "where_contract": "0x00000000002b0ecfbd0496ee71e01257da0e37de",
+      "where_label": "0x00000000002b0ecfbd0496ee71e01257da0e37de",
+      "where_category": null,
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": "FractionalGas",
+      "call_depth": 11,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": -840025,
+        "p50": -840025,
+        "p90": -840025
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 24,
+          "p90": 24
+        },
+        "sload": {
+          "p50": 46,
+          "p90": 46
+        },
+        "sstore": {
+          "p50": 5,
+          "p90": 5
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x76d401965131ac85f42c849a25f9de1cc9f13fa6b9641598f827a742c513c102",
+          "block_number": 22291139,
+          "gas_delta": -840025
+        }
+      ]
+    },
     {
       "role": "oog_site",
       "kind": "oog",
@@ -41,8 +100,8 @@
       "call_depth": 7,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.25,
       "gas_delta": {
         "avg": -661446,
         "p50": -661446,
@@ -87,6 +146,65 @@
     {
       "role": "revert_site",
       "kind": "non_oog",
+      "selector": "0x239b907c",
+      "selector_signature": null,
+      "entry_selector": "0x239b907c",
+      "entry_signature": null,
+      "where_contract": "0x00000000002b0ecfbd0496ee71e01257da0e37de",
+      "where_label": "0x00000000002b0ecfbd0496ee71e01257da0e37de",
+      "where_category": null,
+      "opcode": "SSTORE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 11,
+      "revert_decoded": "Error(string): Execution failed.",
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.25,
+      "gas_delta": {
+        "avg": -840025,
+        "p50": -840025,
+        "p90": -840025
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 24,
+          "p90": 24
+        },
+        "sload": {
+          "p50": 46,
+          "p90": 46
+        },
+        "sstore": {
+          "p50": 5,
+          "p90": 5
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x76d401965131ac85f42c849a25f9de1cc9f13fa6b9641598f827a742c513c102",
+          "block_number": 22291139,
+          "gas_delta": -840025
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
       "selector": "0x765e827f",
       "selector_signature": null,
       "entry_selector": "0x765e827f",
@@ -100,8 +218,8 @@
       "call_depth": 7,
       "revert_decoded": "custom:0x65c8fd4d",
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 0.5,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.25,
       "gas_delta": {
         "avg": -661446,
         "p50": -661446,
@@ -155,15 +273,21 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24634272,
+    "block_span_start": 22291139,
     "block_span_end": 24634272,
-    "distinct_blocks": 1,
+    "distinct_blocks": 2,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0x657ae83afd32be2cdf576c24cfaa9c8057da601e",
+        "label": "0x657ae83afd32be2cdf576c24cfaa9c8057da601e",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0x0000000071727de22e5e9d8baf0edac6f37da032",
         "label": "ERC-4337 EntryPoint v0.7",

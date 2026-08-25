@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 1
+      "halt_count": 10
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -37,13 +37,13 @@
       "oog_bottleneck_kind": "FixedGas",
       "call_depth": 5,
       "revert_decoded": null,
-      "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 6,
+      "share_of_role": 0.6,
+      "share_of_contract": 0.6,
       "gas_delta": {
-        "avg": 5968,
-        "p50": 5968,
-        "p90": 5968
+        "avg": 7428,
+        "p50": 5206,
+        "p90": 12527
       },
       "drivers": {
         "cold_account": {
@@ -51,8 +51,8 @@
           "p90": 4
         },
         "sload": {
-          "p50": 23,
-          "p90": 23
+          "p50": 25,
+          "p90": 26
         },
         "sstore": {
           "p50": 0,
@@ -64,7 +64,7 @@
         },
         "surcharge_at_oog": {
           "p50": 200,
-          "sum": 200
+          "sum": 1200
         },
         "gas_remaining_at_oog": {
           "p50": 0,
@@ -75,27 +75,96 @@
       },
       "examples": [
         {
-          "tx_hash": "0x3e022210f96df01a200eba540f97b21825fc5b48ba8f791957a8f1c18db4d7b8",
-          "block_number": 24161768,
-          "gas_delta": 5968
+          "tx_hash": "0x9b8eed1e42df50a82cdb74312390cd1cb692899c25c63a9d06c3efc4ad6f5bbc",
+          "block_number": 22349120,
+          "gas_delta": 4550
+        },
+        {
+          "tx_hash": "0x7e8f699bf1c6a2aae6b944238688ca9efc2f3205684340764841b72be57bc87c",
+          "block_number": 22342978,
+          "gas_delta": 4550
+        }
+      ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0xdcfdeb60",
+      "selector_signature": null,
+      "entry_selector": "0xdcfdeb60",
+      "entry_signature": null,
+      "where_contract": "0xaaee1a9723aadb7afa2810263653a34ba2c21c7a",
+      "where_label": "0xaaee1a9723aadb7afa2810263653a34ba2c21c7a",
+      "where_category": null,
+      "opcode": "CALL",
+      "pattern_or_reason": "call_chain",
+      "oog_bottleneck_kind": "FractionalGas",
+      "call_depth": 5,
+      "revert_decoded": null,
+      "count": 4,
+      "share_of_role": 0.4,
+      "share_of_contract": 0.4,
+      "gas_delta": {
+        "avg": 21072,
+        "p50": 20502,
+        "p90": 27286
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 4,
+          "p90": 4
+        },
+        "sload": {
+          "p50": 26,
+          "p90": 27
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 200,
+          "sum": 800
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x1ffd1097c6dd6b3254f679d836d85c35dc5dff37829754b1e7b19cf6ef65f950",
+          "block_number": 22996054,
+          "gas_delta": 20502
+        },
+        {
+          "tx_hash": "0x5dd9ee559fda068390441b464092c717f993541136d5f83dd58fed376a368d2c",
+          "block_number": 23031697,
+          "gas_delta": 20502
         }
       ]
     }
   ],
   "context": {
-    "g3_tx_count": 2519,
+    "g3_tx_count": 5583,
     "g2_drillin_tx_count": 0,
-    "af_tx_count": 200,
-    "status_flips": 2519,
+    "af_tx_count": 428,
+    "status_flips": 5583,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24161768,
+    "block_span_start": 22342978,
     "block_span_end": 24161768,
-    "distinct_blocks": 1,
+    "distinct_blocks": 10,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -106,7 +175,7 @@
         "contract": "0xbf2e102fb382d6ec52823c8f81a45e9caa951320",
         "label": "0xbf2e102fb382d6ec52823c8f81a45e9caa951320",
         "category": null,
-        "count": 1
+        "count": 10
       }
     ]
   }

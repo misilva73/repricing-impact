@@ -84,7 +84,7 @@
  *      oog_pattern:[{key,count}],
  *      gas_remaining_hist:[{bucket:str,count:int}],  // ordered magnitude buckets, gas left at halt
  *      oog_opcode:[{key,count}],                 // key = decoded mnemonic (no humanizeKey)
- *      call_depth_hist:[{depth:str,count:int}],  // "1".."8","9+" (totals the cohort)
+ *      call_depth_hist:[{depth:str,count:int}],  // "1".."8","9+","unknown" (totals the cohort)
  *      call_depth_percentiles:{p50,p90,p99,max : int|null},
  *      oog_contract_leaderboard:[{addr:str,label:str,count:int}],  // top-12 halt contracts
  *      oog_recipient_leaderboard:[{  // top entry contracts (the tx `recipient`) by OOG halts
@@ -112,7 +112,7 @@
  *      failure_reason:[{key,count}],              // raw failure_reason enum
  *      revert_error_mix:[{key,count}],            // Error(string) message, top 5 + "Others"
  *      divergence_opcode:[{key,count}],           // key = decoded mnemonic (no humanizeKey)
- *      call_depth_hist:[{depth:str,count:int}],   // "1".."8","9+" (totals the cohort)
+ *      call_depth_hist:[{depth:str,count:int}],   // "1".."8","9+","unknown" (totals the cohort)
  *      call_depth_percentiles:{p50,p90,p99,max : int|null},
  *      sankey: { nodes:[{label:str, addr:str|null, side:"entry"|"revert"}],
  *                links:[{source:int,target:int,value:int}] } }  // bipartite entry->revert

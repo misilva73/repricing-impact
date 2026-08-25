@@ -15,11 +15,14 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
+    "oog_site": {
+      "halt_count": 1
+    },
     "revert_site": {
-      "revert_count": 3
+      "revert_count": 4
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +41,8 @@
       "call_depth": 9,
       "revert_decoded": "custom:0x5c0dee5d",
       "count": 3,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.75,
+      "share_of_contract": 0.6,
       "gas_delta": {
         "avg": -311809,
         "p50": -311744,
@@ -83,6 +86,124 @@
           "gas_delta": -311744
         }
       ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x6a761202",
+      "selector_signature": null,
+      "entry_selector": "0x6a761202",
+      "entry_signature": null,
+      "where_contract": "0xa59ba433ac34d2927232918ef5b2eaafcf130ba5",
+      "where_label": "0xa59ba433ac34d2927232918ef5b2eaafcf130ba5",
+      "where_category": null,
+      "opcode": "MSTORE",
+      "pattern_or_reason": "memory_expansion",
+      "oog_bottleneck_kind": null,
+      "call_depth": 6,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.2,
+      "gas_delta": {
+        "avg": -1517941,
+        "p50": -1517941,
+        "p90": -1517941
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 19,
+          "p90": 19
+        },
+        "sload": {
+          "p50": 234,
+          "p90": 234
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x7227fce6d67a908e0e6565b47bf3d9059ddd6a8c3c27b8a43e29c684ea14a4e3",
+          "block_number": 22391619,
+          "gas_delta": -1517941
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x6a761202",
+      "selector_signature": null,
+      "entry_selector": "0x6a761202",
+      "entry_signature": null,
+      "where_contract": "0xa59ba433ac34d2927232918ef5b2eaafcf130ba5",
+      "where_label": "0xa59ba433ac34d2927232918ef5b2eaafcf130ba5",
+      "where_category": null,
+      "opcode": "MSTORE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 6,
+      "revert_decoded": "Error(string): GS013",
+      "count": 1,
+      "share_of_role": 0.25,
+      "share_of_contract": 0.2,
+      "gas_delta": {
+        "avg": -1517941,
+        "p50": -1517941,
+        "p90": -1517941
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 19,
+          "p90": 19
+        },
+        "sload": {
+          "p50": 234,
+          "p90": 234
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x7227fce6d67a908e0e6565b47bf3d9059ddd6a8c3c27b8a43e29c684ea14a4e3",
+          "block_number": 22391619,
+          "gas_delta": -1517941
+        }
+      ]
     }
   ],
   "context": {
@@ -96,15 +217,21 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23511216,
+    "block_span_start": 22391619,
     "block_span_end": 23757310,
-    "distinct_blocks": 3,
+    "distinct_blocks": 4,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0xe9c74b7e297bc9ba6e9348b2d36576d24d4af630",
+        "label": "0xe9c74b7e297bc9ba6e9348b2d36576d24d4af630",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0x9076eaf84849439397c029098293354ad3020279",
         "label": "0x9076eaf84849439397c029098293354ad3020279",

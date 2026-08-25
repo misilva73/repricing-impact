@@ -104,12 +104,20 @@ schema v10 (we now read v11), so we **re-derive** the partition downstream and
 ## Key facts
 
 - **Pinned config** (auto-picked; override with `REPRICING_CONFIG_HASH`):
-  `0x6617c5db2827a7e77b08473306381258bb98e7eea456c90f18513d9e76e66ed3` — v11,
-  covers both schedules, blocks **24,319,986 → 25,319,985** (~2026-01-26 →
-  2026-06-15), `max_divergences_per_block = 8192`. It is the **only** config in
-  the warehouse (verified live 2026-07-29): the previously pinned v10 hash
-  `0xc17ac709…f37d2` and the `7904-prelim` schedule **no longer exist**, so
-  `eip-8037` / `eip-8038` are all that remain.
+  `0x8ccad591661bfca557e688c41d8fbf14d8f51cc3b0239fcdc517c6592b780527` — v11,
+  covers both schedules. **The hash itself has been stable** since at least
+  2026-08-14, but its block coverage under `resolve_config_hash`'s "most
+  blocks + most recent updated_at covering both schedules" rule **keeps
+  growing backward in time** as more history gets backfilled under the same
+  config: 2,102,648 blocks (23,217,338 → 25,319,985, ~2025-08-25 → 2026-06-15)
+  as of the 2026-08-14 run, **4,000,000 blocks** (21,319,986 → 25,319,985,
+  ~2024-12-03 → 2026-06-15) as of 2026-08-24 — same end block both times, the
+  start keeps moving earlier. **Don't hardcode the block range**; always
+  re-derive it from the resolved config (`resolve_config_hash()` /
+  `meta.json.block_range`) rather than trusting a number written down here.
+  (Prior *hash*, now superseded: `0x6617c5db…66ed3`, ~1,000,000 blocks,
+  24,319,986 → 25,319,985, verified 2026-07-29; `0xc17ac709…f37d2` v10, no
+  longer exists.)
 - **Producer v11 grew `block_summary` 43 → 54 columns** (verified 2026-07-29) —
   the eleven additions ship Recommendations 1 + 2 of
   [`docs/producer-data-recommendations.md`](docs/producer-data-recommendations.md):

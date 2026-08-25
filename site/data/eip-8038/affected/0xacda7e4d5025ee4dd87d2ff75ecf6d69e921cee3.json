@@ -16,12 +16,133 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 20
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 4,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00000000",
+      "selector_signature": null,
+      "entry_selector": "0x00000000",
+      "entry_signature": null,
+      "where_contract": "0xacda7e4d5025ee4dd87d2ff75ecf6d69e921cee3",
+      "where_label": "0xacda7e4d5025ee4dd87d2ff75ecf6d69e921cee3",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "Error(string): TR",
+      "count": 17,
+      "share_of_role": 0.85,
+      "share_of_contract": 0.85,
+      "gas_delta": {
+        "avg": 544699,
+        "p50": 532328,
+        "p90": 834908
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 17
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 5
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 162,
+          "p90": 265
+        },
+        "surcharge_at_oog": {
+          "p50": 1400,
+          "sum": 1400
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xdb12246aa5e086af38d5641eb7152bcc33fc6c3c51cb9e0524850f37841501ab",
+          "block_number": 22019160,
+          "gas_delta": 215428
+        },
+        {
+          "tx_hash": "0x20c20d9f80c067a983d87933fa998a7268748d955b7d702dbd10a427f06be081",
+          "block_number": 22018258,
+          "gas_delta": 207028
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xb1d523c6",
+      "selector_signature": null,
+      "entry_selector": "0xb1d523c6",
+      "entry_signature": null,
+      "where_contract": "0xacda7e4d5025ee4dd87d2ff75ecf6d69e921cee3",
+      "where_label": "0xacda7e4d5025ee4dd87d2ff75ecf6d69e921cee3",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 4,
+      "revert_decoded": "Error(string): revenue insufficient",
+      "count": 1,
+      "share_of_role": 0.05,
+      "share_of_contract": 0.05,
+      "gas_delta": {
+        "avg": 81636,
+        "p50": 81636,
+        "p90": 81636
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
+        },
+        "sload": {
+          "p50": 36,
+          "p90": 36
+        },
+        "sstore": {
+          "p50": 1,
+          "p90": 1
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xa1fbd778a918e409fd362e94ec9b57a2f02cf2aad9c58ae2638c635d651829b6",
+          "block_number": 22483835,
+          "gas_delta": 81636
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -38,8 +159,8 @@
       "call_depth": 3,
       "revert_decoded": "Panic(0x11)",
       "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_role": 0.05,
+      "share_of_contract": 0.05,
       "gas_delta": {
         "avg": 70611,
         "p50": 70611,
@@ -89,8 +210,8 @@
       "call_depth": 5,
       "revert_decoded": "empty",
       "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_role": 0.05,
+      "share_of_contract": 0.05,
       "gas_delta": {
         "avg": 98206,
         "p50": 98206,
@@ -136,15 +257,27 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23680156,
+    "block_span_start": 22018258,
     "block_span_end": 25067940,
-    "distinct_blocks": 2,
+    "distinct_blocks": 20,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0xe6b1de575e7e610889ea21024834e120f92033a3",
+        "label": "0xe6b1de575e7e610889ea21024834e120f92033a3",
+        "category": null,
+        "count": 17
+      },
+      {
+        "contract": "0x4ae48f037ec8de86d986d15c42314a9c80a3ac89",
+        "label": "0x4ae48f037ec8de86d986d15c42314a9c80a3ac89",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0x0891190561f26106c3f886985e508d0f4aedd1c8",
         "label": "0x0891190561f26106c3f886985e508d0f4aedd1c8",

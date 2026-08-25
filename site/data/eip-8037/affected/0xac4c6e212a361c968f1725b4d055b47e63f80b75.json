@@ -15,13 +15,77 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
+    "entry": {
+      "g4_tx_count": 1,
+      "g4_oog_count": 1,
+      "g4_nonoog_count": 0
+    },
     "revert_site": {
       "revert_count": 2
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "entry",
+      "kind": "oog",
+      "selector": "0x5f3bd1c8",
+      "selector_signature": null,
+      "entry_selector": "0x5f3bd1c8",
+      "entry_signature": null,
+      "where_contract": "0x06450dee7fd2fb8e39061434babcfc05599a6fb8",
+      "where_label": "XEN Crypto",
+      "where_category": "token",
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": null,
+      "call_depth": 11,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.3333,
+      "gas_delta": {
+        "avg": -275763,
+        "p50": -275763,
+        "p90": -275763
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 10,
+          "p90": 10
+        },
+        "sload": {
+          "p50": 130,
+          "p90": 130
+        },
+        "sstore": {
+          "p50": 138,
+          "p90": 138
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xd7f23309526cb81df3846ff88be15c4b2af23d331eb1f636a715c9acd3f6aab4",
+          "block_number": 22080760,
+          "gas_delta": -275763
+        }
+      ]
+    },
     {
       "role": "revert_site",
       "kind": "non_oog",
@@ -39,7 +103,7 @@
       "revert_decoded": "empty",
       "count": 1,
       "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_contract": 0.3333,
       "gas_delta": {
         "avg": -156136,
         "p50": -156136,
@@ -90,7 +154,7 @@
       "revert_decoded": "custom:0xe9a477f6",
       "count": 1,
       "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_contract": 0.3333,
       "gas_delta": {
         "avg": -201509,
         "p50": -201509,
@@ -126,24 +190,50 @@
     }
   ],
   "context": {
-    "g3_tx_count": 30954,
-    "g2_drillin_tx_count": 0,
-    "af_tx_count": 6312,
-    "status_flips": 30954,
+    "g3_tx_count": 62295,
+    "g2_drillin_tx_count": 2,
+    "af_tx_count": 15196,
+    "status_flips": 62296,
     "gas_delta": {
-      "avg": 0,
-      "sum": 0,
-      "p50": null,
-      "p90": null
+      "avg": -275763,
+      "sum": -275763,
+      "p50": -275763,
+      "p90": -275763
     },
-    "block_span_start": 23273753,
-    "block_span_end": 23983104,
-    "distinct_blocks": 2,
+    "block_span_start": 22080760,
+    "block_span_end": 22080760,
+    "distinct_blocks": 1,
     "failure_rate": null,
-    "entry_functions": [],
-    "failing_functions": [],
-    "halt_contracts": [],
-    "revert_contracts": [],
+    "entry_functions": [
+      {
+        "selector": "0x5f3bd1c8",
+        "signature": null,
+        "count": 1
+      }
+    ],
+    "failing_functions": [
+      {
+        "selector": "0x5f3bd1c8",
+        "signature": null,
+        "count": 1
+      }
+    ],
+    "halt_contracts": [
+      {
+        "contract": "0x06450dee7fd2fb8e39061434babcfc05599a6fb8",
+        "label": "XEN Crypto",
+        "category": "token",
+        "count": 1
+      }
+    ],
+    "revert_contracts": [
+      {
+        "contract": "0x06450dee7fd2fb8e39061434babcfc05599a6fb8",
+        "label": "XEN Crypto",
+        "category": "token",
+        "count": 1
+      }
+    ],
     "entry_contracts": [
       {
         "contract": "0x8084bc9ca174d6957957c4efbc6e4f74ab329b55",

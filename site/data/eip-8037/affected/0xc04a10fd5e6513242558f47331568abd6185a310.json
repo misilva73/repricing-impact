@@ -15,11 +15,14 @@
   "is_mev_bot": false,
   "mev_role": null,
   "roles_summary": {
+    "oog_site": {
+      "halt_count": 1
+    },
     "revert_site": {
-      "revert_count": 6289
+      "revert_count": 6290
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 4,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +41,8 @@
       "call_depth": 5,
       "revert_decoded": "Error(string): no profit",
       "count": 5866,
-      "share_of_role": 0.9327,
-      "share_of_contract": 0.9327,
+      "share_of_role": 0.9326,
+      "share_of_contract": 0.9324,
       "gas_delta": {
         "avg": -10822,
         "p50": -10822,
@@ -94,8 +97,8 @@
       "call_depth": 7,
       "revert_decoded": "Error(string): no profit",
       "count": 423,
-      "share_of_role": 0.0673,
-      "share_of_contract": 0.0673,
+      "share_of_role": 0.0672,
+      "share_of_contract": 0.0672,
       "gas_delta": {
         "avg": -10822,
         "p50": -10822,
@@ -128,9 +131,127 @@
           "gas_delta": -10822
         },
         {
-          "tx_hash": "0xd9cef8a0a6a5ae720002242477f5790fd7c28a3cf3f872b1be1c797b3c5baad2",
-          "block_number": 24750924,
+          "tx_hash": "0x353af1d63302d1e92805cb302f9080b9ed0b9cdd533a693080a2a6abddd3b0d4",
+          "block_number": 24750879,
           "gas_delta": -10822
+        }
+      ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0xa9059cbb",
+      "selector_signature": "func_2093253501(bytes)",
+      "entry_selector": "0xa9059cbb",
+      "entry_signature": "func_2093253501(bytes)",
+      "where_contract": "0xc04a10fd5e6513242558f47331568abd6185a310",
+      "where_label": "AdminUpgradeabilityProxy",
+      "where_category": "other",
+      "opcode": "DELEGATECALL",
+      "pattern_or_reason": "call_chain",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 1.0,
+      "share_of_contract": 0.0002,
+      "gas_delta": {
+        "avg": 1507534,
+        "p50": 1507534,
+        "p90": 1507534
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 5,
+          "p90": 5
+        },
+        "sload": {
+          "p50": 5,
+          "p90": 5
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x0551697629b7f10e81e866e56ad7ffd43a20d26e08e92b79c5e255cce766b2a2",
+          "block_number": 22205782,
+          "gas_delta": 1507534
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xa9059cbb",
+      "selector_signature": "func_2093253501(bytes)",
+      "entry_selector": "0xa9059cbb",
+      "entry_signature": "func_2093253501(bytes)",
+      "where_contract": "0xc04a10fd5e6513242558f47331568abd6185a310",
+      "where_label": "AdminUpgradeabilityProxy",
+      "where_category": "other",
+      "opcode": "DELEGATECALL",
+      "pattern_or_reason": "OutOfGas(Basic)",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.0002,
+      "share_of_contract": 0.0002,
+      "gas_delta": {
+        "avg": 1507534,
+        "p50": 1507534,
+        "p90": 1507534
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 5,
+          "p90": 5
+        },
+        "sload": {
+          "p50": 5,
+          "p90": 5
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x0551697629b7f10e81e866e56ad7ffd43a20d26e08e92b79c5e255cce766b2a2",
+          "block_number": 22205782,
+          "gas_delta": 1507534
         }
       ]
     }
@@ -146,9 +267,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24750733,
+    "block_span_start": 22205782,
     "block_span_end": 24751122,
-    "distinct_blocks": 206,
+    "distinct_blocks": 207,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -160,6 +281,12 @@
         "label": "Aave v3 Flashloan User",
         "category": "infra",
         "count": 6289
+      },
+      {
+        "contract": "0x1036c0a06810b2880ab0ac3471b682d6b4d041dc",
+        "label": "0x1036c0a06810b2880ab0ac3471b682d6b4d041dc",
+        "category": null,
+        "count": 1
       }
     ]
   }

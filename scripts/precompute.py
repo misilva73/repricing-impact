@@ -1044,7 +1044,10 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
         dr_min = int(mn) if dr_min is None else min(dr_min, int(mn))
         dr_max = int(mx) if dr_max is None else max(dr_max, int(mx))
 
-    g2_count = go_count + dr_count
+    # NOT the group's full count: dr_count is scoped to gas_delta != 0 (the
+    # gas_bins cohort), so go_count + dr_count excludes G2 drill-in members whose
+    # only change was e.g. logs/output. Use _totals(ctx)["g2"] (same source as
+    # group_categories.g2.count) for the "count" field below.
     g2_sum = go_sum + dr_sum
     mins = [v for v in (go_min if have_go else None, dr_min) if v is not None]
     maxs = [v for v in (go_max if have_go else None, dr_max) if v is not None]
@@ -1071,7 +1074,7 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
             "bucket. The >=1024-gas bin is a catch-all — the aggregate cohort has no "
             "finer resolution above 1024 gas."
         ),
-        "count": int(g2_count),
+        "count": int(_totals(ctx)["g2"]),
         "gas_bins": _gas_bins(g2_go_hist, g2_dr_hist),
         "sum_gas_delta": int(g2_sum),
         "min_gas_delta": int(min(mins)) if mins else 0,
@@ -1848,10 +1851,15 @@ def _percentiles(ctx: RunContext, col: str, where: str) -> dict:
 
 
 def _call_depth_hist(ctx: RunContext, col: str, where: str) -> List[dict]:
-    """Call-depth histogram: explicit 1..N bins + an "N+" overflow bin.
+    """Call-depth histogram: explicit 1..N bins + an "N+" overflow bin + "unknown".
 
     ``col`` is a nullable depth column (``oog_call_depth`` / ``divergence_call_depth``);
-    the overflow bin keeps the whole cohort totalling even for deep frames.
+    the overflow bin keeps the whole cohort totalling even for deep frames. Some
+    non-OOG revert rows carry no frame location at all (``divergence_contract``,
+    ``divergence_opcode`` and this depth column are NULL together — a bare
+    ``failure_reason`` signal with no traced divergence frame), so a trailing
+    "unknown" bucket keeps the histogram totalling the whole cohort rather than
+    silently dropping those rows.
     """
     depth = ctx.con.execute(f"""
         SELECT least({col}, {_OOG_DEPTH_TOP + 1}) AS d, count(*) AS n
@@ -1859,12 +1867,18 @@ def _call_depth_hist(ctx: RunContext, col: str, where: str) -> List[dict]:
         GROUP BY d ORDER BY d
     """).df()
     dmap = {int(r["d"]): int(r["n"]) for _, r in depth.iterrows()}
+    unknown = int(
+        ctx.con.execute(
+            f"SELECT count(*) FROM divergence_tx WHERE {where} AND {col} IS NULL"
+        ).fetchone()[0]
+    )
     hist = [
         {"depth": str(d), "count": dmap.get(d, 0)} for d in range(1, _OOG_DEPTH_TOP + 1)
     ]
     hist.append(
         {"depth": f"{_OOG_DEPTH_TOP + 1}+", "count": dmap.get(_OOG_DEPTH_TOP + 1, 0)}
     )
+    hist.append({"depth": "unknown", "count": unknown})
     return hist
 
 
@@ -3456,7 +3470,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             block_end=block_end,
             chunk_blocks=args.chunk_blocks,
             out_dir=args.out_dir,
-            schedules_available=list(args.schedules),
+            schedules_available=FOCUS_SCHEDULES,
             cfg_source=cfg_source,
             duckdb_path=duckdb_path,
         )

@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 30
+      "revert_count": 40
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 4,
       "revert_decoded": "empty",
       "count": 21,
-      "share_of_role": 0.7,
-      "share_of_contract": 0.7,
+      "share_of_role": 0.525,
+      "share_of_contract": 0.525,
       "gas_delta": {
         "avg": 131463,
         "p50": 131934,
@@ -99,13 +99,13 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "empty",
-      "count": 9,
-      "share_of_role": 0.3,
-      "share_of_contract": 0.3,
+      "count": 13,
+      "share_of_role": 0.325,
+      "share_of_contract": 0.325,
       "gas_delta": {
-        "avg": 64740,
+        "avg": 59540,
         "p50": 67840,
-        "p90": 70260
+        "p90": 67840
       },
       "drivers": {
         "cold_account": {
@@ -129,14 +129,70 @@
       },
       "examples": [
         {
-          "tx_hash": "0x8e22aefcf651a96c893fd584c0caad1d15370082f07ac1c56c09fbd91f37d3b2",
-          "block_number": 23249898,
+          "tx_hash": "0x54ec5321b0afeebafedb4664b2ab4df024d7556ca75387f8c993c0f5efe9f603",
+          "block_number": 23146992,
           "gas_delta": 67840
         },
         {
-          "tx_hash": "0xd08985af26ea48fa76dbb24357db591d888074bc1c52e4998acf78701eead951",
-          "block_number": 23286081,
+          "tx_hash": "0xec465e4266b253afe64a32bdcb4a5c4a7180f6061d83ceb6f1010fdb363aa503",
+          "block_number": 23163717,
           "gas_delta": 67840
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0xca8bd1f9",
+      "selector_signature": null,
+      "entry_selector": "0xca8bd1f9",
+      "entry_signature": null,
+      "where_contract": "0xee9f2375b4bdf6387aa8265dd4fb8f16512a1d46",
+      "where_label": "chainlink",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 6,
+      "revert_decoded": "Error(string): :G",
+      "count": 6,
+      "share_of_role": 0.15,
+      "share_of_contract": 0.15,
+      "gas_delta": {
+        "avg": 244285,
+        "p50": 230435,
+        "p90": 295435
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 26,
+          "p90": 31
+        },
+        "sload": {
+          "p50": 116,
+          "p90": 124
+        },
+        "sstore": {
+          "p50": 1,
+          "p90": 2
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x545da9455063bdb40700c8d70b7731427b3beae4177ade696838ce29ce9c4d5b",
+          "block_number": 21616191,
+          "gas_delta": 242835
+        },
+        {
+          "tx_hash": "0xa207649918f0657577b07da21a826f61108677eb1275ed6e65bb8d3cde0997b5",
+          "block_number": 21754859,
+          "gas_delta": 241335
         }
       ]
     }
@@ -152,9 +208,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23249898,
+    "block_span_start": 21616191,
     "block_span_end": 24721932,
-    "distinct_blocks": 30,
+    "distinct_blocks": 40,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -171,7 +227,19 @@
         "contract": "0x3149c3c5687dbca911007996553948fe92fd15fc",
         "label": "0x3149c3c5687dbca911007996553948fe92fd15fc",
         "category": null,
-        "count": 9
+        "count": 13
+      },
+      {
+        "contract": "0x9d6b911199b891c55a93e4bc635bf59e33d002d8",
+        "label": "0x9d6b911199b891c55a93e4bc635bf59e33d002d8",
+        "category": null,
+        "count": 4
+      },
+      {
+        "contract": "0xa090fc409a9f25bf8e28257d42ef6904590c8984",
+        "label": "0xa090fc409a9f25bf8e28257d42ef6904590c8984",
+        "category": null,
+        "count": 2
       }
     ]
   }

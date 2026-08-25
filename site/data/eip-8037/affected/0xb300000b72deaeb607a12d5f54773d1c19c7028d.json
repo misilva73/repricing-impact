@@ -16,14 +16,73 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 1,
-      "g4_oog_count": 1,
+      "g4_tx_count": 2,
+      "g4_oog_count": 2,
       "g4_nonoog_count": 0
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "entry",
+      "kind": "oog",
+      "selector": "0x849ce572",
+      "selector_signature": null,
+      "entry_selector": "0x849ce572",
+      "entry_signature": null,
+      "where_contract": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+      "where_label": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+      "where_category": null,
+      "opcode": "SLOAD",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": null,
+      "call_depth": 7,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
+      "gas_delta": {
+        "avg": -5777166,
+        "p50": -5777166,
+        "p90": -5777166
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 11,
+          "p90": 11
+        },
+        "sload": {
+          "p50": 2150,
+          "p90": 2150
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x95772011ba060042743cd6dd2fe2524351f10c619e5e386c5e7dd1e05b0112a1",
+          "block_number": 21837251,
+          "gas_delta": -5777166
+        }
+      ]
+    },
     {
       "role": "entry",
       "kind": "oog",
@@ -40,8 +99,8 @@
       "call_depth": 8,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.5,
+      "share_of_contract": 0.5,
       "gas_delta": {
         "avg": -11464404,
         "p50": -11464404,
@@ -85,21 +144,26 @@
     }
   ],
   "context": {
-    "g3_tx_count": 30796,
-    "g2_drillin_tx_count": 466,
-    "af_tx_count": 56576,
-    "status_flips": 30797,
+    "g3_tx_count": 35698,
+    "g2_drillin_tx_count": 512,
+    "af_tx_count": 86291,
+    "status_flips": 35700,
     "gas_delta": {
-      "avg": -11464404,
-      "sum": -11464404,
-      "p50": -11464404,
-      "p90": -11464404
+      "avg": -8620785,
+      "sum": -17241570,
+      "p50": -8620785,
+      "p90": -6345890
     },
-    "block_span_start": 23453215,
+    "block_span_start": 21837251,
     "block_span_end": 23453215,
-    "distinct_blocks": 1,
+    "distinct_blocks": 2,
     "failure_rate": null,
     "entry_functions": [
+      {
+        "selector": "0x849ce572",
+        "signature": null,
+        "count": 1
+      },
       {
         "selector": "0x810c705b",
         "signature": null,
@@ -108,12 +172,23 @@
     ],
     "failing_functions": [
       {
+        "selector": "0x849ce572",
+        "signature": null,
+        "count": 1
+      },
+      {
         "selector": "0x810c705b",
         "signature": null,
         "count": 1
       }
     ],
     "halt_contracts": [
+      {
+        "contract": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+        "label": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0xcde6480bd92f3ea226434cb1a50bc8b048216411",
         "label": "0xcde6480bd92f3ea226434cb1a50bc8b048216411",
@@ -122,6 +197,12 @@
       }
     ],
     "revert_contracts": [
+      {
+        "contract": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+        "label": "0xfc49cc3c222a02b6de929480e8008c393c587480",
+        "category": null,
+        "count": 1
+      },
       {
         "contract": "0xcde6480bd92f3ea226434cb1a50bc8b048216411",
         "label": "0xcde6480bd92f3ea226434cb1a50bc8b048216411",

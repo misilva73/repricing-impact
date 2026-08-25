@@ -63,10 +63,22 @@ STORAGE_DIFFS_TABLE = "default.canonical_execution_storage_diffs"
 #: Xatu network selector — the same cohort as ``chain_id = 1`` on gas_analysis.
 NETWORK_NAME = "mainnet"
 
+#: Max addresses inlined into one query's ``IN (...)`` literal. ``slot_query``
+#: embeds the list twice (reads + diffs branches of its ``UNION ALL``), so at
+#: ~46 bytes/address (42-char quoted hex + separator) 400 addresses is ~37KB
+#: per occurrence — comfortably under ClickHouse's default 256KiB
+#: ``max_query_size`` even as the probe set grows well past today's sizes.
+_ADDR_BATCH_SIZE = 400
+
 
 def _sql_str_list(values: Iterable[str]) -> str:
     """Render an iterable of strings as a SQL ``IN (...)`` literal list."""
     return ", ".join("'" + str(v) + "'" for v in values)
+
+
+def _batched(items: List[str], size: int) -> Iterable[List[str]]:
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
 
 
 def classify_inputs(inputs: Dict[str, Dict[str, Any]]) -> List[LabelRecord]:
@@ -111,54 +123,59 @@ def fetch_structural_inputs(
     from ..clickhouse import run_query  # lazy — only needed to refresh the cache
 
     addrs = sorted({a.lower() for a in addresses})
-    addr_list = _sql_str_list(addrs)
     slot_list = _sql_str_list(EIP1967_SLOTS.values())
     inputs: Dict[str, Dict[str, Any]] = {
         a: {"code_hex": None, "storage": {}} for a in addrs
     }
 
-    # 1) EIP-1967 slot values — latest observed per (address, slot). Reads catch
-    #    the impl/beacon slots a live proxy SLOADs on every call; diffs catch the
-    #    admin slot, which is usually only written (deploy/upgrade). Union both.
-    slot_query = f"""
-        SELECT addr, slot, argMax(value, bn) AS value FROM (
-            SELECT lower(contract_address) AS addr, slot, value, block_number AS bn
-            FROM {STORAGE_READS_TABLE}
+    # Batched to keep every query's inlined address IN-list well under
+    # ClickHouse's max_query_size — see _ADDR_BATCH_SIZE. slot_query embeds the
+    # list twice (reads + diffs), so it's the tighter constraint of the two.
+    for batch in _batched(addrs, _ADDR_BATCH_SIZE):
+        addr_list = _sql_str_list(batch)
+
+        # 1) EIP-1967 slot values — latest observed per (address, slot). Reads
+        #    catch the impl/beacon slots a live proxy SLOADs on every call;
+        #    diffs catch the admin slot, usually only written (deploy/upgrade).
+        slot_query = f"""
+            SELECT addr, slot, argMax(value, bn) AS value FROM (
+                SELECT lower(contract_address) AS addr, slot, value, block_number AS bn
+                FROM {STORAGE_READS_TABLE}
+                WHERE meta_network_name = '{NETWORK_NAME}'
+                  AND block_number BETWEEN {block_start} AND {block_end}
+                  AND lower(contract_address) IN ({addr_list})
+                  AND slot IN ({slot_list})
+                UNION ALL
+                SELECT lower(address) AS addr, slot, to_value AS value, block_number AS bn
+                FROM {STORAGE_DIFFS_TABLE}
+                WHERE meta_network_name = '{NETWORK_NAME}'
+                  AND block_number BETWEEN {block_start} AND {block_end}
+                  AND lower(address) IN ({addr_list})
+                  AND slot IN ({slot_list})
+            )
+            GROUP BY addr, slot
+        """
+        for _, row in run_query(slot_query, engine).iterrows():
+            addr = str(row["addr"])
+            if addr in inputs:
+                inputs[addr]["storage"][str(row["slot"])] = str(row["value"])
+
+        # 2) Deployed runtime bytecode — for the EIP-1167 clone match and the
+        #    UUPS / diamond selector scan. Only contracts deployed in-range have
+        #    a row; older ones keep code_hex=None and rely on the slot signal.
+        code_query = f"""
+            SELECT lower(contract_address) AS addr, argMax(code, block_number) AS code
+            FROM {CONTRACTS_TABLE}
             WHERE meta_network_name = '{NETWORK_NAME}'
               AND block_number BETWEEN {block_start} AND {block_end}
               AND lower(contract_address) IN ({addr_list})
-              AND slot IN ({slot_list})
-            UNION ALL
-            SELECT lower(address) AS addr, slot, to_value AS value, block_number AS bn
-            FROM {STORAGE_DIFFS_TABLE}
-            WHERE meta_network_name = '{NETWORK_NAME}'
-              AND block_number BETWEEN {block_start} AND {block_end}
-              AND lower(address) IN ({addr_list})
-              AND slot IN ({slot_list})
-        )
-        GROUP BY addr, slot
-    """
-    for _, row in run_query(slot_query, engine).iterrows():
-        addr = str(row["addr"])
-        if addr in inputs:
-            inputs[addr]["storage"][str(row["slot"])] = str(row["value"])
-
-    # 2) Deployed runtime bytecode — for the EIP-1167 clone match and the UUPS /
-    #    diamond selector scan. Only contracts deployed in-range have a row; older
-    #    ones keep code_hex=None and rely on the slot signal above.
-    code_query = f"""
-        SELECT lower(contract_address) AS addr, argMax(code, block_number) AS code
-        FROM {CONTRACTS_TABLE}
-        WHERE meta_network_name = '{NETWORK_NAME}'
-          AND block_number BETWEEN {block_start} AND {block_end}
-          AND lower(contract_address) IN ({addr_list})
-        GROUP BY addr
-    """
-    for _, row in run_query(code_query, engine).iterrows():
-        addr = str(row["addr"])
-        code = row["code"]
-        if addr in inputs and isinstance(code, str) and code:
-            inputs[addr]["code_hex"] = code
+            GROUP BY addr
+        """
+        for _, row in run_query(code_query, engine).iterrows():
+            addr = str(row["addr"])
+            code = row["code"]
+            if addr in inputs and isinstance(code, str) and code:
+                inputs[addr]["code_hex"] = code
 
     return inputs
 

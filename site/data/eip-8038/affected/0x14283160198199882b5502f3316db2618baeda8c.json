@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 2
+      "revert_count": 5
     }
   },
-  "distinct_cluster_count": 2,
+  "distinct_cluster_count": 3,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -37,13 +37,75 @@
       "oog_bottleneck_kind": null,
       "call_depth": 3,
       "revert_decoded": "Error(string): TR",
-      "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "count": 3,
+      "share_of_role": 0.6,
+      "share_of_contract": 0.6,
       "gas_delta": {
-        "avg": 237030,
+        "avg": 258863,
         "p50": 237030,
-        "p90": 237030
+        "p90": 339990
+      },
+      "drivers": {
+        "state_gas_category": [
+          {
+            "key": "access_list",
+            "count": 3
+          }
+        ],
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 63,
+          "p90": 84
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x789baa5d25ba19c4c6dac1b40543c2c7ebeefe2f9c49b70d3b5fef8b9ed23472",
+          "block_number": 22479146,
+          "gas_delta": 173830
+        },
+        {
+          "tx_hash": "0xe5f72bf1768867d7bbfc3b4b4200e11e135013c4b26d9bee40109ed5bea1957a",
+          "block_number": 23100447,
+          "gas_delta": 365730
+        }
+      ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x00000000",
+      "selector_signature": null,
+      "entry_selector": "0x00000000",
+      "entry_signature": null,
+      "where_contract": "0x14283160198199882b5502f3316db2618baeda8c",
+      "where_label": "0x14283160198199882b5502f3316db2618baeda8c",
+      "where_category": null,
+      "opcode": "EXTCODESIZE",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 5,
+      "revert_decoded": "Error(string): GP",
+      "count": 1,
+      "share_of_role": 0.2,
+      "share_of_contract": 0.2,
+      "gas_delta": {
+        "avg": 104483,
+        "p50": 104483,
+        "p90": 104483
       },
       "drivers": {
         "state_gas_category": [
@@ -65,17 +127,17 @@
           "p90": 0
         },
         "access_list_entries": {
-          "p50": 63,
-          "p90": 63
+          "p50": 33,
+          "p90": 33
         },
         "reservoir_exhausted_share": 0.0,
         "spillover_share": 0.0
       },
       "examples": [
         {
-          "tx_hash": "0x05635a1615ce4255674b744007acf6c8e20995de4e2a9e7b404e3e9becc9ba84",
-          "block_number": 23286092,
-          "gas_delta": 237030
+          "tx_hash": "0x5958357e47273e12960e02e0c1ed245975ceacb3c1774fe4c6ee47a67800d672",
+          "block_number": 22458498,
+          "gas_delta": 104483
         }
       ]
     },
@@ -95,8 +157,8 @@
       "call_depth": 5,
       "revert_decoded": "empty",
       "count": 1,
-      "share_of_role": 0.5,
-      "share_of_contract": 0.5,
+      "share_of_role": 0.2,
+      "share_of_contract": 0.2,
       "gas_delta": {
         "avg": 190087,
         "p50": 190087,
@@ -142,9 +204,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23286092,
+    "block_span_start": 22458498,
     "block_span_end": 25011917,
-    "distinct_blocks": 2,
+    "distinct_blocks": 5,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -155,6 +217,12 @@
         "contract": "0x50d3865a63d52c0a54e4679949647ea752107390",
         "label": "StrategyExecutor",
         "category": "swap_dex",
+        "count": 3
+      },
+      {
+        "contract": "0x27e141dd285fe00d52aaabf6aef1db34745173ba",
+        "label": "0x27e141dd285fe00d52aaabf6aef1db34745173ba",
+        "category": null,
         "count": 1
       },
       {

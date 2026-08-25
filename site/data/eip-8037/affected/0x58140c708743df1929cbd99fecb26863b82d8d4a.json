@@ -16,14 +16,78 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 1,
-      "g4_oog_count": 1,
+      "g4_tx_count": 3,
+      "g4_oog_count": 3,
       "g4_nonoog_count": 0
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "entry",
+      "kind": "oog",
+      "selector": "0xa0ab9653",
+      "selector_signature": null,
+      "entry_selector": "0xa0ab9653",
+      "entry_signature": null,
+      "where_contract": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+      "where_label": "FiatTokenV2_2",
+      "where_category": null,
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": "FixedGas",
+      "call_depth": 3,
+      "revert_decoded": null,
+      "count": 2,
+      "share_of_role": 0.6667,
+      "share_of_contract": 0.6667,
+      "gas_delta": {
+        "avg": 36362,
+        "p50": 36362,
+        "p90": 38266
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 2,
+          "p90": 2
+        },
+        "sload": {
+          "p50": 11,
+          "p90": 11
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xf74e0ae8793c571a6a0935fcfb900f30536a3514e157b7bb350d857f79058110",
+          "block_number": 22535794,
+          "gas_delta": 38742
+        },
+        {
+          "tx_hash": "0x8961217aa2f2b18cb1c66c12dc604ac8712ce5fa08f690195bf8f2e99d8bcad0",
+          "block_number": 22535589,
+          "gas_delta": 33982
+        }
+      ]
+    },
     {
       "role": "entry",
       "kind": "oog",
@@ -40,8 +104,8 @@
       "call_depth": 2,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.3333,
       "gas_delta": {
         "avg": 35204,
         "p50": 35204,
@@ -85,35 +149,41 @@
     }
   ],
   "context": {
-    "g3_tx_count": 0,
+    "g3_tx_count": 1,
     "g2_drillin_tx_count": 0,
     "af_tx_count": 0,
-    "status_flips": 1,
+    "status_flips": 4,
     "gas_delta": {
-      "avg": 35204,
-      "sum": 35204,
+      "avg": 35976,
+      "sum": 107928,
       "p50": 35204,
-      "p90": 35204
+      "p90": 38034
     },
-    "block_span_start": 23639741,
+    "block_span_start": 22535589,
     "block_span_end": 23639741,
-    "distinct_blocks": 1,
+    "distinct_blocks": 3,
     "failure_rate": null,
     "entry_functions": [
       {
         "selector": "0xa0ab9653",
         "signature": null,
-        "count": 1
+        "count": 3
       }
     ],
     "failing_functions": [
       {
         "selector": "0xa0ab9653",
         "signature": null,
-        "count": 1
+        "count": 3
       }
     ],
     "halt_contracts": [
+      {
+        "contract": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+        "label": "FiatTokenV2_2",
+        "category": null,
+        "count": 2
+      },
       {
         "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7",
         "label": "Tether USDT",
@@ -122,6 +192,12 @@
       }
     ],
     "revert_contracts": [
+      {
+        "contract": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+        "label": "FiatTokenV2_2",
+        "category": null,
+        "count": 2
+      },
       {
         "contract": "0xdac17f958d2ee523a2206206994597c13d831ec7",
         "label": "Tether USDT",

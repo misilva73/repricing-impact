@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 2
+      "halt_count": 3
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 7,
       "revert_decoded": null,
       "count": 2,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.6667,
+      "share_of_contract": 0.6667,
       "gas_delta": {
         "avg": 474738,
         "p50": 474738,
@@ -85,6 +85,65 @@
           "gas_delta": 465127
         }
       ]
+    },
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0x4283f920",
+      "selector_signature": null,
+      "entry_selector": "0x4283f920",
+      "entry_signature": null,
+      "where_contract": "0x8f68f4810cce3194b6cb6f3d50fa58c2c9bdd1d5",
+      "where_label": "0x8f68f4810cce3194b6cb6f3d50fa58c2c9bdd1d5",
+      "where_category": null,
+      "opcode": "STATICCALL",
+      "pattern_or_reason": "call_chain",
+      "oog_bottleneck_kind": "FractionalGas",
+      "call_depth": 6,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.3333,
+      "share_of_contract": 0.3333,
+      "gas_delta": {
+        "avg": -10939,
+        "p50": -10939,
+        "p90": -10939
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 14,
+          "p90": 14
+        },
+        "sload": {
+          "p50": 53,
+          "p90": 53
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 1100,
+          "sum": 1100
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xda143f217c0c7183448dc38da8725f101478b6cdb392b47c71b0177ac58656c4",
+          "block_number": 22687057,
+          "gas_delta": -10939
+        }
+      ]
     }
   ],
   "context": {
@@ -98,9 +157,9 @@
       "p50": null,
       "p90": null
     },
-    "block_span_start": 24080021,
+    "block_span_start": 22687057,
     "block_span_end": 24759080,
-    "distinct_blocks": 2,
+    "distinct_blocks": 3,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -112,6 +171,12 @@
         "label": "Proxy",
         "category": "other",
         "count": 2
+      },
+      {
+        "contract": "0x850833c63e4214fb6eccc9b45a97232e809a919b",
+        "label": "0x850833c63e4214fb6eccc9b45a97232e809a919b",
+        "category": null,
+        "count": 1
       }
     ]
   }

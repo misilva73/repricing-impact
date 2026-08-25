@@ -16,12 +16,12 @@
   "mev_role": null,
   "roles_summary": {
     "entry": {
-      "g4_tx_count": 4,
-      "g4_oog_count": 4,
+      "g4_tx_count": 11,
+      "g4_oog_count": 11,
       "g4_nonoog_count": 0
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -39,9 +39,9 @@
       "oog_bottleneck_kind": "FixedGas",
       "call_depth": 4,
       "revert_decoded": null,
-      "count": 4,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "count": 10,
+      "share_of_role": 0.9091,
+      "share_of_contract": 0.9091,
       "gas_delta": {
         "avg": -17366,
         "p50": -17366,
@@ -77,45 +77,104 @@
       },
       "examples": [
         {
-          "tx_hash": "0xee4b077c32911e0cbabb63f8bf27db33bea9751ed674559dbdcfd9b85a1aef7a",
-          "block_number": 23238821,
+          "tx_hash": "0x38314cb16683e38c3e41349adbe24d79166c0bcb4d18a7ef596d39ee486aebdb",
+          "block_number": 22821828,
           "gas_delta": -17366
         },
         {
-          "tx_hash": "0xbab4270ed4a44a99d0f662e6bc9c6648e9d9c9663121b3bf03c8dc60698e0a06",
-          "block_number": 23279603,
+          "tx_hash": "0xda61907d601c1f4588a7c7b95dd504c01d5b1c7424449a7ad30da88ed7d83901",
+          "block_number": 23036245,
           "gas_delta": -17366
+        }
+      ]
+    },
+    {
+      "role": "entry",
+      "kind": "oog",
+      "selector": "0x8926c4ee",
+      "selector_signature": null,
+      "entry_selector": "0x8926c4ee",
+      "entry_signature": null,
+      "where_contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "where_label": "WETH",
+      "where_category": "infra",
+      "opcode": "SSTORE",
+      "pattern_or_reason": "storage_heavy",
+      "oog_bottleneck_kind": "FractionalGas",
+      "call_depth": 4,
+      "revert_decoded": null,
+      "count": 1,
+      "share_of_role": 0.0909,
+      "share_of_contract": 0.0909,
+      "gas_delta": {
+        "avg": 27322,
+        "p50": 27322,
+        "p90": 27322
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 8,
+          "p90": 8
+        },
+        "sload": {
+          "p50": 19,
+          "p90": 19
+        },
+        "sstore": {
+          "p50": 0,
+          "p90": 0
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 0,
+          "sum": 0
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0xc92b597740da1b7141eccaa73a2dcd828ad4a0afe0339ddadfafb479c50566ca",
+          "block_number": 22602660,
+          "gas_delta": 27322
         }
       ]
     }
   ],
   "context": {
-    "g3_tx_count": 0,
-    "g2_drillin_tx_count": 686,
-    "af_tx_count": 0,
-    "status_flips": 4,
+    "g3_tx_count": 2,
+    "g2_drillin_tx_count": 1054,
+    "af_tx_count": 2,
+    "status_flips": 13,
     "gas_delta": {
-      "avg": -17366,
-      "sum": -69464,
+      "avg": -13303,
+      "sum": -146338,
       "p50": -17366,
       "p90": -17366
     },
-    "block_span_start": 23238821,
+    "block_span_start": 22602660,
     "block_span_end": 23372763,
-    "distinct_blocks": 4,
+    "distinct_blocks": 11,
     "failure_rate": null,
     "entry_functions": [
       {
         "selector": "0x8926c4ee",
         "signature": null,
-        "count": 4
+        "count": 11
       }
     ],
     "failing_functions": [
       {
         "selector": "0x8926c4ee",
         "signature": null,
-        "count": 4
+        "count": 11
       }
     ],
     "halt_contracts": [
@@ -123,7 +182,7 @@
         "contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
         "label": "WETH",
         "category": "infra",
-        "count": 4
+        "count": 11
       }
     ],
     "revert_contracts": [
@@ -131,7 +190,7 @@
         "contract": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
         "label": "WETH",
         "category": "infra",
-        "count": 4
+        "count": 11
       }
     ],
     "entry_contracts": []

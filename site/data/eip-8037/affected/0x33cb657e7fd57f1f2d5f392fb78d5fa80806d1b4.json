@@ -16,10 +16,10 @@
   "mev_role": null,
   "roles_summary": {
     "revert_site": {
-      "revert_count": 9
+      "revert_count": 10
     }
   },
-  "distinct_cluster_count": 1,
+  "distinct_cluster_count": 2,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
     {
@@ -38,8 +38,8 @@
       "call_depth": 3,
       "revert_decoded": "Error(string): no profit",
       "count": 9,
-      "share_of_role": 1.0,
-      "share_of_contract": 1.0,
+      "share_of_role": 0.9,
+      "share_of_contract": 0.9,
       "gas_delta": {
         "avg": -129416,
         "p50": -128214,
@@ -77,22 +77,73 @@
           "gas_delta": -128214
         }
       ]
+    },
+    {
+      "role": "revert_site",
+      "kind": "non_oog",
+      "selector": "0x000002ef",
+      "selector_signature": null,
+      "entry_selector": "0x000002ef",
+      "entry_signature": null,
+      "where_contract": "0x33cb657e7fd57f1f2d5f392fb78d5fa80806d1b4",
+      "where_label": "0x33cb657e7fd57f1f2d5f392fb78d5fa80806d1b4",
+      "where_category": null,
+      "opcode": "DUP12",
+      "pattern_or_reason": "Revert",
+      "oog_bottleneck_kind": null,
+      "call_depth": 3,
+      "revert_decoded": "empty",
+      "count": 1,
+      "share_of_role": 0.1,
+      "share_of_contract": 0.1,
+      "gas_delta": {
+        "avg": -53931,
+        "p50": -53931,
+        "p90": -53931
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 0,
+          "p90": 0
+        },
+        "sload": {
+          "p50": 46,
+          "p90": 46
+        },
+        "sstore": {
+          "p50": 2,
+          "p90": 2
+        },
+        "access_list_entries": {
+          "p50": 60,
+          "p90": 60
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x77fbd81a2d3c539fcf198ff90600a1a464bf026fc39b7c31c8bb4028ecace8d9",
+          "block_number": 23044397,
+          "gas_delta": -53931
+        }
+      ]
     }
   ],
   "context": {
-    "g3_tx_count": 1,
+    "g3_tx_count": 9,
     "g2_drillin_tx_count": 0,
-    "af_tx_count": 0,
-    "status_flips": 1,
+    "af_tx_count": 1,
+    "status_flips": 9,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23709202,
+    "block_span_start": 23044397,
     "block_span_end": 23949158,
-    "distinct_blocks": 9,
+    "distinct_blocks": 10,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
@@ -104,6 +155,12 @@
         "label": "Aave v3 Flashloan User",
         "category": "infra",
         "count": 9
+      },
+      {
+        "contract": "0xbaef6b5096b3655234dbf69ca257ed1579d764d8",
+        "label": "0xbaef6b5096b3655234dbf69ca257ed1579d764d8",
+        "category": null,
+        "count": 1
       }
     ]
   }

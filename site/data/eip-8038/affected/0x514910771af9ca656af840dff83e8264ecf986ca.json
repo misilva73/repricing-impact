@@ -16,12 +16,76 @@
   "mev_role": null,
   "roles_summary": {
     "oog_site": {
-      "halt_count": 5
+      "halt_count": 12
     }
   },
-  "distinct_cluster_count": 4,
+  "distinct_cluster_count": 5,
   "clusters_shown_share": 1.0,
   "failure_clusters": [
+    {
+      "role": "oog_site",
+      "kind": "oog",
+      "selector": "0xfa98a33f",
+      "selector_signature": null,
+      "entry_selector": "0xfa98a33f",
+      "entry_signature": null,
+      "where_contract": "0x514910771af9ca656af840dff83e8264ecf986ca",
+      "where_label": "Chainlink LINK",
+      "where_category": "token",
+      "opcode": "CALL",
+      "pattern_or_reason": "call_chain",
+      "oog_bottleneck_kind": "FixedGas",
+      "call_depth": 5,
+      "revert_decoded": null,
+      "count": 7,
+      "share_of_role": 0.5833,
+      "share_of_contract": 0.5833,
+      "gas_delta": {
+        "avg": -73465,
+        "p50": -43114,
+        "p90": -43114
+      },
+      "drivers": {
+        "cold_account": {
+          "p50": 11,
+          "p90": 11
+        },
+        "sload": {
+          "p50": 31,
+          "p90": 33
+        },
+        "sstore": {
+          "p50": 2,
+          "p90": 3
+        },
+        "access_list_entries": {
+          "p50": 0,
+          "p90": 0
+        },
+        "surcharge_at_oog": {
+          "p50": 600,
+          "sum": 4400
+        },
+        "gas_remaining_at_oog": {
+          "p50": 0,
+          "p90": 0
+        },
+        "reservoir_exhausted_share": 0.0,
+        "spillover_share": 0.0
+      },
+      "examples": [
+        {
+          "tx_hash": "0x6aca95ea65cd5536e254665a35456f629d46cd668cc9368b1f5131ba6e987338",
+          "block_number": 22888193,
+          "gas_delta": -43126
+        },
+        {
+          "tx_hash": "0x732123a792c862c7f169d9c5f505ba346d52131c45504205ba5c1647b86f0d76",
+          "block_number": 22888188,
+          "gas_delta": -43114
+        }
+      ]
+    },
     {
       "role": "oog_site",
       "kind": "oog",
@@ -38,8 +102,8 @@
       "call_depth": 14,
       "revert_decoded": null,
       "count": 2,
-      "share_of_role": 0.4,
-      "share_of_contract": 0.4,
+      "share_of_role": 0.1667,
+      "share_of_contract": 0.1667,
       "gas_delta": {
         "avg": 9686811,
         "p50": 9686811,
@@ -102,8 +166,8 @@
       "call_depth": 6,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 0.2,
-      "share_of_contract": 0.2,
+      "share_of_role": 0.0833,
+      "share_of_contract": 0.0833,
       "gas_delta": {
         "avg": 236471,
         "p50": 236471,
@@ -161,8 +225,8 @@
       "call_depth": 7,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 0.2,
-      "share_of_contract": 0.2,
+      "share_of_role": 0.0833,
+      "share_of_contract": 0.0833,
       "gas_delta": {
         "avg": -538152,
         "p50": -538152,
@@ -220,8 +284,8 @@
       "call_depth": 15,
       "revert_decoded": null,
       "count": 1,
-      "share_of_role": 0.2,
-      "share_of_contract": 0.2,
+      "share_of_role": 0.0833,
+      "share_of_contract": 0.0833,
       "gas_delta": {
         "avg": 385386,
         "p50": 385386,
@@ -265,25 +329,31 @@
     }
   ],
   "context": {
-    "g3_tx_count": 239811,
+    "g3_tx_count": 440095,
     "g2_drillin_tx_count": 0,
-    "af_tx_count": 3592,
-    "status_flips": 239811,
+    "af_tx_count": 7064,
+    "status_flips": 440095,
     "gas_delta": {
       "avg": 0,
       "sum": 0,
       "p50": null,
       "p90": null
     },
-    "block_span_start": 23984331,
+    "block_span_start": 22888170,
     "block_span_end": 24674764,
-    "distinct_blocks": 5,
+    "distinct_blocks": 12,
     "failure_rate": null,
     "entry_functions": [],
     "failing_functions": [],
     "halt_contracts": [],
     "revert_contracts": [],
     "entry_contracts": [
+      {
+        "contract": "0x87be3fc3edfe10cb8ce1244d6a1969fc55f9f83c",
+        "label": "SocketBatcher",
+        "category": null,
+        "count": 7
+      },
       {
         "contract": "0x8f5835e9d756c9bd934bce527157a4b0ef3c5cb7",
         "label": "0x8f5835e9d756c9bd934bce527157a4b0ef3c5cb7",
