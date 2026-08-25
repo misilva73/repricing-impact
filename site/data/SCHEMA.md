@@ -187,7 +187,7 @@ exists as a separate key: the pre-existing `sum_gas_delta` spans **both** cohort
     "2": {
       "label": "Succeeds with changes",
       "signed": false,
-      "note": "Txs with a gas change (gas_delta != 0)… >=1024-gas bin is a catch-all…",
+      "note": "Absolute gas-use change for transactions whose gas use changed…",
       "count": 3570791,
       "gas_bins": [                                   // producer bins 1..11, hi exclusive
         { "lo": 1,    "hi": 2,    "count_gas_only": 12, "count_drillin": 3, "count": 15 },
@@ -204,7 +204,7 @@ exists as a separate key: the pre-existing `sum_gas_delta` spans **both** cohort
         { "lo": 500,  "hi": null, "count": … }         // ≥500% catch-all
       ],
       "pct_covered_count": 3512044,                   // sum of the 13 bin counts == gas_only txs represented
-      "pct_note": "…producer class-grain histogram over the gas_only cohort ONLY…",
+      "pct_note": "Per-transaction gas-use change… gas-only cohort…",
       "sum_gas_delta_gas_only": 77901554000,          // gas_only class rows only — ratio NUMERATOR
       "baseline_gas_used_sum": 570220118000,          // gas_only class rows only — ratio DENOMINATOR
       "gas_delta_pct_of_baseline": 13.6617            // float | null — RATIO OF SUMS, signed %, 4 dp
@@ -248,12 +248,12 @@ All `*_mix` / pattern / category / break-reason lists are arrays of
     "state_driver_mix": [ { "key": "no_state", "count": … }, { "key": "runtime_state", "count": … } ], // PARTITION of gas_only_count: no_state|runtime_state
     "tx_shape_mix": [ { "key": "simple_transfer", "count": … }, … ], // PARTITION of gas_only_count: simple_transfer|contract_call|contract_creation — THREE keys, NO authorization member (unlike g3/g4); contract_creation is the producer's tx-level tx_count_creation (to IS NULL)
     "tx_type_mix": [ { "key": "legacy", "count": … }, … ],           // PARTITION of gas_only_count, EIP-2718: legacy|access_list|dynamic_fee|blob|set_code|unknown (zero-filled); unknown is the producer's tx_count_type_other
-    "gas_only_mix_note": "state_driver_mix, tx_shape_mix and tx_type_mix … gas_only aggregate cohort ONLY…", // cohort-scope caveat for the three partitions above
+    "gas_only_mix_note": "Transaction shape, type, and state-driver counts cover only…", // cohort-scope caveat for the three partitions above
     "tx_overlay_mix": [ { "key": "authorization", "count": … } ],    // OVERLAPPING OVERLAY, not a partition: authorization
-    "tx_overlay_note": "Overlay, NOT a partition…",
+    "tx_overlay_note": "EIP-7702 authorization is an overlapping attribute…",
     "state_driver_mix_drillin": [ { "key": "authorization", "count": … }, … ], // drill-in subset: state_gas_category (access_list|authorization|contract_creation|transfer_new_account|none)
     "change_type_mix": [ { "key": "gas_changed", "count": … }, … ], // OVERLAPPING: gas_changed|event_logs_changed|output_changed|logs_bloom_changed|trace_only
-    "change_type_note": "Change types are non-exclusive…"
+    "change_type_note": "Change types overlap…"
   },
   "g3": {
     "label": "Fixable with gas-limit increase",
@@ -324,8 +324,9 @@ in the payload, as `tx_shape_mix.contract_creation`, where it *is* a legitimate
 partition member. The caveat travels **in the payload** as the sibling
 `tx_overlay_note` string, and the cohort-scope caveat for the three partitions
 travels as `gas_only_mix_note`; both follow the `change_type_mix` /
-`change_type_note` precedent and are rendered verbatim as prose (`textContent`),
-never hardcoded in the HTML.
+`change_type_note` precedent. The current frontend composes reader-facing cohort
+notes from the accompanying counts so it can state exact coverage; these payload
+notes remain durable descriptions for other consumers.
 
 **BREAKING — `tx_count_creation` was REDEFINED by producer schema v11.** It used to
 be a **state-op creation** count; under v11 it is a **tx-level contract-creation**

@@ -1069,10 +1069,10 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
         "label": GROUP_LABELS["g2"],
         "signed": False,
         "note": (
-            "Txs with a gas change (gas_delta != 0): block_summary gas_only cohort "
-            "+ Succeeds-with-changes drill-in members, binned by the producer log2 "
-            "bucket. The >=1024-gas bin is a catch-all — the aggregate cohort has no "
-            "finer resolution above 1024 gas."
+            "Absolute gas-use change for transactions whose gas use changed. This "
+            "combines transactions whose only detected difference was gas use with "
+            "Succeeds-with-changes transactions that have retained per-transaction "
+            "diagnostics. The >=1,024-gas bin is a catch-all."
         ),
         "count": int(_totals(ctx)["g2"]),
         "gas_bins": _gas_bins(g2_go_hist, g2_dr_hist),
@@ -1083,11 +1083,9 @@ def emit_gas_delta_hist(ctx: RunContext) -> dict:
         "pct_bins": g2_pct_bins,
         "pct_covered_count": int(g2_pct_covered),
         "pct_note": (
-            "Class-grain producer histogram of 100*gas_delta/baseline_gas_used per tx "
-            "over the gas_only aggregate cohort ONLY "
-            "(block_summary.gas_delta_pct_hist); the drill-in members counted in "
-            "gas_bins are not included. Fixed signed bins; bounded below at -100%; "
-            "the >=500% bin is a catch-all."
+            "Per-transaction gas-use change as a share of baseline gas used for the "
+            "gas-only cohort. Transactions with retained per-transaction diagnostics "
+            "are excluded from this percentage view; >=500% is a catch-all."
             + (
                 f" Excludes {go_count - g2_pct_covered:,} gas_only txs from blocks "
                 "with an unpopulated histogram (written pre-v11)."
@@ -1166,7 +1164,7 @@ def _signed_per_tx_hist(ctx: RunContext, predicate: str, label: str) -> dict:
     return {
         "label": label,
         "signed": True,
-        "note": "Signed exact per-tx gas_delta (negative = schedule cheaper).",
+        "note": "Exact per-transaction gas-use change; negative values mean the candidate schedule used less gas.",
         "count": count,
         "bins": bin_list,
         "percentiles": _percentiles_from_log2_hist(abs_hist),
@@ -1177,9 +1175,8 @@ def _signed_per_tx_hist(ctx: RunContext, predicate: str, label: str) -> dict:
         "pct_bins": _pct_bins(pct_counts),
         "pct_covered_count": int(pct_covered),
         "pct_note": (
-            "Per-tx 100*gas_delta/baseline_gas_used (share of baseline gas used; "
-            "negative = schedule cheaper), fixed signed bins. Bounded below at "
-            "-100%; the >=500% bin is a catch-all."
+            "Per-transaction gas-use change as a share of baseline gas used. Negative "
+            "values mean the candidate schedule used less gas; >=500% is a catch-all."
             + (
                 f" Excludes {count - pct_covered:,} txs with no usable baseline gas."
                 if count - pct_covered
@@ -1301,13 +1298,11 @@ def _g2_categories(ctx: RunContext) -> dict:
         {"key": "unknown", "count": sd_t_other},
     ]
     gas_only_mix_note = (
-        "state_driver_mix, tx_shape_mix and tx_type_mix are producer class-grain "
-        "counts over the gas_only aggregate cohort ONLY — each is a true partition "
-        "summing to gas_only_count, and none of them cover the drill-in members. "
-        "contract_creation is the tx-level creation count (to IS NULL). Unlike the "
-        "g3/g4 taxonomy, EIP-7702 authorization txs are NOT carved out here: they "
-        "fall in contract_call (or simple_transfer when calldata is empty); their "
-        "count is in tx_overlay_mix."
+        "Transaction shape, type, and state-driver counts cover only transactions "
+        "whose sole detected difference was gas use; each is a complete partition "
+        "of that cohort. They exclude transactions with retained per-transaction "
+        "diagnostics. EIP-7702 authorization is an overlapping attribute and is not "
+        "a separate transaction-shape member here."
     )
     # The one quantity that belongs to NEITHER partition, quarantined behind a
     # distinctly-named key plus a note that travels in the JSON (the
@@ -1316,9 +1311,9 @@ def _g2_categories(ctx: RunContext) -> dict:
     # the same number twice under two meanings is what confused v10 readers.
     tx_overlay_mix = [{"key": "authorization", "count": sd_au}]
     tx_overlay_note = (
-        "Overlay, NOT a partition: authorization counts gas_only txs carrying an "
-        "EIP-7702 authorization list. It overlaps tx_shape_mix and tx_type_mix and "
-        "must not be added to either."
+        "EIP-7702 authorization is an overlapping attribute, not a separate partition "
+        "member. Authorization transactions are also counted in transaction shape "
+        "and type and must not be added to either total."
     )
 
     # G2 drill-in members — LOCAL DuckDB. status_changed is definitionally false
@@ -1379,11 +1374,10 @@ def _g2_categories(ctx: RunContext) -> dict:
         "state_driver_mix_drillin": state_driver_mix_drillin,
         "change_type_mix": change_type_mix,
         "change_type_note": (
-            "Change types are non-exclusive: a tx can be counted under several "
-            "(e.g. a gas change plus a logs-bloom change), so they do not sum to "
-            "the group total. gas_changed spans the gas_only cohort and drill-in "
-            "members with gas_delta != 0; the other flags exist only on drill-in "
-            "members."
+            "Change types overlap: one transaction can be counted under several, so "
+            "they do not sum to the group total. Gas-use changes cover both data "
+            "cohorts; logs, output, and trace flags are available only for transactions "
+            "with retained per-transaction diagnostics."
         ),
     }
 

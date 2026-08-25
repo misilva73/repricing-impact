@@ -16,6 +16,7 @@
       <a data-nav="overview">Overview</a>
       <a data-nav="transaction-failures">Transaction failures</a>
       <a data-nav="affected-contracts">Affected contracts</a>
+      <a data-method-link>Method</a>
       <a data-nav="entity-report">Entity report</a>
     </div>
     <div class="schedule-picker">
@@ -29,10 +30,12 @@
     <div class="hero">
       <h1>Gas-schedule divergence dashboard</h1>
       <p class="lead">
-        Per-schedule analysis of how mainnet transactions diverge under a candidate
-        gas schedule. Pick a schedule, then explore the
+        Historical Ethereum mainnet transactions replayed under a candidate gas
+        schedule and compared with the baseline. Pick a schedule, then explore the
         <strong>divergence overview</strong> and <strong>transaction failures</strong>.
       </p>
+      <p class="note" id="scheduleSummary"></p>
+      <p class="note" id="windowSummary"></p>
       <div class="hero-actions">
         <a class="cta-btn" id="overviewLink">Open overview →</a>
         <a class="btn-secondary" id="failuresLink">Transaction failures</a>
@@ -40,12 +43,12 @@
       </div>
     </div>
 
-    <h2>Headline</h2>
+    <h2>Impact at a glance</h2>
     <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
 
     <div class="panel">
       <h3>Group composition (totals)</h3>
-      <p class="note">Share of all transactions across every group, over the pinned block range.</p>
+      <p class="note">How all replayed transactions are distributed across the six mutually exclusive groups.</p>
       <div id="donut" class="chart"><p class="loading">Loading chart…</p></div>
     </div>
 
@@ -53,7 +56,7 @@
       <h3>How the six transaction groups are defined</h3>
       <p class="note">
         Every mainnet transaction in the pinned block range is replayed under the candidate
-        gas schedule and categorised into <strong>exactly one</strong> of these six groups.
+        gas schedule and categorized into <strong>exactly one</strong> of these six groups.
         The three <em>changed</em> groups — Succeeds with changes, Fixable, and Potentially
         broken — require a <strong>working baseline</strong> (the transaction succeeded before
         the repricing); a transaction whose baseline replay already failed is
@@ -62,8 +65,7 @@
       <div class="group-defs">
         <div class="group-def" style="--gc: var(--g1)">
           <h4>No change <span class="gkey">g1</span></h4>
-          <p>Identical outcome <em>and</em> execution trace under the repricing — the transaction
-             is completely unaffected.</p>
+          <p>No recorded difference in outcome or execution trace under the repricing.</p>
         </div>
         <div class="group-def" style="--gc: var(--g2)">
           <h4>Succeeds with changes <span class="gkey">g2</span></h4>
@@ -72,13 +74,15 @@
         </div>
         <div class="group-def" style="--gc: var(--g3)">
           <h4>Fixable with gas-limit increase <span class="gkey">g3</span></h4>
-          <p>Worked before; now runs out of gas at the original limit, but <strong>completes</strong>
-             once the limit is raised (rescued at up to <code>10×</code>). A gas-limit bump fixes it.</p>
+          <p>Worked before; now fails at the original limit, but <strong>completes in the replay</strong>
+             with a higher limit of up to <code>10×</code>. This does not establish that the required
+             limit is practical under block or protocol constraints.</p>
         </div>
         <div class="group-def" style="--gc: var(--g4)">
           <h4>Potentially broken <span class="gkey">g4</span></h4>
-          <p>Worked before; now fails and is <strong>not rescued</strong> even at the <code>10×</code>
-             gas ceiling — genuinely at risk under the repricing.</p>
+          <p>Worked before; now fails and is <strong>not rescued</strong> at the tested <code>10×</code>
+             gas ceiling. A small subset is still out of gas at that ceiling, so fixability beyond
+             <code>10×</code> remains unknown.</p>
         </div>
         <div class="group-def" style="--gc: var(--af)">
           <h4>Already failing <span class="gkey">af</span></h4>
@@ -87,11 +91,35 @@
         </div>
         <div class="group-def" style="--gc: var(--g5)">
           <h4>Unknown <span class="gkey">g5</span></h4>
-          <p>No retained per-transaction detail — dropped at the producer’s per-block
-             drill-in cap. A coverage gap, not an outcome; zero on non-truncated blocks.</p>
+          <p>No retained per-transaction detail, usually because the producer’s per-block
+             diagnostic cap was reached. This is a coverage gap, not an execution outcome.</p>
         </div>
       </div>
     </div>
+
+    <section id="method">
+      <h2>Method and limitations</h2>
+      <div class="panel">
+        <p>Each historical transaction is replayed independently against its canonical
+          pre-transaction state under the baseline and the selected candidate schedule.
+          The comparison records changes in success, gas use, logs, output, and execution trace.</p>
+        <p>The producer tests the transaction's original gas limit (<code>1×</code>) and a
+          <code>10×</code> ceiling. When the ceiling replay completes, gas used divided by the
+          original gas limit gives the measured multiplier used for Fixable transactions;
+          this is not a discrete 1/2/4/8 sweep.</p>
+        <p>This is a counterfactual replay of historical activity, not a forecast. It does not
+          model how users, wallets, contracts, block builders, or fee markets would adapt after
+          a repricing. “Potentially broken” therefore identifies replay risk rather than proving
+          future production failure.</p>
+        <p class="note"><strong>Terms:</strong> baseline = the original gas schedule;
+          gas delta = candidate gas used minus baseline gas used; OOG = out of gas;
+          call depth 1 = the transaction's entry contract; drill-in = retained
+          per-transaction diagnostic detail; execution trace = the recorded execution path;
+          p50 = median; p90 = the value below which 90% of observations fall.
+          EIP-2718 type refers to the transaction envelope; an EIP-7702 authorization
+          transaction carries an authorization list.</p>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -118,19 +146,17 @@
       const t = meta.totals, gl = meta.group_labels;
       renderCards('cards', [
         { value: fmtCount(t.tx_count), label: 'Total transactions' },
-        { value: fmtCount(meta.block_range.count), label: 'Blocks analyzed' },
+        { value: fmtPct(100 * (t.g2 + t.g3 + t.g4) / t.tx_count), label: 'Changed from a working baseline', color: GROUP_COLOR(1) },
         { value: fmtPct(100 * t.g3 / t.tx_count), label: gl.g3, color: GROUP_COLOR(2) },
         { value: fmtPct(100 * t.g4 / t.tx_count), label: gl.g4, color: GROUP_COLOR(3) },
       ]);
 
       renderTotalsDonut('donut', t, gl);
 
-      document.getElementById('footSchedule').textContent = meta.schedule;
-      document.getElementById('footConfig').innerHTML =
-        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
-      document.getElementById('footBlocks').textContent =
-        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
-      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      document.getElementById('scheduleSummary').textContent = scheduleDescription(meta.schedule);
+      document.getElementById('windowSummary').textContent = 'Analysis window: ' + analysisWindow(meta) + '.';
+
+      fillFooter(meta);
       window.rerenderCharts = () => renderTotalsDonut('donut', t, gl);
     });
   </script>

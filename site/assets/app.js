@@ -405,7 +405,7 @@ function upgradeRank(rec) {
 
 function showError(id, err) {
   const el = document.getElementById(id);
-  if (el) el.innerHTML = `<p class="loading" style="color:var(--red)">load error: ${escHtml(err.message || err)}</p>`;
+  if (el) el.innerHTML = `<p class="loading" style="color:var(--red)">Unable to load data: ${escHtml(err.message || err)}</p>`;
   console.error(err);
 }
 
@@ -773,6 +773,31 @@ function buildChrome(active) {
     a.href = scheduleLink(s);
     if (s === sched) a.classList.add('active');
   });
+  document.querySelectorAll('[data-method-link]').forEach(a => {
+    a.href = `index.html?schedule=${sched}#method`;
+  });
+}
+
+function scheduleDescription(schedule) {
+  return schedule === 'eip-8037'
+    ? 'EIP-8037 tests a per-transaction state-gas reservoir that changes how state-heavy execution is charged.'
+    : 'EIP-8038 tests revised gas prices for state access and state writes.';
+}
+
+function analysisWindow(meta) {
+  const dates = meta.date_range
+    ? `${meta.date_range.start}–${meta.date_range.end}`
+    : 'date range unavailable';
+  return `${dates}; blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
+}
+
+function fillFooter(meta) {
+  document.getElementById('footSchedule').textContent = meta.schedule.toUpperCase();
+  document.getElementById('footConfig').innerHTML =
+    `config <code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
+  document.getElementById('footBlocks').textContent = analysisWindow(meta);
+  document.getElementById('footGenerated').textContent =
+    'Generated ' + meta.generated_at.replace('T', ' ').replace('Z', ' UTC');
 }
 
 // ═════════════════════════════════════════════════════════════════════
@@ -786,16 +811,16 @@ function buildChrome(active) {
 //     contract, FETCHED ON LOOKUP; its payload is exactly the record
 //     renderContractDetail(rec) consumes (that render is unchanged).
 //  A direct address fetches its shard straight away; a name search substring-
-//  scans the index, then fetches the chosen entry's shard. A 404/failed shard
-//  fetch is treated as "not affected" (banner), never an uncaught error.
+//  scans the index, then fetches the chosen entry's shard. A confirmed 404 is a
+//  shard miss; other fetch/parse failures render an indeterminate-status banner.
 // ═════════════════════════════════════════════════════════════════════
 
 // Module-scoped handle to the loaded index, set once by the page init.
 let _affected = null;
 // Lazily-fetched, cached aggregate for the collapsed "fresh contract deployment
 // OOG'd during construction" class (~102k long-tail accounts that no longer get
-// an individual {addr}.json shard). undefined = not yet fetched, null = fetch
-// failed / file absent, object = the deploy_oog.json payload.
+// an individual {addr}.json shard). undefined = not yet fetched; object = the
+// deploy_oog.json payload.
 let _deployOog = undefined;
 function initAffectedContracts(index) {
   _affected = index || { contracts: [] };
@@ -804,25 +829,22 @@ function initAffectedContracts(index) {
 
 // Fetch the collapsed deploy-OOG aggregate once, on first miss. Potentially
 // several MB, so it is never loaded on page init — only when a shard miss needs
-// to consult it. Resolves to null on any failure so callers can fall through.
+// to consult it. Fetch/parse failures propagate so they cannot be misreported as
+// evidence that a contract was unaffected.
 async function _fetchDeployOog() {
   if (_deployOog !== undefined) return _deployOog;
-  try {
-    _deployOog = await fetchJSON(dataUrl('affected/deploy_oog.json'));
-  } catch (e) {
-    _deployOog = null;
-  }
+  _deployOog = await fetchJSON(dataUrl('affected/deploy_oog.json'));
   return _deployOog;
 }
 
-// Fetch a per-contract shard; resolve to null on any failure (404 / network /
-// bad JSON) so callers can treat a miss as "not affected" without throwing.
+// Fetch a per-contract shard. Only a confirmed 404 is an unaffected/shard miss;
+// network, server, and parse failures must remain visible as indeterminate.
 async function _fetchAffectedShard(addr) {
-  try {
-    return await fetchJSON(dataUrl('affected/' + addr.toLowerCase() + '.json'));
-  } catch (e) {
-    return null;
-  }
+  const url = dataUrl('affected/' + addr.toLowerCase() + '.json');
+  const res = await fetch(url);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  return res.json();
 }
 // Transient loading state in #detail while a shard is in flight.
 function _showDetailLoading() {
@@ -884,23 +906,34 @@ function _notAffectedBanner(q) {
   if (d) d.innerHTML = '';
 }
 
+function _lookupFailedBanner(q) {
+  _showBanner(`We could not load the analysis for <strong>${escHtml(q)}</strong>. `
+    + `Its affected status could not be determined. Check your connection and try again.`);
+}
+
 // Fetch + render a single contract's shard by address. Returns true on a hit.
 async function _resolveAndRender(addr, missQuery) {
   _setAddrParam(addr);
   _showDetailLoading();
-  const rec = await _fetchAffectedShard(addr);
-  if (!rec) {
-    // Shard miss: this address may be one of the collapsed fresh-deployment
-    // OOG accounts (no individual shard). Consult the aggregate before giving up.
-    const dj = await _fetchDeployOog();
-    const acct = dj && dj.accounts ? dj.accounts[addr.toLowerCase()] : null;
-    if (acct) { _clearBanner(); renderDeployOogDetail(addr.toLowerCase(), acct, dj); return true; }
-    _notAffectedBanner(missQuery != null ? missQuery : addr);
+  try {
+    const rec = await _fetchAffectedShard(addr);
+    if (!rec) {
+      // Shard miss: this address may be one of the collapsed fresh-deployment
+      // OOG accounts (no individual shard). Consult the aggregate before giving up.
+      const dj = await _fetchDeployOog();
+      const acct = dj && dj.accounts ? dj.accounts[addr.toLowerCase()] : null;
+      if (acct) { _clearBanner(); renderDeployOogDetail(addr.toLowerCase(), acct, dj); return true; }
+      _notAffectedBanner(missQuery != null ? missQuery : addr);
+      return false;
+    }
+    _clearBanner();
+    renderContractDetail(_asRecord(rec));
+    return true;
+  } catch (e) {
+    console.error(e);
+    _lookupFailedBanner(missQuery != null ? missQuery : addr);
     return false;
   }
-  _clearBanner();
-  renderContractDetail(_asRecord(rec));
-  return true;
 }
 
 // Lookup entry point wired to the search box (and ?addr= deep-link). Normalizes
@@ -1039,16 +1072,16 @@ function _driversCell(drivers) {
   const sstore = pctile(drivers.sstore);
   const sload = pctile(drivers.sload);
   const cold = pctile(drivers.cold_account);
-  if (sstore != null) parts.push(`SSTORE ×${fmtCount(sstore)}`);
-  if (sload != null) parts.push(`SLOAD ×${fmtCount(sload)}`);
-  if (cold != null) parts.push(`cold ×${fmtCount(cold)}`);
+  if (sstore != null) parts.push(`median SSTOREs: ${fmtCount(sstore)}`);
+  if (sload != null) parts.push(`median SLOADs: ${fmtCount(sload)}`);
+  if (cold != null) parts.push(`median cold-account accesses: ${fmtCount(cold)}`);
   if (drivers.surcharge_at_oog && drivers.surcharge_at_oog.p50 != null)
-    parts.push(`+${fmtGas(drivers.surcharge_at_oog.p50)} surcharge`);
+    parts.push(`median added surcharge: ${fmtGas(drivers.surcharge_at_oog.p50)} gas`);
   if (drivers.gas_remaining_at_oog && drivers.gas_remaining_at_oog.p50 != null)
-    parts.push(`${fmtGas(drivers.gas_remaining_at_oog.p50)} short`);
+    parts.push(`median gas remaining at halt: ${fmtGas(drivers.gas_remaining_at_oog.p50)}`);
   if (drivers.reservoir_exhausted_share != null && drivers.reservoir_exhausted_share > 0)
     parts.push(`reservoir exhausted ${fmtPct(100 * drivers.reservoir_exhausted_share)}`);
-  else if (drivers.spillover_share != null && drivers.spillover_share > 0)
+  if (drivers.spillover_share != null && drivers.spillover_share > 0)
     parts.push(`spillover ${fmtPct(100 * drivers.spillover_share)}`);
   const scat = drivers.state_gas_category;
   if ((!parts.length) && Array.isArray(scat) && scat.length && scat[0].key != null)
@@ -1130,37 +1163,44 @@ function renderContractDetail(rec) {
   const cards = [];
   if (rs.entry) {
     if (rs.entry.g4_oog_count != null)
-      cards.push({ value: fmtCount(rs.entry.g4_oog_count), label: 'OOG halt txs as entry site', color: T.accent });
+      cards.push({ value: fmtCount(rs.entry.g4_oog_count), label: 'OOG txs as entry contract', color: T.accent });
     if (rs.entry.g4_nonoog_count != null)
-      cards.push({ value: fmtCount(rs.entry.g4_nonoog_count), label: 'non-OOG revert txs as entry site', color: T.accent });
+      cards.push({ value: fmtCount(rs.entry.g4_nonoog_count), label: 'Non-OOG txs as entry contract', color: T.accent });
   }
   if (rs.oog_site)
-    cards.push({ value: fmtCount(rs.oog_site.halt_count || 0), label: 'txs as OOG halt site', color: T.accent });
+    cards.push({ value: fmtCount(rs.oog_site.halt_count || 0), label: 'Txs as OOG halt site', color: T.accent });
   if (rs.revert_site)
-    cards.push({ value: fmtCount(rs.revert_site.revert_count || 0), label: 'txs as non-OOG revert site', color: T.accent });
+    cards.push({ value: fmtCount(rs.revert_site.revert_count || 0), label: 'Txs as non-OOG revert site', color: T.accent });
   const fr = rec.context && rec.context.failure_rate;
   if (fr) {
-    if (fr.halt_rate != null) cards.push({ value: fmtPct(100 * fr.halt_rate), label: 'OOG halt rate (all mainnet txs)', color: T.accent });
-    else if (fr.revert_rate != null) cards.push({ value: fmtPct(100 * fr.revert_rate), label: 'Revert rate (all mainnet txs)', color: T.accent });
+    if (fr.halt_rate != null) cards.push({ value: fmtPct(100 * fr.halt_rate), label: 'OOG rate when called', color: T.accent });
+    if (fr.revert_rate != null) cards.push({ value: fmtPct(100 * fr.revert_rate), label: 'Non-OOG rate when called', color: T.accent });
   }
 
   // ── The spine: failure-mode clusters table ──────────────────────
   // Merge the self-referential entry/site double-count into single rows.
   const clusters = _mergeSelfRoleClusters(rec.failure_clusters || []);
   const distinct = rec.distinct_cluster_count != null ? rec.distinct_cluster_count : clusters.length;
-  const shownShare = rec.clusters_shown_share != null ? ` covering ${fmtPct(100 * rec.clusters_shown_share)} of this contract's G4 txs` : '';
-  const caption = `Top ${clusters.length} of ${fmtCount(distinct)} failure modes${shownShare}.`;
+  const sourceShown = (rec.failure_clusters || []).length;
+  const shownShare = rec.clusters_shown_share != null ? ` covering ${fmtPct(100 * rec.clusters_shown_share)} of its role-tagged G4 occurrences` : '';
+  const caption = `Showing ${clusters.length} rows from the top ${sourceShown} of ${fmtCount(distinct)} role-tagged failure modes${shownShare}.`;
 
   // ── Assemble the DOM shell, then render Plotly bits into it ──────
   el.innerHTML = `
     ${header}
+    <p class="note">A contract can appear as the transaction's entry contract, as the
+      OOG halt site, or as the non-OOG revert site. The same transaction can contribute
+      to more than one role, so the role cards below should not be added together.
+      Rates use all mainnet transactions sent to this contract as the denominator.</p>
     <div class="poster-grid" id="acCards"></div>
     <div class="panel">
       <h3>Failure modes</h3>
-      <p class="note">${escHtml(caption)} Ranked by transaction count. Each row is a distinct
-        failure mode: a failing function paired with a halt/revert signature, tagged with the
+      <p class="note">${escHtml(caption)} Ranked by occurrence count. A transaction can appear
+        in more than one role, so role counts and shares are not unique-transaction totals.
+        Each row is a distinct failure mode: a failing-frame function (falling back to the entry
+        function when unavailable) paired with a halt/revert signature, tagged with the
         role it plays for this contract, and annotated with the repriced state line items
-        (the "why") behind it.</p>
+        behind it. Driver counts and gas values are medians per transaction unless stated otherwise.</p>
       <div id="acClusters" class="chart"><p class="loading">No failure clusters.</p></div>
     </div>
     <div class="panel">
@@ -1181,7 +1221,7 @@ function renderContractDetail(rec) {
       { title: 'Halt / revert detail', get: r => _detailCell(r) },
       { title: 'Why', get: r => _driversCell(r.drivers) },
       { title: 'Count', num: true, get: r => fmtCount(r.count), sortVal: r => r.count },
-      { title: 'Share', num: true,
+      { title: 'Share of role occurrences', num: true,
         get: r => r.share_of_contract != null ? fmtPct(100 * r.share_of_contract) : '—',
         sortVal: r => r.share_of_contract || 0 },
       { title: 'Example tx', get: r => _examplesCell(r.examples) },
@@ -1278,7 +1318,8 @@ function renderDeployOogDetail(addr, acct, dj) {
     <div class="panel">
       <h3>Across this class</h3>
       <p class="note">Aggregate over all collapsed fresh-deployment OOG accounts in this
-        schedule. Individual accounts are not shown separately.</p>
+        schedule. The table above is specific to the searched address; the charts below
+        summarize the full class.</p>
       <div class="grid-2">
         <div>
           <h4>Halt opcode</h4>
@@ -1340,16 +1381,19 @@ function _renderAffectedContext(rec) {
     ? `<p class="note">Block span ${Number(ctx.block_span_start).toLocaleString()}–${Number(ctx.block_span_end).toLocaleString()}.</p>` : '';
 
   el.innerHTML = `
+    <p class="note">Gas-change cards and G2/G3/Already-failing context below cover transactions
+      where this contract was the entry recipient; they do not describe transactions in which the
+      contract appeared only as a halt or revert site.</p>
     ${gasCards.length ? '<div class="poster-grid" id="acGasCards"></div>' : ''}
     <div class="grid-2">
       <div class="panel">
-        <h3>Which functions break — entry</h3>
-        <p class="note">Top entry functions (<code>entry_selector</code>) of this contract in G4 txs.</p>
+        <h3>Entry functions in affected transactions</h3>
+        <p class="note">Functions called on this contract when it was the transaction recipient.</p>
         <div id="acEntryFns" class="chart"><p class="loading">No data.</p></div>
       </div>
       <div class="panel">
-        <h3>Which functions break — failing frame</h3>
-        <p class="note">Top failing functions (the frame the halt/revert lands in).</p>
+        <h3>Functions at the failing frame</h3>
+        <p class="note">Function at the halt/revert frame when available; otherwise the entry function.</p>
         <div id="acFailingFns" class="chart"><p class="loading">No data.</p></div>
       </div>
     </div>
@@ -1371,7 +1415,7 @@ function _renderAffectedContext(rec) {
       <div id="acEntryContracts" class="chart"><p class="loading">No data.</p></div>
     </div>
     <div class="panel">
-      <h3>Broader context</h3>
+      <h3>Broader entry-contract context</h3>
       ${spanNote}
       <div id="acMini"></div>
     </div>`;

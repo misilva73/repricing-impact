@@ -16,6 +16,7 @@
       <a data-nav="overview">Overview</a>
       <a data-nav="transaction-failures">Transaction failures</a>
       <a data-nav="affected-contracts">Affected contracts</a>
+      <a data-method-link>Method</a>
       <a data-nav="entity-report">Entity report</a>
     </div>
     <div class="schedule-picker">
@@ -27,7 +28,8 @@
 
   <main>
     <h1>Divergence overview <span id="schedTitle" class="subtitle"></span></h1>
-    <p class="subtitle">Per-block group composition, totals, and gas-diff distributions for the changed groups.</p>
+    <p class="subtitle">Group composition over time and gas-use changes under the selected candidate schedule.</p>
+    <p class="note" id="scheduleSummary"></p>
 
     <div class="poster-grid" id="cards"><span class="loading">Loading…</span></div>
 
@@ -54,8 +56,8 @@
       </div>
     </div>
 
-    <h2>Succeeds with changes - breakdown</h2>
-    <p class="note">The largest changed group: txs that still succeed at the original gas limit but whose replay differs from baseline. Change types are non-exclusive.</p>
+    <h2>Succeeds with changes — breakdown</h2>
+    <p class="note">Transactions that still succeed at the original gas limit but differ from baseline. Change types overlap, so their counts should not be added together.</p>
     <div class="panel">
       <h3>Change type</h3>
       <p class="note" id="g2changeNote"></p>
@@ -76,25 +78,30 @@
       </div>
     </div>
     <div class="panel">
-      <h3>Gas-diff distribution</h3>
+      <h3>Gas-use change</h3>
       <p class="note" id="g2gasNote"></p>
       <div id="g2gashist" class="chart"><p class="loading">Loading…</p></div>
     </div>
     <div class="with-side">
       <div class="panel">
-        <h3>Gas-diff distribution (% of baseline)</h3>
+        <h3>Gas-use change (% of baseline)</h3>
         <p class="note" id="g2pctNote"></p>
         <div id="g2pcthist" class="chart"><p class="loading">Loading…</p></div>
       </div>
       <div class="sidecard">
         <div class="big" id="g2ratio">—</div>
-        <div class="lbl">Aggregate gas change (gas_only cohort)</div>
-        <p class="note" style="margin-top:10px">Ratio of sums: total <code>gas_delta</code> over total <code>baseline_gas_used</code> for the aggregate cohort — gas-weighted, NOT the mean of per-tx percentages.</p>
+        <div class="lbl">Aggregate gas change (gas-only cohort)</div>
+        <p class="note" style="margin-top:10px">Total added gas divided by total baseline gas for transactions whose only detected change was gas use. This gas-weighted ratio is not the average transaction-level percentage.</p>
       </div>
     </div>
 
-    <h2>Fixable with gas-limit increase - breakdown</h2>
-    <p class="note">Txs that fail at the original gas limit but succeed once it is raised — a repricing under-estimate, not a true break.</p>
+    <h2>Fixable with gas-limit increase — breakdown</h2>
+    <p class="note">Transactions that fail at the original gas limit but complete in replay with a higher limit of up to 10×. Completion in replay does not establish that the required limit is practical under block or protocol constraints.</p>
+    <div class="panel">
+      <h3>Gas-limit increase required</h3>
+      <p class="note" id="g3multiplierNote">Measured minimum gas needed as a multiple of the original transaction limit. Bins are upper-inclusive; for example, “2–4×” means more than 2× and at most 4×.</p>
+      <div id="g3multiplier" class="chart"><p class="loading">Loading…</p></div>
+    </div>
     <div class="grid-2">
       <div class="panel">
         <h3>Transaction shape</h3>
@@ -108,22 +115,27 @@
       </div>
     </div>
     <div class="panel">
-      <h3>Gas-diff distribution</h3>
+        <h3>Gas-use change</h3>
       <p class="note" id="g3note"></p>
       <div id="histG3" class="chart"><p class="loading">Loading…</p></div>
     </div>
 
-    <h2>Potentially broken - breakdown</h2>
-    <p class="note">Txs whose status flips to failure under the schedule and cannot be rescued by a gas-limit increase.</p>
+    <h2>Potentially broken — breakdown</h2>
+    <p class="note">Transactions that succeeded under the baseline, fail under the candidate schedule, and do not complete at the tested 10× gas ceiling.</p>
+    <div class="panel">
+      <h3>Does more gas help at the 10× ceiling?</h3>
+      <p class="note" id="g4fixabilityNote">Authoritative fixability signal from the ceiling replay. “Non-gas halt at 10×” was not rescued by more gas; “Still OOG at 10×” may need more than 10× or may contain an unbounded loop.</p>
+      <div id="g4fixability" class="chart"><p class="loading">Loading…</p></div>
+    </div>
     <div class="grid-2">
       <div class="panel">
-        <h3>Break reason</h3>
-        <p class="note">Out-of-gas (carries an OOG signal) vs a non-OOG revert.</p>
+        <h3>Observed failure signal at the original limit</h3>
+        <p class="note">An OOG signal versus a status-changing revert without an OOG signal. This is not the 10× fixability verdict above.</p>
         <div id="g4break" class="chart"><p class="loading">Loading…</p></div>
       </div>
       <div class="panel">
         <h3>OOG bottleneck kind</h3>
-        <p class="note">For out-of-gas breaks, the gas-accounting rule that ran short.</p>
+        <p class="note" id="g4oogNote">For OOG rows with this diagnostic, the gas-accounting rule that ran short.</p>
         <div id="g4oog" class="chart"><p class="loading">Loading…</p></div>
       </div>
     </div>
@@ -140,7 +152,7 @@
       </div>
     </div>
     <div class="panel">
-      <h3>Gas-diff distribution</h3>
+      <h3>Gas-use change</h3>
       <p class="note" id="g4note"></p>
       <div id="histG4" class="chart"><p class="loading">Loading…</p></div>
     </div>
@@ -176,6 +188,8 @@
       } catch (e) { showError('cards', e); return; }
       SERIES = series;
       const t = series.totals, gl = series.group_labels;
+      document.getElementById('scheduleSummary').textContent =
+        scheduleDescription(meta.schedule) + ' Analysis window: ' + analysisWindow(meta) + '.';
 
       renderCards('cards', [
         { value: fmtCount(t.tx_count), label: 'Total txs' },
@@ -191,12 +205,16 @@
       const g5pct = 100 * t.g5 / t.tx_count;
       document.getElementById('g5share').textContent = fmtPct(g5pct);
       const tr = meta.truncation;
-      document.getElementById('g5note').textContent =
-        `${fmtPct(100 * tr.truncated_share)} of blocks have truncated drill-ins, which inflate the Unknown group.`;
+      document.getElementById('g5note').textContent = tr.truncated_share > 0
+        ? `${fmtPct(100 * tr.truncated_share)} of blocks hit the per-block diagnostic cap. Transactions without retained diagnostic detail contribute to Unknown.`
+        : t.g5 === 0
+          ? 'No blocks hit the per-block diagnostic cap in this build; Unknown is 0%.'
+          : `No blocks hit the per-block diagnostic cap, but ${fmtCount(t.g5)} transactions are Unknown because diagnostic detail was otherwise unavailable.`;
 
       // Succeeds-with-changes (G2) deep dive
       const g2 = cats.g2;
-      document.getElementById('g2changeNote').textContent = g2.change_type_note;
+      document.getElementById('g2changeNote').textContent =
+        'Categories overlap: one transaction can have several changes, so these bars do not sum to the group total. Gas-use changes cover both data cohorts; logs, output, and trace flags are available only for transactions with retained per-transaction diagnostics.';
       renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
       // The gas_only *_mix charts. Each is a TRUE partition of gas_only_count;
       // tx_overlay_mix is an OVERLAPPING overlay and is deliberately never charted —
@@ -207,12 +225,12 @@
       // no tx_shape_mix/tx_type_mix at all, so on pre-v11 data we print a note in
       // each panel instead of drawing anything.
       const drawG2Mixes = () => {
-        document.getElementById('g2mixNote').textContent = g2.gas_only_mix_note || '';
-        document.getElementById('g2overlayNote').textContent = g2.tx_overlay_note || '';
+        document.getElementById('g2mixNote').textContent =
+          `Transaction shape and type cover ${fmtCount(g2.gas_only_count)} gas-only transactions whose only detected difference was gas use. They exclude ${fmtCount(g2.drillin_count)} transactions with retained per-transaction diagnostics.`;
+        document.getElementById('g2overlayNote').textContent =
+          'EIP-7702 authorization is an overlapping attribute, not a separate member of these partitions. Authorization transactions are also counted in transaction shape and type.';
         if (!Array.isArray(g2.tx_shape_mix)) {
-          const stale = 'Not available in this data build — the aggregate-cohort shape '
-            + 'and type partitions need the producer class-grain columns. '
-            + 'Re-run precompute to populate them.';
+          const stale = 'Transaction shape and type are unavailable in this data build. Re-run precompute with the current producer schema to populate them.';
           ['g2shape', 'g2type'].forEach(id => {
             document.getElementById(id).innerHTML = `<p class="loading">${escHtml(stale)}</p>`;
           });
@@ -225,13 +243,48 @@
 
       // Fixable-with-gas-limit-increase (G3) deep dive
       const g3 = cats.g3;
+      const multLabels = { 2: '1–2×', 4: '2–4×', 6: '4–6×', 8: '6–8×', 10: '8–10×' };
+      const multiplierRows = (g3.multiplier_histogram || []).map(r => ({
+        bucket: multLabels[r.multiplier] || `up to ${r.multiplier}×`, count: r.count,
+      }));
+      const withinTwo = (g3.multiplier_histogram || []).find(r => r.multiplier === 2)?.count || 0;
+      document.getElementById('g3multiplierNote').textContent = g3.count
+        ? `Measured minimum gas needed as a multiple of the original transaction limit. ${fmtPct(100 * withinTwo / g3.count)} completed with no more than 2×. Bins are upper-inclusive; “2–4×” means more than 2× and at most 4×.`
+        : 'No fixable transactions were recorded for this schedule.';
+      const drawMultiplier = () => renderVBar('g3multiplier', multiplierRows, 'bucket', 'count', {
+        xTitle: 'minimum gas required / original gas limit', yTitle: 'transactions',
+        color: GROUP_COLOR(2),
+      });
+      drawMultiplier();
       renderHBar('g3shape', g3.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(2) });
       renderHBar('g3type', g3.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(2) });
 
       // Potentially-broken (G4) deep dive
       const g4 = cats.g4;
+      const fixLabels = {
+        not_gas_fixable: 'Non-gas halt at 10×',
+        still_oog_at_ceiling: 'Still OOG at 10×',
+        unknown: 'Ceiling outcome unknown',
+      };
+      const fixRows = (g4.fixability || []).map(r => ({
+        key: fixLabels[r.key] || humanizeKey(r.key), count: r.count,
+      }));
+      const notGasFixable = (g4.fixability || []).find(r => r.key === 'not_gas_fixable')?.count || 0;
+      const stillOog = (g4.fixability || []).find(r => r.key === 'still_oog_at_ceiling')?.count || 0;
+      document.getElementById('g4fixabilityNote').textContent = g4.count
+        ? `${fmtCount(notGasFixable)} (${fmtPct(100 * notGasFixable / g4.count)}) reached a non-gas halt at 10× and were not rescued by more gas. ${fmtCount(stillOog)} (${fmtPct(100 * stillOog / g4.count)}) were still OOG at 10×, so fixability beyond the tested ceiling is unknown.`
+        : 'No potentially-broken transactions were recorded for this schedule.';
+      const drawFixability = () => renderHBar('g4fixability', fixRows, 'key', 'count', {
+        humanize: false, left: 190, color: GROUP_COLOR(3), xTitle: 'potentially-broken transactions',
+      });
+      drawFixability();
       renderHBar('g4break', g4.break_reason, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
       renderHBar('g4oog', g4.oog_bottleneck_kind, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
+      const oogCount = (g4.break_reason || []).find(r => r.key === 'oog')?.count || 0;
+      const bottleneckCount = (g4.oog_bottleneck_kind || []).reduce((sum, r) => sum + r.count, 0);
+      document.getElementById('g4oogNote').textContent = oogCount
+        ? `For OOG rows with this diagnostic, the gas-accounting rule that ran short. Available for ${fmtCount(bottleneckCount)} of ${fmtCount(oogCount)} OOG rows (${fmtPct(100 * bottleneckCount / oogCount)}).`
+        : 'No OOG rows were recorded for this schedule.';
       renderHBar('g4shape', g4.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
       renderHBar('g4type', g4.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(3) });
 
@@ -244,9 +297,13 @@
       // note names its own cohort. G3/G4 keep the single auto-routed chart: % of
       // baseline when precompute emitted pct_bins, else the absolute log2 hist.
       const g = hist.groups;
-      document.getElementById('g2gasNote').textContent = g['2'].note;
-      document.getElementById('g3note').textContent = g['3'].pct_bins ? g['3'].pct_note : g['3'].note;
-      document.getElementById('g4note').textContent = g['4'].pct_bins ? g['4'].pct_note : g['4'].note;
+      const g2GasCovered = (g['2'].gas_bins || []).reduce((sum, r) => sum + r.count, 0);
+      document.getElementById('g2gasNote').textContent =
+        `Absolute gas-use change for ${fmtCount(g2GasCovered)} transactions whose gas use changed. This combines the gas-only cohort with G2 transactions that have retained diagnostics. The ≥1,024-gas bin is a catch-all.`;
+      const perTxPctNote = group =>
+        `Per-transaction gas-use change as a share of baseline gas used for ${fmtCount(group.pct_covered_count)} transactions. Negative values mean the candidate schedule used less gas; ≥500% is a catch-all.`;
+      document.getElementById('g3note').textContent = g['3'].pct_bins ? perTxPctNote(g['3']) : 'Exact per-transaction gas-use change; negative values mean the candidate schedule used less gas.';
+      document.getElementById('g4note').textContent = g['4'].pct_bins ? perTxPctNote(g['4']) : 'Exact per-transaction gas-use change; negative values mean the candidate schedule used less gas.';
       renderG2GasHist('g2gashist', g['2']);
       renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
       renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
@@ -256,32 +313,29 @@
       // than a stuck "Loading…" placeholder. renderPctHist is called with NO color
       // so negative bins keep the diverging (cheaper/costlier) scale.
       if (g['2'].pct_bins) {
-        document.getElementById('g2pctNote').textContent = g['2'].pct_note;
+        document.getElementById('g2pctNote').textContent =
+          `Per-transaction gas-use change as a share of baseline gas used for ${fmtCount(g['2'].pct_covered_count)} gas-only transactions. Transactions with retained diagnostics are excluded from this percentage view; ≥500% is a catch-all.`;
         renderPctHist('g2pcthist', g['2']);
       } else {
         document.getElementById('g2pctNote').textContent =
-          'Not available in this data build — the percent-of-baseline view needs the '
-          + 'producer class-grain percentage histogram. Re-run precompute to populate it.';
+          'The percentage view is unavailable in this data build. Re-run precompute with the current producer schema to populate it.';
         document.getElementById('g2pcthist').innerHTML = '<p class="loading">No data.</p>';
       }
       const g2r = g['2'].gas_delta_pct_of_baseline;
       document.getElementById('g2ratio').textContent =
         (g2r == null) ? '—' : (g2r < 0 ? '-' : '+') + fmtPct(Math.abs(g2r));
 
-      document.getElementById('footSchedule').textContent = meta.schedule;
-      document.getElementById('footConfig').innerHTML =
-        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
-      document.getElementById('footBlocks').textContent =
-        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
-      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      fillFooter(meta);
 
       window.rerenderCharts = () => {
         renderComposition('composition', series, pctMode);
         renderTotalsDonut('donut', t, gl);
         renderHBar('g2change', g2.change_type_mix, 'key', 'count', { left: 160, color: GROUP_COLOR(1) });
         drawG2Mixes();
+        drawMultiplier();
         renderHBar('g3shape', g3.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(2) });
         renderHBar('g3type', g3.tx_type_mix || [], 'key', 'count', { left: 130, color: GROUP_COLOR(2) });
+        drawFixability();
         renderHBar('g4break', g4.break_reason, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
         renderHBar('g4oog', g4.oog_bottleneck_kind, 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
         renderHBar('g4shape', g4.tx_shape_mix || [], 'key', 'count', { left: 150, color: GROUP_COLOR(3) });
@@ -290,7 +344,6 @@
         renderGroupGasHist('histG3', g['3'], GROUP_COLOR(2));
         renderGroupGasHist('histG4', g['4'], GROUP_COLOR(3));
         if (g['2'].pct_bins) {
-          document.getElementById('g2pctNote').textContent = g['2'].pct_note;
           renderPctHist('g2pcthist', g['2']);
         }
         const g2r2 = g['2'].gas_delta_pct_of_baseline;

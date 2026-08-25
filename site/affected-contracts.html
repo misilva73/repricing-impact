@@ -16,6 +16,7 @@
       <a data-nav="overview">Overview</a>
       <a data-nav="transaction-failures">Transaction failures</a>
       <a data-nav="affected-contracts">Affected contracts</a>
+      <a data-method-link>Method</a>
       <a data-nav="entity-report">Entity report</a>
     </div>
     <div class="schedule-picker">
@@ -36,15 +37,16 @@
       (clusters), each annotated with the repricing drivers behind it. Freshly-deployed
       accounts that run out of gas during their own creation (mostly ERC-4337 smart-account
       wallets) are collapsed into a shared summary view rather than an individual page.
-      Contracts with no identified failures show a clear banner.</p>
+      If the analysis cannot be loaded, the page reports that separately rather than
+      treating the contract as unaffected.</p>
 
     <!-- ============================ Search ============================ -->
     <section id="sec-search">
       <div class="panel">
         <h3>Find a contract</h3>
-        <p class="note">Paste a full <code>0x…</code> address, or type part of a contract
-          name / owner project. Deep-linkable via <code>?addr=</code> (and
-          <code>?schedule=</code>).</p>
+        <p class="note">Paste a full <code>0x…</code> address, or type part of a known contract
+          name or owner project. Unlabeled contracts can be found only by full address.
+          Searches can be shared with the current URL.</p>
         <div class="toggle-row">
           <input id="addrSearch" type="text" placeholder="0x… address or contract name"
             style="flex:1 1 auto; min-width:240px; padding:8px 10px; font-size:0.9em;
@@ -81,9 +83,9 @@
         ]);
       } catch (e) { showError('banner', e); return; }
 
-      document.getElementById('flavourNote').textContent = currentSchedule() === 'eip-8037'
-        ? 'EIP-8037 (per-tx state reservoir): per-contract Potentially-broken (G4) failure analysis.'
-        : 'EIP-8038 (state access/write repricing): per-contract Potentially-broken (G4) failure analysis.';
+      document.getElementById('flavourNote').textContent =
+        scheduleDescription(meta.schedule) + ' Per-contract Potentially-broken (G4) analysis. '
+        + 'Analysis window: ' + analysisWindow(meta) + '.';
 
       // Hand the loaded index to app.js's lookup machinery. Per-contract detail
       // is sharded under data/{schedule}/affected/{addr}.json, fetched on lookup.
@@ -101,12 +103,7 @@
       if (urlAddr) { input.value = urlAddr; affectedLookup(urlAddr); }
 
       // Footer.
-      document.getElementById('footSchedule').textContent = meta.schedule;
-      document.getElementById('footConfig').innerHTML =
-        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
-      document.getElementById('footBlocks').textContent =
-        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
-      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      fillFooter(meta);
 
       // Re-render on schedule switch is handled by full navigation (schedule-picker
       // links carry ?schedule=), so nothing to redraw in-place here.

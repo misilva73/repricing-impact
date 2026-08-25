@@ -4,7 +4,7 @@
     "2": {
       "label": "Succeeds with changes",
       "signed": false,
-      "note": "Txs with a gas change (gas_delta != 0): block_summary gas_only cohort + Succeeds-with-changes drill-in members, binned by the producer log2 bucket. The >=1024-gas bin is a catch-all \u2014 the aggregate cohort has no finer resolution above 1024 gas.",
+      "note": "Absolute gas-use change for transactions whose gas use changed. This combines transactions whose only detected difference was gas use with Succeeds-with-changes transactions that have retained per-transaction diagnostics. The >=1,024-gas bin is a catch-all.",
       "count": 456656332,
       "gas_bins": [
         {
@@ -157,7 +157,7 @@
         }
       ],
       "pct_covered_count": 450302683,
-      "pct_note": "Class-grain producer histogram of 100*gas_delta/baseline_gas_used per tx over the gas_only aggregate cohort ONLY (block_summary.gas_delta_pct_hist); the drill-in members counted in gas_bins are not included. Fixed signed bins; bounded below at -100%; the >=500% bin is a catch-all.",
+      "pct_note": "Per-transaction gas-use change as a share of baseline gas used for the gas-only cohort. Transactions with retained per-transaction diagnostics are excluded from this percentage view; >=500% is a catch-all.",
       "sum_gas_delta_gas_only": 5240858631357,
       "baseline_gas_used_sum": 68773671993738,
       "gas_delta_pct_of_baseline": 7.6204
@@ -165,7 +165,7 @@
     "3": {
       "label": "Fixable with gas-limit increase",
       "signed": true,
-      "note": "Signed exact per-tx gas_delta (negative = schedule cheaper).",
+      "note": "Exact per-transaction gas-use change; negative values mean the candidate schedule used less gas.",
       "count": 84708228,
       "bins": [
         {
@@ -355,12 +355,12 @@
         }
       ],
       "pct_covered_count": 84708228,
-      "pct_note": "Per-tx 100*gas_delta/baseline_gas_used (share of baseline gas used; negative = schedule cheaper), fixed signed bins. Bounded below at -100%; the >=500% bin is a catch-all."
+      "pct_note": "Per-transaction gas-use change as a share of baseline gas used. Negative values mean the candidate schedule used less gas; >=500% is a catch-all."
     },
     "4": {
       "label": "Potentially broken",
       "signed": true,
-      "note": "Signed exact per-tx gas_delta (negative = schedule cheaper).",
+      "note": "Exact per-transaction gas-use change; negative values mean the candidate schedule used less gas.",
       "count": 3036537,
       "bins": [
         {
@@ -680,7 +680,7 @@
         }
       ],
       "pct_covered_count": 3036537,
-      "pct_note": "Per-tx 100*gas_delta/baseline_gas_used (share of baseline gas used; negative = schedule cheaper), fixed signed bins. Bounded below at -100%; the >=500% bin is a catch-all."
+      "pct_note": "Per-transaction gas-use change as a share of baseline gas used. Negative values mean the candidate schedule used less gas; >=500% is a catch-all."
     }
   }
 }

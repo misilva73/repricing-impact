@@ -16,6 +16,7 @@
       <a data-nav="overview">Overview</a>
       <a data-nav="transaction-failures">Transaction failures</a>
       <a data-nav="affected-contracts">Affected contracts</a>
+      <a data-method-link>Method</a>
       <a data-nav="entity-report">Entity report</a>
     </div>
     <div class="schedule-picker">
@@ -28,9 +29,11 @@
   <main>
     <h1>Transaction failures <span id="schedTitle" class="subtitle"></span></h1>
     <p class="subtitle" id="flavourNote"></p>
-    <p class="note">Potentially-broken (G4) transactions split by break reason:
-      <strong>out-of-gas failures</strong> (an OOG halt was recorded) vs.
-      <strong>non-OOG reverts</strong> (the status flipped without running out of gas).</p>
+    <p class="note">Potentially-broken (G4) transactions split by observed failure signal at
+      the original limit: <strong>out-of-gas failures</strong> (an OOG signal was recorded) vs.
+      <strong>non-OOG reverts</strong> (the status flipped without a recorded OOG signal).
+      This split does not determine whether more gas helps at the 10× ceiling.</p>
+    <p class="note"><a id="affectedSearchLink">Search an individual affected contract →</a></p>
 
     <!-- ============================ OOG ============================ -->
     <section id="sec-oog">
@@ -46,7 +49,7 @@
         </div>
         <div class="panel">
           <h3>How much — gas left at the halt</h3>
-          <p class="note">Distribution of the gas remaining when the transaction ran out (<code>oog_gas_remaining</code>).</p>
+          <p class="note">Gas remaining in the failing frame immediately before the OOG halt. This is not the amount of gas needed to rescue the transaction.</p>
           <div id="oogGasRemaining" class="chart"><p class="loading">Loading…</p></div>
         </div>
       </div>
@@ -68,10 +71,11 @@
         <h3>Where — top entry contracts by OOG halts</h3>
         <p class="note">Entry contracts (the <code>recipient</code> the user calls) ranked by OOG halts
           or by failure rate. The failure rate is halts as a share of <em>all</em> mainnet
-          transactions to that contract over the analysis window. The <strong>Upgradable</strong>
-          column shows the detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
+          transactions to that contract over the analysis window. The <strong>Upgradeability</strong>
+          column shows a detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
           EIP-1167 <em>Immutable clone</em> is a proxy that can never change, so it is not
-          upgradable. Addresses link to Etherscan; click a column header to re-sort.</p>
+          upgradeable. A dash means no mechanism was detected or the status is unknown.
+          Addresses link to Etherscan; click a column header to re-sort.</p>
         <div class="toggle-row">
           <span class="note" style="margin-right:6px">Rank by</span>
           <button class="toggle-btn active" id="btnByHalts" onclick="setRecipientRank('halts')">OOG halts</button>
@@ -95,8 +99,8 @@
     <section id="sec-nonoog">
       <h2>Non-OOG reverts</h2>
       <p class="note" id="nonOogIntro">Potentially-broken transactions whose status flipped under the
-        schedule <em>without</em> an out-of-gas signal — the transaction reverted
-        for a non-gas reason instead of halting on OOG.</p>
+        schedule without a recorded out-of-gas signal. This describes the observed failure mode;
+        it does not prove that gas was causally irrelevant.</p>
       <div class="poster-grid" id="nonOogCards"><span class="loading">Loading…</span></div>
 
       <div class="grid-2">
@@ -107,7 +111,7 @@
         </div>
         <div class="panel">
           <h3>Why — most common errors</h3>
-          <p class="note">ABI-decoded <code>Error(string)</code> revert messages (top 5; the rest grouped as “Others”).</p>
+          <p class="note" id="nonOogErrorsNote">ABI-decoded <code>Error(string)</code> revert messages only (top 5; the remaining decoded messages grouped as “Others”).</p>
           <div id="nonOogErrors" class="chart"><p class="loading">Loading…</p></div>
         </div>
       </div>
@@ -115,7 +119,7 @@
       <div class="grid-2">
         <div class="panel">
           <h3>What — opcode at the revert</h3>
-          <p class="note">The EVM opcode at the first-divergence frame (top 5; the rest grouped as “Others”).</p>
+          <p class="note">The EVM opcode in the first call frame where the candidate replay diverged from baseline (top 5; the rest grouped as “Others”).</p>
           <div id="nonOogOpcode" class="chart"><p class="loading">Loading…</p></div>
         </div>
         <div class="panel">
@@ -129,10 +133,11 @@
         <h3>Where — top entry contracts by non-OOG reverts</h3>
         <p class="note">Entry contracts (the <code>recipient</code> the user calls) ranked by non-OOG
           reverts or by failure rate. The failure rate is reverts as a share of <em>all</em> mainnet
-          transactions to that contract over the analysis window. The <strong>Upgradable</strong>
-          column shows the detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
+          transactions to that contract over the analysis window. The <strong>Upgradeability</strong>
+          column shows a detected upgrade mechanism (Transparent / UUPS / Beacon / Diamond); an
           EIP-1167 <em>Immutable clone</em> is a proxy that can never change, so it is not
-          upgradable. Addresses link to Etherscan; click a column header to re-sort.</p>
+          upgradeable. A dash means no mechanism was detected or the status is unknown.
+          Addresses link to Etherscan; click a column header to re-sort.</p>
         <div class="toggle-row">
           <span class="note" style="margin-right:6px">Rank by</span>
           <button class="toggle-btn active" id="btnNonOogByReverts" onclick="setNonOogRecipientRank('reverts')">Non-OOG reverts</button>
@@ -162,20 +167,20 @@
     document.addEventListener('DOMContentLoaded', async () => {
       buildChrome('transaction-failures');
       document.getElementById('schedTitle').textContent = '· ' + currentSchedule();
+      document.getElementById('affectedSearchLink').href = pageLink('affected-contracts.html');
 
-      let meta, cats, oog, nonoog;
+      let meta, oog, nonoog;
       try {
-        [meta, cats, oog, nonoog] = await Promise.all([
+        [meta, oog, nonoog] = await Promise.all([
           fetchJSON(dataUrl('meta.json')),
-          fetchJSON(dataUrl('group_categories.json')),
           fetchJSON(dataUrl('oog_forensics.json')),
           fetchJSON(dataUrl('nonoog_forensics.json')),
         ]);
       } catch (e) { showError('oogIntro', e); return; }
 
-      document.getElementById('flavourNote').textContent = cats.flavour === 'state'
-        ? 'EIP-8037 (per-tx state reservoir): Potentially-broken (G4) transactions only.'
-        : 'EIP-8038 (state access/write repricing): Potentially-broken (G4) transactions only.';
+      document.getElementById('flavourNote').textContent =
+        scheduleDescription(meta.schedule) + ' This page covers Potentially-broken (G4) transactions only. '
+        + 'Analysis window: ' + analysisWindow(meta) + '.';
 
       // ── OOG section ──────────────────────────────────────────────
       const T = theme();
@@ -183,7 +188,7 @@
       document.getElementById('oogIntro').textContent = hasOog
         ? `${fmtCount(oog.oog_total)} of ${fmtCount(oog.g4_total)} potentially-broken txs `
           + `(${fmtPct(100 * oog.oog_share_of_g4)}) recorded an out-of-gas halt. `
-          + `The rest are non-OOG reverts (below).`
+          + `The remaining G4 transactions reverted without a recorded OOG signal (below).`
         : 'No out-of-gas halts recorded in the potentially-broken cohort for this schedule.';
 
       renderCards('oogCards', [
@@ -211,14 +216,14 @@
         const ranked = (byRate ? oogByRate : oogByHalts).slice().sort((a, b) =>
           byRate ? b.halt_rate - a.halt_rate : b.halt_count - a.halt_count);
         document.getElementById('oogRecipientsNote').textContent = byRate
-          ? 'Ranked by failure rate; only contracts with ≥ 100 total mainnet txs over the window qualify.'
+          ? 'Highest rates among entry contracts preselected for high OOG-halt counts; only contracts with ≥ 100 total mainnet transactions over the window qualify.'
           : '';
         renderTable('oogRecipients', 'oogRecipientsTable', ranked, [
           { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
           { title: 'Contract', get: r => `<strong>${escHtml(contractName(r))}</strong>` },
           { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
-          { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
-          { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
+          { title: 'Label source', get: r => r.source ? `${humanizeKey(r.source)}${r.confidence ? ' · ' + humanizeKey(r.confidence) : ''}` : '—', sortVal: r => r.source || '' },
+          { title: 'Upgradeability', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
           { title: 'Address', get: r => `<a class="addr" href="https://etherscan.io/address/${escHtml(r.addr)}" target="_blank" rel="noopener noreferrer" title="${escHtml(r.addr)}">${escHtml(shortAddr(r.addr))}</a>` },
           { title: 'OOG halts', num: true, get: r => fmtCount(r.halt_count), sortVal: r => r.halt_count },
           { title: 'Failure rate', num: true,
@@ -242,8 +247,12 @@
       document.getElementById('nonOogIntro').textContent = hasNonOog
         ? `${fmtCount(nonoog.nonoog_total)} of ${fmtCount(nonoog.g4_total)} potentially-broken txs `
           + `(${fmtPct(100 * nonoog.nonoog_share_of_g4)}) flipped status without an out-of-gas `
-          + `signal — the transaction reverted for a non-gas reason instead of halting on OOG.`
+          + `signal. This describes the observed failure mode; it does not prove that gas was causally irrelevant.`
         : 'No non-OOG reverts recorded in the potentially-broken cohort for this schedule.';
+      const decodedErrorCount = (nonoog.revert_error_mix || []).reduce((sum, r) => sum + r.count, 0);
+      document.getElementById('nonOogErrorsNote').textContent = nonoog.nonoog_total
+        ? `ABI-decoded Error(string) messages only: ${fmtCount(decodedErrorCount)} of ${fmtCount(nonoog.nonoog_total)} non-OOG reverts (${fmtPct(100 * decodedErrorCount / nonoog.nonoog_total)}). Top 5 messages are shown; remaining decoded messages are grouped as “Others”.`
+        : 'No ABI-decoded Error(string) messages were recorded.';
 
       renderCards('nonOogCards', [
         { value: fmtCount(nonoog.nonoog_total), label: 'Non-OOG reverts', color: T.groups[3] },
@@ -270,14 +279,14 @@
         const ranked = (byRate ? nonOogByRate : nonOogByReverts).slice().sort((a, b) =>
           byRate ? b.revert_rate - a.revert_rate : b.revert_count - a.revert_count);
         document.getElementById('nonOogRecipientsNote').textContent = byRate
-          ? 'Ranked by failure rate; only contracts with ≥ 100 total mainnet txs over the window qualify.'
+          ? 'Highest rates among entry contracts preselected for high non-OOG-revert counts; only contracts with ≥ 100 total mainnet transactions over the window qualify.'
           : '';
         renderTable('nonOogRecipients', 'nonOogRecipientsTable', ranked, [
           { title: '#', num: true, get: (r, i) => i + 1, sortVal: (r, i) => i + 1 },
           { title: 'Contract', get: r => `<strong>${escHtml(contractName(r))}</strong>` },
           { title: 'Category', get: r => r.category ? humanizeKey(r.category) : '—', sortVal: r => r.category || '' },
-          { title: 'Source', get: r => r.source ? humanizeKey(r.source) : '—', sortVal: r => r.source || '' },
-          { title: 'Upgradable', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
+          { title: 'Label source', get: r => r.source ? `${humanizeKey(r.source)}${r.confidence ? ' · ' + humanizeKey(r.confidence) : ''}` : '—', sortVal: r => r.source || '' },
+          { title: 'Upgradeability', get: r => upgradeTag(r), sortVal: r => upgradeRank(r) },
           { title: 'Address', get: r => `<a class="addr" href="https://etherscan.io/address/${escHtml(r.addr)}" target="_blank" rel="noopener noreferrer" title="${escHtml(r.addr)}">${escHtml(shortAddr(r.addr))}</a>` },
           { title: 'Non-OOG reverts', num: true, get: r => fmtCount(r.revert_count), sortVal: r => r.revert_count },
           { title: 'Failure rate', num: true,
@@ -301,12 +310,7 @@
       };
       draw();
 
-      document.getElementById('footSchedule').textContent = meta.schedule;
-      document.getElementById('footConfig').innerHTML =
-        `config_hash=<code>${escHtml(meta.analysis_config_hash.slice(0, 18))}…</code>`;
-      document.getElementById('footBlocks').textContent =
-        `blocks ${meta.block_range.start.toLocaleString()}–${meta.block_range.end.toLocaleString()}`;
-      document.getElementById('footGenerated').textContent = 'Generated ' + meta.generated_at;
+      fillFooter(meta);
       window.rerenderCharts = draw;
     });
   </script>
